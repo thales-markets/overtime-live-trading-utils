@@ -39,8 +39,6 @@ export const processMarket = (
         maxPercentageDiffBetwenOdds
     );
 
-    market.live = true;
-
     if (moneylineOdds.errorMessage) {
         market.odds = market.odds.map(() => {
             return {
@@ -83,7 +81,7 @@ export const processMarket = (
                         normalizedImplied: 0,
                     };
                 }
-                preparedMarket.live = true;
+
                 return {
                     american: oddslib.from('impliedProbability', _odd).to('moneyline'),
                     decimal: oddslib.from('impliedProbability', _odd).to('decimal'),

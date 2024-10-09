@@ -46,7 +46,7 @@ export const LeagueMap = {
         matchResolveType: MatchResolveType.OVERTIME,
         periodType: PeriodType.INNING,
         isDrawAvailable: false,
-        betTypesForLive: [MoneylineTypes.MONEYLINE],
+        betTypesForLive: [MoneylineTypes.MONEYLINE, SpreadTypes.RUN_LINE, TotalTypes.TOTAL_RUNS],
         betTypesForLiveTestnet: [MoneylineTypes.MONEYLINE, SpreadTypes.RUN_LINE, TotalTypes.TOTAL_RUNS],
     },
     [League.NBA]: {
@@ -84,8 +84,8 @@ export const LeagueMap = {
         matchResolveType: MatchResolveType.OVERTIME,
         periodType: PeriodType.PERIOD,
         isDrawAvailable: false,
-        betTypesForLive: [MoneylineTypes.MONEYLINE],
-        betTypesForLiveTestnet: [MoneylineTypes.MONEYLINE],
+        betTypesForLive: [MoneylineTypes.MONEYLINE, SpreadTypes.PUCK_LINE, TotalTypes.TOTAL_GOALS],
+        betTypesForLiveTestnet: [MoneylineTypes.MONEYLINE, SpreadTypes.PUCK_LINE, TotalTypes.TOTAL_GOALS],
     },
     [League.UFC]: {
         sport: Sport.FIGHTING,
@@ -580,7 +580,7 @@ export const LeagueMap = {
         matchResolveType: MatchResolveType.OVERTIME,
         periodType: PeriodType.QUARTER,
         isDrawAvailable: false,
-        betTypesForLive: [MoneylineTypes.MONEYLINE],
+        betTypesForLive: [MoneylineTypes.MONEYLINE, SpreadTypes.POINT_SPREAD, TotalTypes.TOTAL_POINTS],
         betTypesForLiveTestnet: [MoneylineTypes.MONEYLINE, SpreadTypes.POINT_SPREAD, TotalTypes.TOTAL_POINTS],
     },
     [League.SUMMER_OLYMPICS_BASKETBALL]: {

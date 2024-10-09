@@ -177,6 +177,7 @@ export enum SpreadTypes {
     GAME_SPREAD = 'Game Spread',
     POINT_SPREAD = 'Point Spread',
     RUN_LINE = 'Run Line',
+    PUCK_LINE = 'Puck Line',
 }
 
 export enum TotalTypes {
