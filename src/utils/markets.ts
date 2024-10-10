@@ -1,7 +1,15 @@
 import * as oddslib from 'oddslib';
-import { TAG_CHILD_SPREAD, TAG_CHILD_TOTALS } from '../constants/common';
-import { filterOddsByMarketNameBookmaker, formatSpreadOdds, getParentOdds, processTotalOdds } from './odds';
-import { getLeagueSpreadType, getLeagueTotalType } from './sports';
+import { TAG_CHILD_SPREAD, TAG_CHILD_TOTALS, ZERO } from '../constants/common';
+import {
+    filterOddsByMarketNameBookmaker,
+    formatSpreadOdds,
+    getParentOdds,
+    groupAndFormatChildOdds,
+    processTotalOdds,
+} from './odds';
+import { getBetTypesForLeague, getLeagueSpreadType, getLeagueTotalType } from './sports';
+import { MoneylineTypes } from '../enums/sports';
+import { getSpreadData, adjustSpreadOnOdds } from './spread';
 /**
  * Processes a single sports event. This function maps event data to a specific format,
  * filters invalid events, and optionally fetches player properties if the sport supports it.
@@ -62,7 +70,7 @@ export const processMarket = (
     }
 
     const childMarkets = getChildMarkets(
-        market.leagueId,
+        market,
         sportSpreadData,
         apiResponseWithOdds,
         liveOddsProviders,
@@ -107,7 +115,7 @@ export const processMarket = (
  * @returns {Array} The child markets for the event.
  */
 const getChildMarkets = (
-    leagueId,
+    market,
     spreadDataForSport,
     apiResponseWithOdds,
     liveOddsProviders,
@@ -120,7 +128,7 @@ const getChildMarkets = (
     childMarkets = childMarkets.concat(
         createSpreadChildMarkets(
             apiResponseWithOdds,
-            leagueId,
+            market.leagueId,
             spreadDataForSport,
             liveOddsProviders,
             defaultSpreadForLiveMarkets,
@@ -132,7 +140,7 @@ const getChildMarkets = (
     childMarkets = childMarkets.concat(
         createTotalChildMarkets(
             apiResponseWithOdds,
-            leagueId,
+            market.leagueId,
             spreadDataForSport,
             liveOddsProviders,
             defaultSpreadForLiveMarkets,
@@ -141,6 +149,89 @@ const getChildMarkets = (
     );
 
     return childMarkets;
+};
+
+/**
+ * Creates spread child markets based on the given parameters.
+ *
+ * @param {Object} market - The market object from the API
+ * @param {Array} spreadDataForSport - Spread data for sport.
+ * @param {Object} apiResponseWithOdds - API response from the provider
+ * @param {Array} liveOddsProviders - Odds providers for live odds
+ * @param {Number} defaultSpreadForLiveMarkets - Default spread for live markets
+ * @param {Boolean} isTestnet - Flag showing should we process for testnet or mainnet
+ * @returns {Array} The spread child markets.
+ */
+export const createChildMarkets = (
+    apiResponseWithOdds,
+    market,
+    spreadDataForSport,
+    liveOddsProviders,
+    defaultSpreadForLiveMarkets,
+    isTestnet
+) => {
+    const commonData = {
+        homeTeam: apiResponseWithOdds.home_team,
+        awayTeam: apiResponseWithOdds.away_team,
+    };
+    const betTypes = getBetTypesForLeague(market.leagueId, isTestnet)
+        .filter((betType) => betType != MoneylineTypes.MONEYLINE) // remove moneyline from child markets
+        .map((betType) => betType.toLowerCase()); // convert bet type to lower case so we can filter in next step by lower case
+
+    const allChildOdds = filterOddsByMarketNameBookmaker(apiResponseWithOdds.odds, betTypes, liveOddsProviders[0]);
+    const validChildOdds = allChildOdds.filter((odd) => odd && Math.abs(odd.selection_points % 1) === 0.5);
+    const groupedOdds = groupAndFormatChildOdds(allChildOdds, commonData);
+    groupedOdds.forEach(({ line, odds }) => {
+        let homeTeamOdds = convertOddsToImpl(odds[0]) || ZERO;
+        let awayTeamOdds = convertOddsToImpl(odds[1]) || ZERO;
+        let isZeroOddsChild = homeTeamOdds === ZERO || awayTeamOdds === ZERO;
+
+        if (!isZeroOddsChild) {
+            const spreadData = getSpreadData(
+                spreadDataForSport,
+                market.leagueId,
+                market.typeId,
+                defaultSpreadForLiveMarkets
+            );
+            let adjustedOdds;
+            if (spreadData !== null) {
+                adjustedOdds = adjustSpreadOnOdds(
+                    [homeTeamOdds, awayTeamOdds],
+                    spreadData.minSpread,
+                    spreadData.targetSpread
+                );
+            } else {
+                adjustedOdds = adjustSpreadOnOdds([homeTeamOdds, awayTeamOdds], defaultSpreadForLiveMarkets, 0);
+            }
+
+            [homeTeamOdds, awayTeamOdds] = adjustedOdds;
+        }
+
+        const minOdds = process.env.MIN_ODDS_FOR_CHILD_MARKETS_FOR_LIVE;
+        const maxOdds = process.env.MAX_ODDS_FOR_CHILD_MARKETS_FOR_LIVE;
+
+        if (
+            !(
+                minOdds &&
+                maxOdds &&
+                (homeTeamOdds >= minOdds ||
+                    homeTeamOdds <= maxOdds ||
+                    awayTeamOdds >= minOdds ||
+                    awayTeamOdds <= maxOdds)
+            )
+        ) {
+            childMarkets.push({
+                leagueId,
+                typeId: typeId,
+                type: 'spread',
+                line: line,
+                odds: [homeTeamOdds, awayTeamOdds],
+            });
+        }
+    });
+    // adjust spread data
+    // restrict min, max odds
+    // pack child market
 };
 
 /**

@@ -2,7 +2,7 @@ import * as oddslib from 'oddslib';
 import { DRAW, LIVE_TYPE_ID_BASE, MIN_ODDS_FOR_DIFF_CHECKING, ZERO } from '../constants/common';
 import { checkOddsFromBookmakers } from './bookmakers';
 import { adjustSpreadOnOdds, getSpreadData } from './spread';
-import { MoneylineTypes } from '../enums/sports';
+import { MoneylineTypes, SpreadTypes, TotalTypes } from '../enums/sports';
 
 /**
  * Filters the odds array to find moneyline odds.
@@ -118,14 +118,14 @@ export const getParentOdds = (
  * Filters the odds array to find entries matching the specified market name.
  *
  * @param {Array} oddsArray - The array of odds objects.
- * @param {string} marketName - The market name to filter by.
+ * @param {string} betTypes - The market names to filter by.
  * @param {string} oddsProvider - The main odds provider to filter by.
  * @returns {Array} The filtered odds array.
  */
-export const filterOddsByMarketNameBookmaker = (oddsArray, marketName, oddsProvider) => {
+export const filterOddsByMarketNameBookmaker = (oddsArray, betTypes, oddsProvider) => {
     return oddsArray.filter(
         (odd) =>
-            odd.market_name.toLowerCase() === marketName.toLowerCase() &&
+            betTypes.includes(odd.market_name.toLowerCase()) &&
             odd.sports_book_name.toLowerCase() == oddsProvider.toLowerCase()
     );
 };
@@ -257,6 +257,72 @@ export const processTotalOdds = (totalOdds, leagueId, spreadDataForSport, typeId
     });
 
     return childMarkets;
+};
+
+/**
+ * Groups spread odds by their lines and formats the result.
+ *
+ * @param {Array} oddsArray - The input array of odds objects.
+ * @param {Object} commonData - The common data object containing homeTeam information.
+ * @returns {Array} The grouped and formatted spread odds.
+ */
+export const groupAndFormatChildOdds = (oddsArray, commonData) => {
+    const TOTALS_SAND = 'totals';
+    // Group odds by their selection points and selection
+    const groupedOdds = oddsArray.reduce((acc: any, odd: any) => {
+        const { selection_points, price, selection, market_name } = odd;
+        if (Object.values(SpreadTypes).find((spreadType) => spreadType == market_name)) {
+            const isHomeTeam = selection === commonData.homeTeam;
+            const key = isHomeTeam ? selection_points : -selection_points;
+            if (!acc[key]) {
+                acc[key] = { home: null, away: null };
+            }
+            if (isHomeTeam) {
+                acc[key].home = price;
+            } else {
+                acc[key].away = price;
+            }
+        } else if (Object.values(TotalTypes).find((totalType) => totalType == market_name)) {
+            const key = `${TOTALS_SAND}_${selection}_${selection_points}`; // totals
+            if (!acc[key]) {
+                acc[key] = { over: null, under: null };
+            }
+            if (odd.selection_line === 'over') {
+                acc[key].over = price;
+            } else if (odd.selection_line === 'under') {
+                acc[key].under = price;
+            }
+        }
+
+        return acc;
+    }, {});
+    // Format the grouped odds into the desired output
+    const formattedOdds = (Object.entries(groupedOdds as any) as any).reduce((acc, [key, value]) => {
+        if (key.includes(TOTALS_SAND)) {
+            const [_, _selection, selection_points] = key.split('_'); // selection will be used when we add totals per team
+            const line = parseFloat(selection_points);
+            if ((value as any).home !== null && (value as any).away !== null) {
+                acc.push({
+                    type: 'total',
+                    line: line as any,
+                    odds: [(value as any).over, (value as any).under],
+                });
+            }
+            return acc;
+        } else {
+            const line = parseFloat(key);
+            if ((value as any).home !== null && (value as any).away !== null) {
+                acc.push({
+                    type: 'spread',
+                    line: line as any,
+                    odds: [(value as any).home, (value as any).away],
+                });
+            }
+            return acc;
+        }
+    }, []);
+
+    return formattedOdds;
 };
 
 /**
