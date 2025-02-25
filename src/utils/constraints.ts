@@ -1,81 +1,17 @@
 import { League, Sport } from '../enums/sports';
 import { ScoresObject } from '../types/odds';
-import { getLeagueSport } from './sports';
 
 export const checkGameContraints = (opticOddsScoresApiResponse: ScoresObject, marketLeague: League, constraintsMap) => {
-    const marketSport = getLeagueSport(marketLeague);
     const homeTeam = opticOddsScoresApiResponse.homeTeam;
-    const currentScoreHome = opticOddsScoresApiResponse.homeTotal;
     const awayTeam = opticOddsScoresApiResponse.awayTeam;
-    const currentScoreAway = opticOddsScoresApiResponse.awayTotal;
 
-    const currentClock = opticOddsScoresApiResponse.clock;
-    const currentPeriod = opticOddsScoresApiResponse.period;
     const currentGameStatus = opticOddsScoresApiResponse.status;
-    const currentPeriodNumber = parseInt(currentPeriod);
 
     if (currentGameStatus.toLowerCase() == 'completed') {
         return {
             allow: false,
             message: `Blocking game ${homeTeam} - ${awayTeam} because it is no longer live.`,
         };
-    }
-
-    if (marketSport === Sport.BASKETBALL) {
-        return allowGameSportWithPeriodConstraint(
-            homeTeam,
-            awayTeam,
-            currentPeriodNumber,
-            constraintsMap.get(Sport.BASKETBALL)
-        );
-    }
-
-    if (marketSport === Sport.HOCKEY) {
-        return allowGameSportWithPeriodConstraint(
-            homeTeam,
-            awayTeam,
-            currentPeriodNumber,
-            constraintsMap.get(Sport.HOCKEY)
-        );
-    }
-
-    if (marketSport === Sport.BASEBALL) {
-        return allowGameSportWithPeriodConstraint(
-            homeTeam,
-            awayTeam,
-            currentPeriodNumber,
-            constraintsMap.get(Sport.BASEBALL)
-        );
-    }
-
-    if (marketSport === Sport.SOCCER) {
-        return allowSoccerGame(homeTeam, awayTeam, currentClock, currentPeriod, constraintsMap.get(Sport.SOCCER));
-    }
-
-    if (marketSport === Sport.TENNIS) {
-        return allowGameSportWithResultConstraint(
-            opticOddsScoresApiResponse,
-            homeTeam,
-            awayTeam,
-            currentPeriod,
-            currentScoreHome,
-            currentScoreAway,
-            marketLeague,
-            marketSport
-        );
-    }
-
-    if (marketSport === Sport.VOLLEYBALL) {
-        return allowGameSportWithResultConstraint(
-            opticOddsScoresApiResponse,
-            homeTeam,
-            awayTeam,
-            currentPeriodNumber,
-            currentScoreHome,
-            currentScoreAway,
-            marketLeague,
-            marketSport
-        );
     }
 
     return {
@@ -114,7 +50,7 @@ export const allowGameSportWithResultConstraint = (
     currentScoreHome,
     currentScoreAway,
     marketLeague,
-    marketSport
+    marketSport,
 ) => {
     const setInProgress = Number(currentPeriod);
     const currentResultInSet = fetchResultInCurrentSet(setInProgress, opticOddsScoresApiResponse);
@@ -129,7 +65,7 @@ export const allowGameSportWithResultConstraint = (
                 currentResultInSet,
                 currentSetsScore,
                 VOLLEYBALL_SET_THRESHOLD,
-                VOLLEYBALL_FIFTH_SET_POINTS_LIMIT
+                VOLLEYBALL_FIFTH_SET_POINTS_LIMIT,
             );
         } else {
             return checkResultConstraint(
@@ -138,7 +74,7 @@ export const allowGameSportWithResultConstraint = (
                 currentResultInSet,
                 currentSetsScore,
                 VOLLEYBALL_SET_THRESHOLD,
-                VOLLEYBALL_POINTS_LIMIT
+                VOLLEYBALL_POINTS_LIMIT,
             );
         }
     }
@@ -150,7 +86,7 @@ export const allowGameSportWithResultConstraint = (
             currentResultInSet,
             currentSetsScore,
             TENNIS_ATP_GRAND_SLAM_SET_THRESHOLD,
-            TENNIS_GEMS_LIMIT
+            TENNIS_GEMS_LIMIT,
         );
     }
 
@@ -166,7 +102,7 @@ export const allowGameSportWithResultConstraint = (
             currentResultInSet,
             currentSetsScore,
             TENNIS_MASTERS_SET_THRESHOLD,
-            TENNIS_GEMS_LIMIT
+            TENNIS_GEMS_LIMIT,
         );
     }
 
