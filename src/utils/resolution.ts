@@ -60,26 +60,27 @@ export const detectCompletedPeriods = (
             periodScores[`period${periodNum}`] = { home: homeScore, away: awayScore };
 
             // Period is complete if:
-            // 1. Next period exists in periods data, OR
-            // 2. Game is completed, OR
-            // 3. Game is live with numeric period AND current live period is greater than this period, OR
-            // 4. Game is in overtime (all regulation periods are complete)
-            const nextPeriodKey = `period_${periodNum + 1}`;
+            // 1. Game is completed (status = completed/finished), OR
+            // 2. Game is live AND in_play.period is GREATER than this period, OR
+            // 3. Game is in overtime (all regulation periods are complete)
+            //
+            // Note: We do NOT check if next period exists in data, as OpticOdds may include
+            //       future periods with scores (including zeros). Only in_play.period is
+            //       the source of truth for live games.
             const isCompleted = status === 'completed' || status === 'complete' || status === 'finished';
-            const hasNextPeriod = homePeriods[nextPeriodKey] !== undefined && awayPeriods[nextPeriodKey] !== undefined;
             const isCompletedInLiveGame = isLive && currentLivePeriod !== null && currentLivePeriod > periodNum;
 
-            if (hasNextPeriod || isCompleted || isCompletedInLiveGame || isInOvertime) {
+            if (isCompleted || isCompletedInLiveGame || isInOvertime) {
                 completedPeriods.push(periodNum);
             }
         }
     }
 
     // Determine current period
-    // If we have a numeric in_play period and it's greater than highest period in data, use it
+    // For live games with numeric in_play period, use that as the authoritative current period
     // Otherwise use highest period number from the data
     const highestPeriodInData = periodKeys.length > 0 ? Math.max(...periodKeys) : undefined;
-    const currentPeriod = currentLivePeriod && currentLivePeriod > (highestPeriodInData || 0)
+    const currentPeriod = isLive && currentLivePeriod !== null
         ? currentLivePeriod
         : highestPeriodInData;
 

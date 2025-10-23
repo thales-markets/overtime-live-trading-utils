@@ -568,6 +568,64 @@ describe('Resolution Utils', () => {
 
             expect(result).toBeNull();
         });
+
+        it('Bug Fix: Should NOT mark current period as complete when future periods have data (live in period 3)', () => {
+            // This tests the bug where OpticOdds API includes future period data with scores (including zeros)
+            // Period 3 is currently being played, period 4 has 0-0 scores but hasn't started
+            const event = {
+                status: 'live',
+                is_live: true,
+                in_play: { period: '3' },
+                scores: {
+                    home: { periods: { period_1: 33, period_2: 32, period_3: 12, period_4: 0 } },
+                    away: { periods: { period_1: 23, period_2: 27, period_3: 18, period_4: 0 } },
+                },
+            };
+
+            const result = detectCompletedPeriods(event);
+
+            expect(result).not.toBeNull();
+            expect(result?.completedPeriods).toEqual([1, 2]); // Only periods 1 and 2 are complete
+            expect(result?.currentPeriod).toBe(3);
+            // Period 3 is currently being played, so NOT complete
+            // Period 4 has data (0-0) but hasn't started, so NOT complete
+        });
+
+        it('Bug Fix: Should mark all periods as complete for completed game', () => {
+            const event = {
+                status: 'completed',
+                is_live: false,
+                scores: {
+                    home: { periods: { period_1: 33, period_2: 32, period_3: 25, period_4: 20 } },
+                    away: { periods: { period_1: 23, period_2: 27, period_3: 18, period_4: 22 } },
+                },
+            };
+
+            const result = detectCompletedPeriods(event);
+
+            expect(result).not.toBeNull();
+            expect(result?.completedPeriods).toEqual([1, 2, 3, 4]);
+            // All periods complete because game status is 'completed'
+        });
+
+        it('Bug Fix: Should NOT mark current period as complete during transition to period 4', () => {
+            const event = {
+                status: 'live',
+                is_live: true,
+                in_play: { period: '4' },
+                scores: {
+                    home: { periods: { period_1: 33, period_2: 32, period_3: 25, period_4: 5 } },
+                    away: { periods: { period_1: 23, period_2: 27, period_3: 18, period_4: 3 } },
+                },
+            };
+
+            const result = detectCompletedPeriods(event);
+
+            expect(result).not.toBeNull();
+            expect(result?.completedPeriods).toEqual([1, 2, 3]); // Periods 1, 2, 3 are complete
+            expect(result?.currentPeriod).toBe(4);
+            // Period 4 is currently in_play, so NOT complete yet
+        });
     });
 
 
