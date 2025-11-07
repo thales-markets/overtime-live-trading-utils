@@ -49,6 +49,10 @@ export const detectCompletedPeriods = (
          inPlayPeriod.toLowerCase().includes('ot') ||
          inPlayPeriod.toLowerCase().includes('extra'));
 
+    // Check if game is at halftime (period 1 is complete)
+    const isAtHalftime = (status === 'half' || status === 'halftime') ||
+        (inPlayPeriod && inPlayPeriod.toLowerCase() === 'half');
+
     // For each period, check if it's complete
     for (const periodNum of periodKeys) {
         const key = `period_${periodNum}`;
@@ -62,15 +66,17 @@ export const detectCompletedPeriods = (
             // Period is complete if:
             // 1. Game is completed (status = completed/finished), OR
             // 2. Game is live AND in_play.period is GREATER than this period, OR
-            // 3. Game is in overtime (all regulation periods are complete)
+            // 3. Game is in overtime (all regulation periods are complete), OR
+            // 4. Game is at halftime AND this is period 1
             //
             // Note: We do NOT check if next period exists in data, as OpticOdds may include
             //       future periods with scores (including zeros). Only in_play.period is
             //       the source of truth for live games.
             const isCompleted = status === 'completed' || status === 'complete' || status === 'finished';
             const isCompletedInLiveGame = isLive && currentLivePeriod !== null && currentLivePeriod > periodNum;
+            const isFirstPeriodAtHalftime = isAtHalftime && periodNum === 1;
 
-            if (isCompleted || isCompletedInLiveGame || isInOvertime) {
+            if (isCompleted || isCompletedInLiveGame || isInOvertime || isFirstPeriodAtHalftime) {
                 completedPeriods.push(periodNum);
             }
         }
