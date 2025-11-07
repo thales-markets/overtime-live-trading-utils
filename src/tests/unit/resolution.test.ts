@@ -935,6 +935,82 @@ describe('Resolution Utils', () => {
             // Periods should only be marked complete based on in_play.period progression
             expect(result).toBeNull();
         });
+
+        it('Unknown sport at halftime should default to PERIOD_BASED (no halftime processing)', () => {
+            const event = {
+                sport: {
+                    id: 'unknown_sport',
+                    name: 'Unknown Sport',
+                },
+                fixture: {
+                    id: 'unknown-halftime-123',
+                    status: 'half',
+                    is_live: true,
+                },
+                scores: {
+                    home: {
+                        total: 50.0,
+                        periods: {
+                            period_1: 25.0,
+                            period_2: 25.0,
+                        },
+                    },
+                    away: {
+                        total: 40.0,
+                        periods: {
+                            period_1: 20.0,
+                            period_2: 20.0,
+                        },
+                    },
+                },
+                in_play: {
+                    period: 'half',
+                },
+            };
+
+            const result = detectCompletedPeriods(event);
+
+            // Unknown sports default to PERIOD_BASED (no halftime processing)
+            // So halftime status should NOT mark any periods as complete
+            expect(result).toBeNull();
+        });
+
+        it('Event with missing sport.id should default to PERIOD_BASED (no halftime processing)', () => {
+            const event = {
+                sport: {
+                    name: 'Some Sport',
+                },
+                fixture: {
+                    id: 'no-sport-id-123',
+                    status: 'half',
+                    is_live: true,
+                },
+                scores: {
+                    home: {
+                        total: 50.0,
+                        periods: {
+                            period_1: 25.0,
+                            period_2: 25.0,
+                        },
+                    },
+                    away: {
+                        total: 40.0,
+                        periods: {
+                            period_1: 20.0,
+                            period_2: 20.0,
+                        },
+                    },
+                },
+                in_play: {
+                    period: 'half',
+                },
+            };
+
+            const result = detectCompletedPeriods(event);
+
+            // Missing sport.id defaults to PERIOD_BASED (no halftime processing)
+            expect(result).toBeNull();
+        });
     });
 
     describe('canResolveMarketsForEvent', () => {
@@ -1387,6 +1463,25 @@ describe('Resolution Utils', () => {
             it('MLB (INNINGS_BASED): Should resolve typeId 10052 after period 9', () => {
                 const result = canResolveMarketsForEvent(MockMLBCompletedEvent, 10052, SportPeriodType.INNINGS_BASED);
                 expect(result).toBe(true);
+            });
+        });
+
+        describe('Error handling for invalid sport type numbers', () => {
+            it('Should throw error for invalid sport type number when using numeric parameter', () => {
+                const typeIds = [10021, 10022];
+
+                // Invalid sport type number (must be 0-3)
+                expect(() => {
+                    canResolveMultipleTypeIdsForEvent(MockSoccerLiveSecondHalf, typeIds, 99);
+                }).toThrow('Invalid sport type number: 99. Must be 0 (halves), 1 (quarters), 2 (innings), or 3 (period).');
+            });
+
+            it('Should throw error for negative sport type number', () => {
+                const typeIds = [10021];
+
+                expect(() => {
+                    canResolveMultipleTypeIdsForEvent(MockSoccerLiveSecondHalf, typeIds, -1);
+                }).toThrow('Invalid sport type number: -1. Must be 0 (halves), 1 (quarters), 2 (innings), or 3 (period).');
             });
         });
     });
