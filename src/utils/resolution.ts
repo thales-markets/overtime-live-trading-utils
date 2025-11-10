@@ -9,6 +9,7 @@ import {
     PERIOD_BASED_TYPE_ID_MAPPING,
     FULL_GAME_TYPE_IDS,
 } from '../types/resolution';
+import { getSportPeriodTypeFromEvent } from './sportPeriodMapping';
 
 /**
  * Detects completed periods for a game based on OpticOdds API event data
@@ -16,11 +17,13 @@ import {
  * @param event - Event object from OpticOdds API
  * @returns PeriodResolutionData with completed periods, readiness status, and period scores
  */
-export const detectCompletedPeriods = (
-    event: OpticOddsEvent
-): PeriodResolutionData | null => {
+export const detectCompletedPeriods = (event: OpticOddsEvent): PeriodResolutionData | null => {
     const status = (event.fixture?.status || event.status || '').toLowerCase();
     const isLive = event.fixture?.is_live ?? event.is_live ?? false;
+
+    // Determine sport period type for sport-aware logic
+    // Defaults to PERIOD_BASED (no halftime processing) for unknown sports
+    const sportType = getSportPeriodTypeFromEvent(event);
 
     // Extract period scores from the event
     const homePeriods = event.scores?.home?.periods || {};
@@ -44,14 +47,15 @@ export const detectCompletedPeriods = (
     const currentLivePeriod = inPlayPeriod && !isNaN(parseInt(inPlayPeriod)) ? parseInt(inPlayPeriod) : null;
 
     // Check if game is in overtime/extra time (non-numeric period indicator)
-    const isInOvertime = inPlayPeriod &&
+    const isInOvertime =
+        inPlayPeriod &&
         (inPlayPeriod.toLowerCase().includes('overtime') ||
-         inPlayPeriod.toLowerCase().includes('ot') ||
-         inPlayPeriod.toLowerCase().includes('extra'));
+            inPlayPeriod.toLowerCase().includes('ot') ||
+            inPlayPeriod.toLowerCase().includes('extra'));
 
-    // Check if game is at halftime (period 1 is complete)
-    const isAtHalftime = (status === 'half' || status === 'halftime') ||
-        (inPlayPeriod && inPlayPeriod.toLowerCase() === 'half');
+    // Check if game is at halftime
+    const isAtHalftime =
+        status === 'half' || status === 'halftime' || (inPlayPeriod && inPlayPeriod.toLowerCase() === 'half');
 
     // For each period, check if it's complete
     for (const periodNum of periodKeys) {
@@ -67,16 +71,38 @@ export const detectCompletedPeriods = (
             // 1. Game is completed (status = completed/finished), OR
             // 2. Game is live AND in_play.period is GREATER than this period, OR
             // 3. Game is in overtime (all regulation periods are complete), OR
-            // 4. Game is at halftime AND this is period 1
+            // 4. Game is at halftime AND this period is complete based on sport type
             //
             // Note: We do NOT check if next period exists in data, as OpticOdds may include
             //       future periods with scores (including zeros). Only in_play.period is
             //       the source of truth for live games.
             const isCompleted = status === 'completed' || status === 'complete' || status === 'finished';
             const isCompletedInLiveGame = isLive && currentLivePeriod !== null && currentLivePeriod > periodNum;
-            const isFirstPeriodAtHalftime = isAtHalftime && periodNum === 1;
 
-            if (isCompleted || isCompletedInLiveGame || isInOvertime || isFirstPeriodAtHalftime) {
+            // Sport-aware halftime logic
+            let isCompletedAtHalftime = false;
+            if (isAtHalftime) {
+                switch (sportType) {
+                    case SportPeriodType.HALVES_BASED:
+                        // Soccer, etc: halftime = end of period 1 (first half complete)
+                        isCompletedAtHalftime = periodNum === 1;
+                        break;
+                    case SportPeriodType.QUARTERS_BASED:
+                        // Basketball, Football: halftime = end of period 2 (first two quarters complete)
+                        isCompletedAtHalftime = periodNum === 1 || periodNum === 2;
+                        break;
+                    case SportPeriodType.INNINGS_BASED:
+                        // Baseball: halftime = middle of game (first 5 innings complete)
+                        isCompletedAtHalftime = periodNum >= 1 && periodNum <= 5;
+                        break;
+                    case SportPeriodType.PERIOD_BASED:
+                        // Hockey: no traditional halftime concept
+                        isCompletedAtHalftime = false;
+                        break;
+                }
+            }
+
+            if (isCompleted || isCompletedInLiveGame || isInOvertime || isCompletedAtHalftime) {
                 completedPeriods.push(periodNum);
             }
         }
@@ -86,9 +112,7 @@ export const detectCompletedPeriods = (
     // For live games with numeric in_play period, use that as the authoritative current period
     // Otherwise use highest period number from the data
     const highestPeriodInData = periodKeys.length > 0 ? Math.max(...periodKeys) : undefined;
-    const currentPeriod = isLive && currentLivePeriod !== null
-        ? currentLivePeriod
-        : highestPeriodInData;
+    const currentPeriod = isLive && currentLivePeriod !== null ? currentLivePeriod : highestPeriodInData;
 
     return completedPeriods.length > 0
         ? {
@@ -116,7 +140,9 @@ export function mapNumberToSportPeriodType(sportTypeNum: number): SportPeriodTyp
         case 3:
             return SportPeriodType.PERIOD_BASED;
         default:
-            throw new Error(`Invalid sport type number: ${sportTypeNum}. Must be 0 (halves), 1 (quarters), 2 (innings), or 3 (period).`);
+            throw new Error(
+                `Invalid sport type number: ${sportTypeNum}. Must be 0 (halves), 1 (quarters), 2 (innings), or 3 (period).`
+            );
     }
 }
 
@@ -153,11 +179,7 @@ function selectMappingForSportType(sportType: SportPeriodType): { [period: numbe
  * @param sportType - The sport period type enum
  * @returns true if the market can be resolved based on completed periods
  */
-export function canResolveMarketsForEvent(
-    event: OpticOddsEvent,
-    typeId: number,
-    sportType: SportPeriodType
-): boolean {
+export function canResolveMarketsForEvent(event: OpticOddsEvent, typeId: number, sportType: SportPeriodType): boolean {
     const periodData = detectCompletedPeriods(event);
     if (!periodData) return false;
 
@@ -201,7 +223,6 @@ export function canResolveMarketsForEventNumber(
     const sportTypeEnum = mapNumberToSportPeriodType(sportTypeNumber);
     return canResolveMarketsForEvent(event, typeId, sportTypeEnum);
 }
-
 
 /**
  * Checks if multiple market types can be resolved, returning a boolean for each

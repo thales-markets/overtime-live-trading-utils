@@ -516,3 +516,147 @@ export const MockNFLCompletedWithOvertime = {
         clock: null,
     },
 };
+
+export const MockNBACompletedEvent = {
+    sport: {
+        id: 'basketball',
+        name: 'Basketball',
+        numerical_id: 4,
+    },
+    league: {
+        id: 'nba',
+        name: 'NBA',
+        numerical_id: 355,
+    },
+    fixture: {
+        id: '202511053DEE59D4',
+        numerical_id: 402396,
+        game_id: '10459-24860-2025-11-04',
+        start_date: '2025-11-05T03:00:00Z',
+        home_competitors: [
+            {
+                id: 'DFC9A735A4D7',
+                name: 'Golden State Warriors',
+                numerical_id: 21801,
+                base_id: 14357,
+                abbreviation: 'GSW',
+                logo: 'https://cdn.opticodds.com/team-logos/basketball/14357.png',
+            },
+        ],
+        away_competitors: [
+            {
+                id: '9BF9A5FD18B1',
+                name: 'Phoenix Suns',
+                numerical_id: 21815,
+                base_id: 14371,
+                abbreviation: 'PHX',
+                logo: 'https://cdn.opticodds.com/team-logos/basketball/14371.png',
+            },
+        ],
+        home_team_display: 'Golden State Warriors',
+        away_team_display: 'Phoenix Suns',
+        status: 'completed',
+        is_live: false,
+        season_type: 'Regular Season',
+        season_year: '2025',
+        season_week: '45',
+        venue_name: 'Chase Center',
+        venue_location: 'San Francisco, CA, USA',
+        venue_neutral: false,
+    },
+    scores: {
+        home: {
+            total: 118.0,
+            periods: {
+                period_1: 33.0,
+                period_2: 35.0,
+                period_3: 24.0,
+                period_4: 26.0,
+            },
+            aggregate: null,
+        },
+        away: {
+            total: 107.0,
+            periods: {
+                period_1: 19.0,
+                period_2: 30.0,
+                period_3: 34.0,
+                period_4: 24.0,
+            },
+            aggregate: null,
+        },
+    },
+    in_play: {
+        period: '4',
+        clock: null,
+    },
+};
+
+export const MockNBALiveAtHalftime = {
+    sport: {
+        id: 'basketball',
+        name: 'Basketball',
+        numerical_id: 4,
+    },
+    league: {
+        id: 'nba',
+        name: 'NBA',
+        numerical_id: 355,
+    },
+    fixture: {
+        id: '202511053DEE59D4',
+        numerical_id: 402396,
+        game_id: '10459-24860-2025-11-04',
+        start_date: '2025-11-05T03:00:00Z',
+        home_competitors: [
+            {
+                id: 'DFC9A735A4D7',
+                name: 'Golden State Warriors',
+                numerical_id: 21801,
+                base_id: 14357,
+                abbreviation: 'GSW',
+                logo: 'https://cdn.opticodds.com/team-logos/basketball/14357.png',
+            },
+        ],
+        away_competitors: [
+            {
+                id: '9BF9A5FD18B1',
+                name: 'Phoenix Suns',
+                numerical_id: 21815,
+                base_id: 14371,
+                abbreviation: 'PHX',
+                logo: 'https://cdn.opticodds.com/team-logos/basketball/14371.png',
+            },
+        ],
+        home_team_display: 'Golden State Warriors',
+        away_team_display: 'Phoenix Suns',
+        status: 'half',
+        is_live: true,
+        season_type: 'Regular Season',
+        season_year: '2025',
+        season_week: '45',
+        venue_name: 'Chase Center',
+        venue_location: 'San Francisco, CA, USA',
+        venue_neutral: false,
+    },
+    scores: {
+        home: {
+            total: 68.0,
+            periods: {
+                period_1: 33.0,
+                period_2: 35.0,
+            },
+        },
+        away: {
+            total: 49.0,
+            periods: {
+                period_1: 19.0,
+                period_2: 30.0,
+            },
+        },
+    },
+    in_play: {
+        period: 'half',
+        clock: null,
+    },
+};
