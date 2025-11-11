@@ -8,6 +8,7 @@ import {
     INNINGS_PERIOD_TYPE_ID_MAPPING,
     PERIOD_BASED_TYPE_ID_MAPPING,
     FULL_GAME_TYPE_IDS,
+    MarketTypeId,
 } from '../types/resolution';
 import { getSportPeriodTypeFromEvent } from './sportPeriodMapping';
 
