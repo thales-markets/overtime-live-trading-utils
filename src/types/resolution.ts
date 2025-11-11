@@ -409,6 +409,7 @@ export const QUARTERS_PERIOD_TYPE_ID_MAPPING: { [period: number]: number[] } = {
         MarketTypeId.FIRST_PERIOD_SECONDARY_AWAY_TEAM_SCORE,
         MarketTypeId.FIRST_PERIOD_CORRECT_SCORE_SECONDARY,
         MarketTypeId.CORRECT_SCORE_PERIOD_TWO,
+        MarketTypeId.CORRECT_SCORE_PERIOD_ONE,
     ], // 2nd quarter + 1st half
     3: [
         MarketTypeId.THIRD_PERIOD_MONEYLINE,
