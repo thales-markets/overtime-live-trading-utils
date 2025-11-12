@@ -580,6 +580,8 @@ export const PERIOD_BASED_TYPE_ID_MAPPING: { [period: number]: number[] } = {
         MarketTypeId.FIRST_PERIOD_SPREAD_SECONDARY,
         MarketTypeId.FIRST_PERIOD_ODD_EVEN,
         MarketTypeId.FIRST_PERIOD_DRAW_NO_BET,
+        MarketTypeId.FIRST_PERIOD_HOME_TEAM_SCORE,
+        MarketTypeId.FIRST_PERIOD_AWAY_TEAM_SCORE,
         MarketTypeId.CORRECT_SCORE_PERIOD_ONE,
         MarketTypeId.FIRST_PERIOD_SCORE_SCORE,
     ], // 1st period
