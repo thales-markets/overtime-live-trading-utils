@@ -593,6 +593,8 @@ export const PERIOD_BASED_TYPE_ID_MAPPING: { [period: number]: number[] } = {
         MarketTypeId.SECOND_PERIOD_SPREAD_SECONDARY,
         MarketTypeId.SECOND_PERIOD_ODD_EVEN,
         MarketTypeId.SECOND_PERIOD_DRAW_NO_BET,
+        MarketTypeId.SECOND_PERIOD_HOME_TEAM_SCORE,
+        MarketTypeId.SECOND_PERIOD_AWAY_TEAM_SCORE,
         MarketTypeId.CORRECT_SCORE_PERIOD_TWO,
         MarketTypeId.SECOND_PERIOD_SCORE_SCORE,
     ], // 2nd period
@@ -604,6 +606,8 @@ export const PERIOD_BASED_TYPE_ID_MAPPING: { [period: number]: number[] } = {
         MarketTypeId.THIRD_PERIOD_SPREAD_SECONDARY,
         MarketTypeId.THIRD_PERIOD_ODD_EVEN,
         MarketTypeId.THIRD_PERIOD_DRAW_NO_BET,
+        MarketTypeId.THIRD_PERIOD_HOME_TEAM_SCORE,
+        MarketTypeId.THIRD_PERIOD_AWAY_TEAM_SCORE,
         MarketTypeId.CORRECT_SCORE_PERIOD_THREE,
         MarketTypeId.THIRD_PERIOD_SCORE_SCORE,
     ], // 3rd period
@@ -615,6 +619,8 @@ export const PERIOD_BASED_TYPE_ID_MAPPING: { [period: number]: number[] } = {
         MarketTypeId.FOURTH_PERIOD_SPREAD_SECONDARY,
         MarketTypeId.FOURTH_PERIOD_ODD_EVEN,
         MarketTypeId.FOURTH_PERIOD_DRAW_NO_BET,
+        MarketTypeId.FOURTH_PERIOD_HOME_TEAM_SCORE,
+        MarketTypeId.FOURTH_PERIOD_AWAY_TEAM_SCORE,
         MarketTypeId.CORRECT_SCORE_PERIOD_FOUR,
         MarketTypeId.FOURTH_PERIOD_SCORE_SCORE,
     ], // 4th period
@@ -625,6 +631,8 @@ export const PERIOD_BASED_TYPE_ID_MAPPING: { [period: number]: number[] } = {
         MarketTypeId.FIFTH_PERIOD_TOTAL_SECONDARY,
         MarketTypeId.FIFTH_PERIOD_SPREAD_SECONDARY,
         MarketTypeId.FIFTH_PERIOD_ODD_EVEN,
+        MarketTypeId.FIFTH_PERIOD_HOME_TEAM_SCORE,
+        MarketTypeId.FIFTH_PERIOD_AWAY_TEAM_SCORE,
         MarketTypeId.CORRECT_SCORE_PERIOD_FIVE,
         MarketTypeId.FIFTH_PERIOD_SCORE_SCORE,
     ], // 5th period
