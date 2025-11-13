@@ -1,4 +1,3 @@
-
 export type LeagueConfigInfo = {
     sportId: number;
     typeId: number;
@@ -8,6 +7,8 @@ export type LeagueConfigInfo = {
     minOdds: number;
     maxOdds: number;
     addedSpread?: number;
+    primaryBookmaker?: string;
+    secondaryBookmaker?: string;
 };
 
 export type ChildMarket = {

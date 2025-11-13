@@ -1,3 +1,5 @@
+import { LeagueConfigInfo } from './sports';
+
 export type Fixture = {
     gameId: string;
     startDate: number;
@@ -33,6 +35,23 @@ export type OddsObject = {
     league: string;
     odds: Odds;
 };
+
+export type OddsWithLeagueInfo = [
+    {
+        id: string;
+        sportsBookName: string;
+        name: string;
+        price: number;
+        timestamp: number;
+        points: number;
+        isMain: boolean;
+        isLive: boolean;
+        marketName: string;
+        playerId: string;
+        selection: string;
+        selectionLine: string;
+    } & LeagueConfigInfo
+];
 
 export type ScoresObject = {
     gameId: string;
