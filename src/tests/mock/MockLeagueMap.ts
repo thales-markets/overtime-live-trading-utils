@@ -157,6 +157,11 @@ const leagueInfoEnabledAll: LeagueConfigInfo[] = [
     willThereBeOvertime,
 ];
 
+const leaguInfoDifferentPrimaryBookmaker: LeagueConfigInfo[] = [
+    baseLeagueInfo,
+    { ...spreadMock, primaryBookmaker: 'draftkings' },
+];
+
 // Grouped Exports
 export const LeagueMocks = {
     leagueInfoOnlyParent,
@@ -167,4 +172,5 @@ export const LeagueMocks = {
     leagueInfoEnabledSpeadAndTotals,
     leagueInfoEnabledAll,
     leagueInfoDisabledCorrectScoreAndDoubleChance,
+    leaguInfoDifferentPrimaryBookmaker,
 };

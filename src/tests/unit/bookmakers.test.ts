@@ -2,7 +2,12 @@ import { DIFF_BETWEEN_BOOKMAKERS_MESSAGE, ZERO_ODDS_MESSAGE } from '../../consta
 import { processMarket } from '../../utils/markets';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
 import { LeagueMocks } from '../mock/MockLeagueMap';
-import { MockOnlyMoneyline, MockOnlyMoneylineWithDifferentSportsbook } from '../mock/MockOpticSoccer';
+import {
+    MockOddsChildMarketsDifferentBookmakers,
+    MockOddsChildMarketsDifferentBookmakersPercentageDiff,
+    MockOnlyMoneyline,
+    MockOnlyMoneylineWithDifferentSportsbook,
+} from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
 
 describe('Bookmakers', () => {
@@ -27,7 +32,6 @@ describe('Bookmakers', () => {
         expect(hasOdds).toBe(false);
         expect(market).toHaveProperty('errorMessage');
         expect(market.errorMessage).toBe(ZERO_ODDS_MESSAGE);
-        expect(market.childMarkets.length).toBe(0);
     });
 
     it('Should return zero odds for moneyline when there is quote diff between bookmakers', () => {
@@ -51,7 +55,6 @@ describe('Bookmakers', () => {
         expect(hasOdds).toBe(false);
         expect(market).toHaveProperty('errorMessage');
         expect(market.errorMessage).toBe(DIFF_BETWEEN_BOOKMAKERS_MESSAGE);
-        expect(market.childMarkets.length).toBe(0);
     });
 
     it('Should return zero odds for moneyline as no matching bookmaker was provided', () => {
@@ -75,5 +78,56 @@ describe('Bookmakers', () => {
         expect(hasOdds).toBe(false);
         expect(market).toHaveProperty('errorMessage');
         expect(market.errorMessage).toBe(ZERO_ODDS_MESSAGE); // should be no matching bookmakers mesage
+    });
+
+    it('Should return odds that have both bookmakers', () => {
+        const freshMockSoccer = JSON.parse(JSON.stringify(mockSoccer));
+        const freshMockOpticSoccer = JSON.parse(JSON.stringify(MockOddsChildMarketsDifferentBookmakers));
+        const market = processMarket(
+            freshMockSoccer,
+            mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
+            ['bovada', 'draftkings'],
+            [],
+            true,
+            undefined,
+            undefined,
+            LeagueMocks.leagueInfoEnabledSpeadAndTotals
+        );
+
+        expect(market.childMarkets.length).toBe(2);
+    });
+
+    it('Should return all odds from draftkings', () => {
+        const freshMockSoccer = JSON.parse(JSON.stringify(mockSoccer));
+        const freshMockOpticSoccer = JSON.parse(JSON.stringify(MockOddsChildMarketsDifferentBookmakers));
+        const market = processMarket(
+            freshMockSoccer,
+            mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
+            ['bovada', 'draftkings'],
+            [],
+            true,
+            undefined,
+            undefined,
+            LeagueMocks.leaguInfoDifferentPrimaryBookmaker
+        );
+
+        expect(market.childMarkets.length).toBe(3);
+    });
+
+    it('Should cut odds that are different between bookmakers', () => {
+        const freshMockSoccer = JSON.parse(JSON.stringify(mockSoccer));
+        const freshMockOpticSoccer = JSON.parse(JSON.stringify(MockOddsChildMarketsDifferentBookmakersPercentageDiff));
+        const market = processMarket(
+            freshMockSoccer,
+            mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
+            ['bovada', 'draftkings'],
+            [],
+            true,
+            undefined,
+            undefined,
+            LeagueMocks.leagueInfoEnabledSpeadAndTotals
+        );
+
+        expect(market.childMarkets.length).toBe(1);
     });
 });
