@@ -110,6 +110,28 @@ const willThereBeOvertime: LeagueConfigInfo = {
     minOdds: 0.99,
 };
 
+const teamTotal: LeagueConfigInfo = {
+    sportId: 9806,
+    enabled: 'true',
+    marketName: 'Team Total',
+    typeId: 10017,
+    type: 'Total',
+    maxOdds: 0.25,
+    minOdds: 0.75,
+    primaryBookmaker: 'draftkings',
+};
+
+const teamTotal2: LeagueConfigInfo = {
+    sportId: 9806,
+    enabled: 'true',
+    marketName: 'Team Total',
+    typeId: 10018,
+    type: 'Total',
+    maxOdds: 0.25,
+    minOdds: 0.75,
+    primaryBookmaker: 'draftkings',
+};
+
 const baseDiffSportId: LeagueConfigInfo = {
     ...baseLeagueInfo,
     sportId: 4,
@@ -155,6 +177,8 @@ const leagueInfoEnabledAll: LeagueConfigInfo[] = [
     bothTeamsToScoreMock2ndHalf,
     drawNoBetMock,
     willThereBeOvertime,
+    teamTotal,
+    teamTotal2,
 ];
 
 const leaguInfoDifferentPrimaryBookmaker: LeagueConfigInfo[] = [
