@@ -9,6 +9,9 @@ import {
     MockOnlyMoneylineWithDifferentSportsbook,
 } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
+import { getLastPolledMapForBookmakers } from '../utils/helper';
+
+const lastPolledMap = getLastPolledMapForBookmakers();
 
 describe('Bookmakers', () => {
     it('Should return zero odds for moneyline when one of the bookmakers has no odds', () => {
@@ -22,7 +25,8 @@ describe('Bookmakers', () => {
             true,
             undefined,
             undefined,
-            LeagueMocks.leagueInfoEnabledSpeadAndTotals
+            LeagueMocks.leagueInfoEnabledSpeadAndTotals,
+            lastPolledMap
         );
 
         const hasOdds = market.odds.some(
@@ -45,7 +49,8 @@ describe('Bookmakers', () => {
             true,
             undefined,
             5,
-            LeagueMocks.leagueInfoOnlyParent
+            LeagueMocks.leagueInfoOnlyParent,
+            lastPolledMap
         );
 
         const hasOdds = market.odds.some(
@@ -68,7 +73,8 @@ describe('Bookmakers', () => {
             true,
             undefined,
             undefined,
-            LeagueMocks.leagueInfoEnabledSpeadAndTotals
+            LeagueMocks.leagueInfoEnabledSpeadAndTotals,
+            lastPolledMap
         );
 
         const hasOdds = market.odds.some(
@@ -91,7 +97,8 @@ describe('Bookmakers', () => {
             true,
             undefined,
             undefined,
-            LeagueMocks.leagueInfoEnabledSpeadAndTotals
+            LeagueMocks.leagueInfoEnabledSpeadAndTotals,
+            lastPolledMap
         );
 
         expect(market.childMarkets.length).toBe(2);
@@ -108,7 +115,8 @@ describe('Bookmakers', () => {
             true,
             undefined,
             undefined,
-            LeagueMocks.leaguInfoDifferentPrimaryBookmaker
+            LeagueMocks.leaguInfoDifferentPrimaryBookmaker,
+            lastPolledMap
         );
 
         expect(market.childMarkets.length).toBe(3);
@@ -125,7 +133,8 @@ describe('Bookmakers', () => {
             true,
             undefined,
             undefined,
-            LeagueMocks.leagueInfoEnabledSpeadAndTotals
+            LeagueMocks.leagueInfoEnabledSpeadAndTotals,
+            lastPolledMap
         );
 
         expect(market.childMarkets.length).toBe(1);

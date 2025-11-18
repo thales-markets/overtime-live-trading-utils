@@ -9,6 +9,9 @@ import {
     MockZeroOdds,
 } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
+import { getLastPolledMapForBookmakers } from '../utils/helper';
+
+const lastPolledMap = getLastPolledMapForBookmakers();
 
 describe('Odds', () => {
     it('Should return odds for moneyline', () => {
@@ -22,7 +25,8 @@ describe('Odds', () => {
             true,
             undefined,
             undefined,
-            LeagueMocks.leagueInfoOnlyParent
+            LeagueMocks.leagueInfoOnlyParent,
+            lastPolledMap
         );
 
         const hasOdds = market.odds.some(
@@ -43,7 +47,8 @@ describe('Odds', () => {
             true,
             undefined,
             undefined,
-            LeagueMocks.leagueInfoEnabledSpeadAndTotals
+            LeagueMocks.leagueInfoEnabledSpeadAndTotals,
+            lastPolledMap
         );
 
         const hasOdds = market.odds.some(
@@ -66,7 +71,8 @@ describe('Odds', () => {
             true,
             undefined,
             undefined,
-            LeagueMocks.leagueInfoEnabledSpeadAndTotals
+            LeagueMocks.leagueInfoEnabledSpeadAndTotals,
+            lastPolledMap
         );
 
         const hasChildMarkets = market.childMarkets.length > 0;
@@ -84,7 +90,8 @@ describe('Odds', () => {
             true,
             undefined,
             undefined,
-            LeagueMocks.leagueInfoEnabledSpeadAndTotals
+            LeagueMocks.leagueInfoEnabledSpeadAndTotals,
+            lastPolledMap
         );
 
         expect(market.childMarkets).toHaveLength(0);

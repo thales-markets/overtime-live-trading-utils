@@ -4,6 +4,9 @@ import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
 import { LeagueMocks } from '../mock/MockLeagueMap';
 import { MockAfterSpreadZeroOdds1, MockOnlyMoneylineFavorite, MockOpticSoccer } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
+import { getLastPolledMapForBookmakers } from '../utils/helper';
+
+const lastPolledMap = getLastPolledMapForBookmakers();
 
 describe('Spread configuration', () => {
     it('Should return zero odds for quotes that sum up total probability above 1', () => {
@@ -17,7 +20,8 @@ describe('Spread configuration', () => {
             false,
             undefined,
             undefined,
-            LeagueMocks.leagueInfoEnabledSpeadAndTotals
+            LeagueMocks.leagueInfoEnabledSpeadAndTotals,
+            lastPolledMap
         );
 
         const hasOdds = market.odds.some(
@@ -42,7 +46,8 @@ describe('Spread configuration', () => {
                     true,
                     undefined,
                     undefined,
-                    LeagueMocks.leagueInfoOnlyParent
+                    LeagueMocks.leagueInfoOnlyParent,
+                    lastPolledMap
                 )
             )
         );
@@ -57,7 +62,8 @@ describe('Spread configuration', () => {
                     true,
                     undefined,
                     undefined,
-                    LeagueMocks.leagueInfoOnlyParentWithSpreadAdded
+                    LeagueMocks.leagueInfoOnlyParentWithSpreadAdded,
+                    lastPolledMap
                 )
             )
         );
@@ -92,7 +98,8 @@ describe('Spread configuration', () => {
                     true,
                     undefined,
                     undefined,
-                    LeagueMocks.leagueInfoOnlyParent
+                    LeagueMocks.leagueInfoOnlyParent,
+                    lastPolledMap
                 )
             )
         );
@@ -107,7 +114,8 @@ describe('Spread configuration', () => {
                     true,
                     undefined,
                     undefined,
-                    LeagueMocks.leagueInfoOnlyParentWithSpreadAdded
+                    LeagueMocks.leagueInfoOnlyParentWithSpreadAdded,
+                    lastPolledMap
                 )
             )
         );
