@@ -4,3 +4,4 @@ export const DIFF_BETWEEN_BOOKMAKERS_MESSAGE = 'Returning zero odds due to perce
 export const NO_MATCHING_BOOKMAKERS_MESSAGE = 'Returning zero odds cause no matching bookmakers have been found';
 export const ZERO_ODDS_AFTER_SPREAD_ADJUSTMENT = 'Bad odds after spread adjustment';
 export const NO_MARKETS_FOR_LEAGUE_ID = 'No child markets for leagueID';
+export const LAST_POLLED_TOO_OLD = 'Last polled data is too old';

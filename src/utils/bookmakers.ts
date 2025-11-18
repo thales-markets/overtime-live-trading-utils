@@ -205,20 +205,40 @@ export const getPrimaryAndSecondaryBookmakerForTypeId = (
     defaultProviders: string[],
     leagueInfos: LeagueConfigInfo[], // LeagueConfigInfo for specific sport, not the entire list from csv
     typeId: number
-): { primaryBookmaker: string | undefined; secondaryBookmaker: string | undefined } => {
+): { primaryBookmaker: string; secondaryBookmaker: string | undefined } => {
     const info = leagueInfos.find((leagueInfo) => Number(leagueInfo.typeId) === typeId);
-    let primaryBookmaker, secondaryBookmaker;
+    let primaryBookmaker = defaultProviders[0].toLowerCase();
+    let secondaryBookmaker = defaultProviders[1] ? defaultProviders[1].toLowerCase() : undefined;
     if (info) {
         if (info.primaryBookmaker) {
             primaryBookmaker = info.primaryBookmaker.toLowerCase();
             secondaryBookmaker = info.secondaryBookmaker ? info.secondaryBookmaker.toLowerCase() : undefined;
-        } else {
-            primaryBookmaker = defaultProviders[0].toLowerCase();
-            secondaryBookmaker = defaultProviders[1] ? defaultProviders[1].toLowerCase() : undefined;
         }
     }
     return { primaryBookmaker, secondaryBookmaker };
 };
+
+export const isLastPolledForBookmakersValid = (
+    lastPolledMap: Map<string, number>,
+    maxAllowableAgeInMs: number,
+    primaryBookmaker: string,
+    secondaryBookmaker?: string
+): boolean => {
+    const lastPolledTimePrimary = lastPolledMap.get(primaryBookmaker);
+    if (!lastPolledTimePrimary) return false;
+
+    const currentTime = Date.now();
+    if (secondaryBookmaker) {
+        const lastPolledTimeSecondary = lastPolledMap.get(secondaryBookmaker);
+        if (!lastPolledTimeSecondary) return false;
+        if (currentTime - lastPolledTimeSecondary >= maxAllowableAgeInMs) {
+            return false;
+        }
+    }
+
+    return currentTime - lastPolledTimePrimary < maxAllowableAgeInMs;
+};
+
 export const calculateImpliedOddsDifference = (impliedOddsA: number, impliedOddsB: number): number => {
     const percentageDifference = (Math.abs(impliedOddsA - impliedOddsB) / impliedOddsA) * 100;
     return percentageDifference;
