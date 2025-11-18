@@ -163,39 +163,35 @@ export const checkOddsFromBookmakersForChildMarkets = (
 ): OddsWithLeagueInfo => {
     const formattedOdds = Object.entries(odds as any).reduce((acc: any, [key, value]: [string, any]) => {
         const [sportsBookName, marketName, points, selection, selectionLine] = key.split('_');
-        if (oddsProviders.length === 1) {
-            acc.push(value);
-        } else if (oddsProviders.length > 1) {
-            const info = leagueInfos.find(
-                (leagueInfo) => leagueInfo.marketName.toLowerCase() === marketName.toLowerCase()
-            );
-            if (info) {
-                let primaryBookmaker = oddsProviders[0].toLowerCase();
-                let secondaryBookmaker = oddsProviders[1].toLowerCase();
-                if (info.primaryBookmaker && !info.secondaryBookmaker) {
-                    if (sportsBookName.toLowerCase() === info.primaryBookmaker.toLowerCase()) {
-                        acc.push(value);
-                    }
-                } else {
-                    if (info.primaryBookmaker && info.secondaryBookmaker) {
-                        primaryBookmaker = info.primaryBookmaker.toLowerCase();
-                        secondaryBookmaker = info.secondaryBookmaker.toLowerCase();
-                    }
-                    if (sportsBookName.toLowerCase() === primaryBookmaker) {
-                        const secondaryBookmakerObject =
-                            odds[
-                                `${secondaryBookmaker}_${marketName.toLowerCase()}_${points}_${selection}_${selectionLine}`
-                            ];
-                        if (secondaryBookmakerObject) {
-                            const primaryOdds = oddslib.from('decimal', value.price).to('impliedProbability');
-                            const secondaryOdds = oddslib
-                                .from('decimal', secondaryBookmakerObject.price)
-                                .to('impliedProbability');
+        const info = leagueInfos.find((leagueInfo) => leagueInfo.marketName.toLowerCase() === marketName.toLowerCase());
+        if (info) {
+            let primaryBookmaker, secondaryBookmaker;
+            if (info.primaryBookmaker) {
+                primaryBookmaker = info.primaryBookmaker.toLowerCase();
+                secondaryBookmaker = info.secondaryBookmaker ? info.secondaryBookmaker.toLowerCase() : undefined;
+            } else {
+                primaryBookmaker = oddsProviders[0].toLowerCase();
+                secondaryBookmaker = oddsProviders[1] ? oddsProviders[1].toLowerCase() : undefined;
+            }
+            if (primaryBookmaker && !secondaryBookmaker) {
+                if (sportsBookName.toLowerCase() === primaryBookmaker.toLowerCase()) {
+                    acc.push(value);
+                }
+            } else {
+                if (sportsBookName.toLowerCase() === primaryBookmaker) {
+                    const secondaryBookmakerObject =
+                        odds[
+                            `${secondaryBookmaker}_${marketName.toLowerCase()}_${points}_${selection}_${selectionLine}`
+                        ];
+                    if (secondaryBookmakerObject) {
+                        const primaryOdds = oddslib.from('decimal', value.price).to('impliedProbability');
+                        const secondaryOdds = oddslib
+                            .from('decimal', secondaryBookmakerObject.price)
+                            .to('impliedProbability');
 
-                            const homeOddsDifference = calculateImpliedOddsDifference(primaryOdds, secondaryOdds);
-                            if (Number(homeOddsDifference) <= Number(MAX_IMPLIED_PERCENTAGE_DIFF)) {
-                                acc.push(value);
-                            }
+                        const homeOddsDifference = calculateImpliedOddsDifference(primaryOdds, secondaryOdds);
+                        if (Number(homeOddsDifference) <= Number(MAX_IMPLIED_PERCENTAGE_DIFF)) {
+                            acc.push(value);
                         }
                     }
                 }

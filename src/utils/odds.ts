@@ -209,7 +209,7 @@ export const createChildMarkets: (
     };
 
     if (leagueInfo.length > 0) {
-        const allChildOdds = filterOddsByMarketNameBookmaker(apiResponseWithOdds.odds, leagueInfo, liveOddsProviders);
+        const allChildOdds = filterOddsByMarketNameBookmaker(apiResponseWithOdds.odds, leagueInfo);
         const checkedChildOdds = checkOddsFromBookmakersForChildMarkets(allChildOdds, leagueInfo, liveOddsProviders);
         checkedChildOdds.forEach((odd) => {
             if (odd.type === 'Total') {
@@ -300,11 +300,7 @@ export const createChildMarkets: (
  * @param {string} oddsProvider - The main odds provider to filter by.
  * @returns {Array} The filtered odds array.
  */
-export const filterOddsByMarketNameBookmaker = (
-    oddsArray: Odds,
-    leagueInfos: LeagueConfigInfo[],
-    oddsProviders: string[]
-): any => {
+export const filterOddsByMarketNameBookmaker = (oddsArray: Odds, leagueInfos: LeagueConfigInfo[]): any => {
     const allChildMarketsTypes = leagueInfos
         .filter(
             (leagueInfo) =>
@@ -313,10 +309,7 @@ export const filterOddsByMarketNameBookmaker = (
         )
         .map((leagueInfo) => leagueInfo.marketName.toLowerCase());
     return oddsArray.reduce((acc: any, odd: any) => {
-        if (
-            allChildMarketsTypes.includes(odd.marketName.toLowerCase()) &&
-            oddsProviders.includes(odd.sportsBookName.toLowerCase())
-        ) {
+        if (allChildMarketsTypes.includes(odd.marketName.toLowerCase())) {
             const { points, marketName, selection, selectionLine, sportsBookName } = odd;
             const key = `${sportsBookName.toLowerCase()}_${marketName.toLowerCase()}_${points}_${selection}_${selectionLine}`;
             acc[key] = {
