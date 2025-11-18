@@ -27,7 +27,8 @@ export const processMarket = (
     isDrawAvailable: any,
     defaultSpreadForLiveMarkets: any,
     maxPercentageDiffBetwenOdds: any,
-    leagueMap: any
+    leagueMap: any,
+    lastPolledMap: Map<string, number>
 ) => {
     const sportSpreadData = spreadData.filter((data: any) => data.sportId === String(market.leagueId));
     const leagueInfo = getLeagueInfo(market.leagueId, leagueMap);
@@ -39,7 +40,9 @@ export const processMarket = (
         apiResponseWithOdds,
         market.leagueId,
         defaultSpreadForLiveMarkets,
-        maxPercentageDiffBetwenOdds
+        maxPercentageDiffBetwenOdds,
+        leagueInfo,
+        lastPolledMap
     );
 
     const oddsAfterSpread = adjustAddedSpread(moneylineOdds.odds, leagueInfo, market.typeId);
@@ -80,7 +83,8 @@ export const processMarket = (
         market.leagueId,
         liveOddsProviders,
         defaultSpreadForLiveMarkets,
-        leagueMap
+        leagueMap,
+        lastPolledMap
     );
 
     const packedChildMarkets = childMarkets.map((childMarket: any) => {

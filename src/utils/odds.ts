@@ -1,11 +1,16 @@
 import * as oddslib from 'oddslib';
 import { MarketType, MarketTypeMap } from 'overtime-utils';
 import { DRAW, MIN_ODDS_FOR_DIFF_CHECKING, MONEYLINE_TYPE_ID, ZERO } from '../constants/common';
-import { NO_MARKETS_FOR_LEAGUE_ID } from '../constants/errors';
+import { LAST_POLLED_TOO_OLD, NO_MARKETS_FOR_LEAGUE_ID } from '../constants/errors';
 import { MoneylineTypes } from '../enums/sports';
 import { HomeAwayTeams, Odds, OddsObject } from '../types/odds';
 import { ChildMarket, LeagueConfigInfo } from '../types/sports';
-import { checkOddsFromBookmakers, checkOddsFromBookmakersForChildMarkets } from './bookmakers';
+import {
+    checkOddsFromBookmakers,
+    checkOddsFromBookmakersForChildMarkets,
+    getPrimaryAndSecondaryBookmakerForTypeId,
+    isLastPolledForBookmakersValid,
+} from './bookmakers';
 import { getLeagueInfo } from './sports';
 import { adjustSpreadOnOdds, getSpreadData } from './spread';
 
@@ -123,9 +128,31 @@ export const getParentOdds = (
     oddsApiObject: OddsObject,
     sportId: string,
     defaultSpreadForLiveMarkets: number,
-    maxPercentageDiffBetwenOdds: number
+    maxPercentageDiffBetwenOdds: number,
+    leagueInfo: LeagueConfigInfo[],
+    lastPolledMap: Map<string, number>
 ) => {
     const commonData = { homeTeam: oddsApiObject.homeTeam, awayTeam: oddsApiObject.awayTeam };
+
+    const { primaryBookmaker, secondaryBookmaker } = getPrimaryAndSecondaryBookmakerForTypeId(
+        liveOddsProviders,
+        leagueInfo,
+        0 // typeId for moneyline
+    );
+
+    const isValidLastPolled = isLastPolledForBookmakersValid(
+        lastPolledMap,
+        30_000,
+        primaryBookmaker,
+        secondaryBookmaker
+    );
+
+    if (!isValidLastPolled) {
+        return {
+            odds: isTwoPositionalSport ? [0, 0] : [0, 0, 0],
+            errorMessage: LAST_POLLED_TOO_OLD,
+        };
+    }
 
     // EXTRACTING ODDS FROM THE RESPONSE PER MARKET NAME AND BOOKMAKER
     const moneylineOddsMap = filterOddsByMarketNameTeamNameBookmaker(
@@ -184,14 +211,16 @@ export const createChildMarkets: (
     leagueId: number,
     liveOddsProviders: any,
     defaultSpreadForLiveMarkets: any,
-    leagueMap: any
+    leagueMap: any,
+    lastPolledMap: Map<string, number>
 ) => ChildMarket[] = (
     apiResponseWithOdds,
     spreadDataForSport,
     leagueId,
     liveOddsProviders,
     defaultSpreadForLiveMarkets,
-    leagueMap
+    leagueMap,
+    lastPolledMap
 ) => {
     const [spreadOdds, totalOdds, moneylineOdds, correctScoreOdds, doubleChanceOdds, ggOdds, childMarkets]: any[] = [
         [],
@@ -210,7 +239,12 @@ export const createChildMarkets: (
 
     if (leagueInfo.length > 0) {
         const allChildOdds = filterOddsByMarketNameBookmaker(apiResponseWithOdds.odds, leagueInfo);
-        const checkedChildOdds = checkOddsFromBookmakersForChildMarkets(allChildOdds, leagueInfo, liveOddsProviders);
+        const checkedChildOdds = checkOddsFromBookmakersForChildMarkets(
+            allChildOdds,
+            leagueInfo,
+            liveOddsProviders,
+            lastPolledMap
+        );
         checkedChildOdds.forEach((odd) => {
             if (odd.type === 'Total') {
                 if (Math.abs(Number(odd.points) % 1) === 0.5) totalOdds.push(odd);

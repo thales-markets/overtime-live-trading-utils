@@ -159,7 +159,8 @@ export const checkOddsFromBookmakers = (
 export const checkOddsFromBookmakersForChildMarkets = (
     odds: any,
     leagueInfos: LeagueConfigInfo[],
-    oddsProviders: string[]
+    oddsProviders: string[],
+    lastPolledMap: Map<string, number>
 ): OddsWithLeagueInfo => {
     const formattedOdds = Object.entries(odds as any).reduce((acc: any, [key, value]: [string, any]) => {
         const [sportsBookName, marketName, points, selection, selectionLine] = key.split('_');
@@ -171,25 +172,34 @@ export const checkOddsFromBookmakersForChildMarkets = (
                 Number(info.typeId)
             );
 
-            if (primaryBookmaker && !secondaryBookmaker) {
-                if (sportsBookName.toLowerCase() === primaryBookmaker.toLowerCase()) {
-                    acc.push(value);
-                }
-            } else {
-                if (sportsBookName.toLowerCase() === primaryBookmaker) {
-                    const secondaryBookmakerObject =
-                        odds[
-                            `${secondaryBookmaker}_${marketName.toLowerCase()}_${points}_${selection}_${selectionLine}`
-                        ];
-                    if (secondaryBookmakerObject) {
-                        const primaryOdds = oddslib.from('decimal', value.price).to('impliedProbability');
-                        const secondaryOdds = oddslib
-                            .from('decimal', secondaryBookmakerObject.price)
-                            .to('impliedProbability');
+            const isValidLastPolled = isLastPolledForBookmakersValid(
+                lastPolledMap,
+                30_000,
+                primaryBookmaker,
+                secondaryBookmaker
+            );
 
-                        const homeOddsDifference = calculateImpliedOddsDifference(primaryOdds, secondaryOdds);
-                        if (Number(homeOddsDifference) <= Number(MAX_IMPLIED_PERCENTAGE_DIFF)) {
-                            acc.push(value);
+            if (isValidLastPolled) {
+                if (primaryBookmaker && !secondaryBookmaker) {
+                    if (sportsBookName.toLowerCase() === primaryBookmaker.toLowerCase()) {
+                        acc.push(value);
+                    }
+                } else {
+                    if (sportsBookName.toLowerCase() === primaryBookmaker) {
+                        const secondaryBookmakerObject =
+                            odds[
+                                `${secondaryBookmaker}_${marketName.toLowerCase()}_${points}_${selection}_${selectionLine}`
+                            ];
+                        if (secondaryBookmakerObject) {
+                            const primaryOdds = oddslib.from('decimal', value.price).to('impliedProbability');
+                            const secondaryOdds = oddslib
+                                .from('decimal', secondaryBookmakerObject.price)
+                                .to('impliedProbability');
+
+                            const homeOddsDifference = calculateImpliedOddsDifference(primaryOdds, secondaryOdds);
+                            if (Number(homeOddsDifference) <= Number(MAX_IMPLIED_PERCENTAGE_DIFF)) {
+                                acc.push(value);
+                            }
                         }
                     }
                 }
