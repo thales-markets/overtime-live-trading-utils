@@ -165,14 +165,12 @@ export const checkOddsFromBookmakersForChildMarkets = (
         const [sportsBookName, marketName, points, selection, selectionLine] = key.split('_');
         const info = leagueInfos.find((leagueInfo) => leagueInfo.marketName.toLowerCase() === marketName.toLowerCase());
         if (info) {
-            let primaryBookmaker, secondaryBookmaker;
-            if (info.primaryBookmaker) {
-                primaryBookmaker = info.primaryBookmaker.toLowerCase();
-                secondaryBookmaker = info.secondaryBookmaker ? info.secondaryBookmaker.toLowerCase() : undefined;
-            } else {
-                primaryBookmaker = oddsProviders[0].toLowerCase();
-                secondaryBookmaker = oddsProviders[1] ? oddsProviders[1].toLowerCase() : undefined;
-            }
+            const { primaryBookmaker, secondaryBookmaker } = getPrimaryAndSecondaryBookmakerForTypeId(
+                oddsProviders,
+                leagueInfos,
+                Number(info.typeId)
+            );
+
             if (primaryBookmaker && !secondaryBookmaker) {
                 if (sportsBookName.toLowerCase() === primaryBookmaker.toLowerCase()) {
                     acc.push(value);
@@ -203,6 +201,24 @@ export const checkOddsFromBookmakersForChildMarkets = (
     return formattedOdds;
 };
 
+export const getPrimaryAndSecondaryBookmakerForTypeId = (
+    defaultProviders: string[],
+    leagueInfos: LeagueConfigInfo[], // LeagueConfigInfo for specific sport, not the entire list from csv
+    typeId: number
+): { primaryBookmaker: string | undefined; secondaryBookmaker: string | undefined } => {
+    const info = leagueInfos.find((leagueInfo) => Number(leagueInfo.typeId) === typeId);
+    let primaryBookmaker, secondaryBookmaker;
+    if (info) {
+        if (info.primaryBookmaker) {
+            primaryBookmaker = info.primaryBookmaker.toLowerCase();
+            secondaryBookmaker = info.secondaryBookmaker ? info.secondaryBookmaker.toLowerCase() : undefined;
+        } else {
+            primaryBookmaker = defaultProviders[0].toLowerCase();
+            secondaryBookmaker = defaultProviders[1] ? defaultProviders[1].toLowerCase() : undefined;
+        }
+    }
+    return { primaryBookmaker, secondaryBookmaker };
+};
 export const calculateImpliedOddsDifference = (impliedOddsA: number, impliedOddsB: number): number => {
     const percentageDifference = (Math.abs(impliedOddsA - impliedOddsB) / impliedOddsA) * 100;
     return percentageDifference;
