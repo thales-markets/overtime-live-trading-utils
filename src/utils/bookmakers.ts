@@ -6,10 +6,15 @@ import {
     ZERO_ODDS_MESSAGE,
     ZERO_ODDS_MESSAGE_SINGLE_BOOKMAKER,
 } from '../constants/errors';
+import { BookmakersConfig } from '../types/bookmakers';
 import { OddsWithLeagueInfo } from '../types/odds';
 import { LastPolledArray, LeagueConfigInfo } from '../types/sports';
 
-export const getBookmakersArray = (bookmakersData: any[], sportId: any, backupLiveOddsProviders: string[]) => {
+export const getBookmakersArray = (
+    bookmakersData: BookmakersConfig[],
+    sportId: any,
+    backupLiveOddsProviders: string[]
+) => {
     const sportBookmakersData = bookmakersData.find((data) => Number(data.sportId) === Number(sportId));
     if (sportBookmakersData) {
         if (sportBookmakersData.primaryBookmaker == '') {
@@ -24,6 +29,45 @@ export const getBookmakersArray = (bookmakersData: any[], sportId: any, backupLi
         return bookmakersArray;
     }
     return backupLiveOddsProviders;
+};
+
+export const getBookmakersFromLeagueConfig = (sportId: string | number, leagueInfoArray: LeagueConfigInfo[]) => {
+    const uniqueBookmakers = [];
+
+    for (const leagueInfo of leagueInfoArray) {
+        if (Number(leagueInfo.sportId) === Number(sportId) && leagueInfo.enabled === 'true') {
+            const primary = leagueInfo.primaryBookmaker?.toLowerCase();
+            const secondary = leagueInfo.secondaryBookmaker?.toLowerCase();
+            if (primary) {
+                uniqueBookmakers.push(primary);
+            }
+            if (secondary && secondary !== primary) {
+                uniqueBookmakers.push(secondary);
+            }
+            break;
+        }
+    }
+
+    return uniqueBookmakers;
+};
+
+export const getBookmakersForLeague = (
+    sportId: string | number,
+    configPerMarket: LeagueConfigInfo[],
+    configPerLeague: BookmakersConfig[],
+    defaultBookmakers: string[],
+    maxNumOfBookmakers = 5
+) => {
+    // bookmakers defined per market for league
+    const bookmakersPerMarket = getBookmakersFromLeagueConfig(sportId, configPerMarket);
+    // bookmakers defined generally per league
+    const bookmakersPerLeague = getBookmakersArray(configPerLeague, sportId, defaultBookmakers);
+    // all unique bookmakers defined from both configs
+    const uniqueBookmakers = [...new Set([...bookmakersPerMarket, ...bookmakersPerLeague])];
+
+    const bookmakers = uniqueBookmakers.filter((s) => s.length).slice(0, maxNumOfBookmakers);
+
+    return bookmakers;
 };
 
 export const checkOddsFromBookmakers = (
