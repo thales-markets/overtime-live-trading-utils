@@ -9,7 +9,7 @@ import {
     MockZeroOdds,
 } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
-import { getLastPolledMapForBookmakers } from '../utils/helper';
+import { getLastPolledMapForBookmakers, MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST } from '../utils/helper';
 
 const lastPolledMap = getLastPolledMapForBookmakers();
 
@@ -26,7 +26,8 @@ describe('Odds', () => {
             undefined,
             undefined,
             LeagueMocks.leagueInfoOnlyParent,
-            lastPolledMap
+            lastPolledMap,
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
         const hasOdds = market.odds.some(
@@ -48,7 +49,8 @@ describe('Odds', () => {
             undefined,
             undefined,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
-            lastPolledMap
+            lastPolledMap,
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
         const hasOdds = market.odds.some(
@@ -72,7 +74,8 @@ describe('Odds', () => {
             undefined,
             undefined,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
-            lastPolledMap
+            lastPolledMap,
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
         const hasChildMarkets = market.childMarkets.length > 0;
@@ -91,7 +94,8 @@ describe('Odds', () => {
             undefined,
             undefined,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
-            lastPolledMap
+            lastPolledMap,
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
         expect(market.childMarkets).toHaveLength(0);

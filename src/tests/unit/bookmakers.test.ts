@@ -9,7 +9,7 @@ import {
     MockOnlyMoneylineWithDifferentSportsbook,
 } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
-import { getLastPolledMapForBookmakers } from '../utils/helper';
+import { getLastPolledMapForBookmakers, MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST } from '../utils/helper';
 
 const lastPolledMap = getLastPolledMapForBookmakers();
 
@@ -26,7 +26,8 @@ describe('Bookmakers', () => {
             undefined,
             undefined,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
-            lastPolledMap
+            lastPolledMap,
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
         const hasOdds = market.odds.some(
@@ -50,7 +51,8 @@ describe('Bookmakers', () => {
             undefined,
             5,
             LeagueMocks.leagueInfoOnlyParent,
-            lastPolledMap
+            lastPolledMap,
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
         const hasOdds = market.odds.some(
@@ -74,7 +76,8 @@ describe('Bookmakers', () => {
             undefined,
             undefined,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
-            lastPolledMap
+            lastPolledMap,
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
         const hasOdds = market.odds.some(
@@ -98,7 +101,8 @@ describe('Bookmakers', () => {
             undefined,
             undefined,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
-            lastPolledMap
+            lastPolledMap,
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
         expect(market.childMarkets.length).toBe(2);
@@ -116,7 +120,8 @@ describe('Bookmakers', () => {
             undefined,
             undefined,
             LeagueMocks.leaguInfoDifferentPrimaryBookmaker,
-            lastPolledMap
+            lastPolledMap,
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
         expect(market.childMarkets.length).toBe(3);
@@ -134,7 +139,8 @@ describe('Bookmakers', () => {
             undefined,
             undefined,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
-            lastPolledMap
+            lastPolledMap,
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
         expect(market.childMarkets.length).toBe(1);

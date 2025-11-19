@@ -4,7 +4,7 @@ import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
 import { LeagueMocks } from '../mock/MockLeagueMap';
 import { MockOnlyMoneyline, MockOpticSoccer } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
-import { getLastPolledMapForBookmakers } from '../utils/helper';
+import { getLastPolledMapForBookmakers, MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST } from '../utils/helper';
 
 const lastPolledMap = getLastPolledMapForBookmakers();
 
@@ -23,7 +23,8 @@ describe('Markets', () => {
                 undefined,
                 undefined,
                 LeagueMocks.leagueInfoOnlyParent,
-                lastPolledMap
+                lastPolledMap,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
             );
 
             expect(market.childMarkets).toHaveLength(0);
@@ -41,7 +42,8 @@ describe('Markets', () => {
                 undefined,
                 undefined,
                 LeagueMocks.leagueInfoMockDisabledChilds,
-                lastPolledMap
+                lastPolledMap,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
             );
 
             expect(market.childMarkets).toHaveLength(0);
@@ -59,7 +61,8 @@ describe('Markets', () => {
                 undefined,
                 undefined,
                 LeagueMocks.leagueInfoEnabledSpreadDisabledTotals,
-                lastPolledMap
+                lastPolledMap,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
             );
 
             const containsSpread = market.childMarkets.some((child: any) => child.type === 'spread');
@@ -81,7 +84,8 @@ describe('Markets', () => {
                 undefined,
                 undefined,
                 LeagueMocks.leagueInfoEnabledSpeadAndTotals,
-                lastPolledMap
+                lastPolledMap,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
             );
 
             const containsSpread = market.childMarkets.some((child: any) => child.type === 'spread');
@@ -103,7 +107,8 @@ describe('Markets', () => {
                 undefined,
                 undefined,
                 LeagueMocks.leagueInfoEnabledAll,
-                lastPolledMap
+                lastPolledMap,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
             );
 
             const containsSpread = market.childMarkets.some((child: any) => child.type === 'spread');
@@ -157,7 +162,8 @@ describe('Markets', () => {
                 undefined,
                 undefined,
                 LeagueMocks.leagueInfoOnlyParentDiffSportId,
-                lastPolledMap
+                lastPolledMap,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
             );
 
             expect(warnSpy).toHaveBeenCalled();

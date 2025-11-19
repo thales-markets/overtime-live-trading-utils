@@ -7,7 +7,7 @@ import {
     ZERO_ODDS_MESSAGE_SINGLE_BOOKMAKER,
 } from '../constants/errors';
 import { OddsWithLeagueInfo } from '../types/odds';
-import { LeagueConfigInfo } from '../types/sports';
+import { LastPolledArray, LeagueConfigInfo } from '../types/sports';
 
 export const getBookmakersArray = (bookmakersData: any[], sportId: any, backupLiveOddsProviders: string[]) => {
     const sportBookmakersData = bookmakersData.find((data) => Number(data.sportId) === Number(sportId));
@@ -160,7 +160,8 @@ export const checkOddsFromBookmakersForChildMarkets = (
     odds: any,
     leagueInfos: LeagueConfigInfo[],
     oddsProviders: string[],
-    lastPolledMap: Map<string, number>
+    lastPolledMap: LastPolledArray,
+    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY: number
 ): OddsWithLeagueInfo => {
     const formattedOdds = Object.entries(odds as any).reduce((acc: any, [key, value]: [string, any]) => {
         const [sportsBookName, marketName, points, selection, selectionLine] = key.split('_');
@@ -174,7 +175,7 @@ export const checkOddsFromBookmakersForChildMarkets = (
 
             const isValidLastPolled = isLastPolledForBookmakersValid(
                 lastPolledMap,
-                30_000,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY,
                 primaryBookmaker,
                 secondaryBookmaker
             );
@@ -229,24 +230,39 @@ export const getPrimaryAndSecondaryBookmakerForTypeId = (
 };
 
 export const isLastPolledForBookmakersValid = (
-    lastPolledMap: Map<string, number>,
-    maxAllowableAgeInMs: number,
+    lastPolledMap: LastPolledArray,
+    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY: number,
     primaryBookmaker: string,
     secondaryBookmaker?: string
 ): boolean => {
-    const lastPolledTimePrimary = lastPolledMap.get(primaryBookmaker);
-    if (!lastPolledTimePrimary) return false;
+    const lastPolledTimePrimary = lastPolledMap.find(
+        (entry) => entry.sportsbook.toLowerCase() === primaryBookmaker.toLowerCase()
+    )?.timestamp;
+    if (typeof lastPolledTimePrimary !== 'number') {
+        return false;
+    }
 
-    const currentTime = Date.now();
+    const now = new Date();
     if (secondaryBookmaker) {
-        const lastPolledTimeSecondary = lastPolledMap.get(secondaryBookmaker);
-        if (!lastPolledTimeSecondary) return false;
-        if (currentTime - lastPolledTimeSecondary >= maxAllowableAgeInMs) {
+        const lastPolledTimeSecondary = lastPolledMap.find(
+            (entry) => entry.sportsbook.toLowerCase() === secondaryBookmaker.toLowerCase()
+        )?.timestamp;
+
+        if (typeof lastPolledTimeSecondary !== 'number') {
+            return false;
+        }
+
+        const oddsDate = new Date(lastPolledTimeSecondary * 1000);
+        const timeDiff = now.getTime() - oddsDate.getTime();
+        if (timeDiff > MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY) {
             return false;
         }
     }
 
-    return currentTime - lastPolledTimePrimary < maxAllowableAgeInMs;
+    const oddsDate = new Date(lastPolledTimePrimary * 1000);
+    const timeDiff = now.getTime() - oddsDate.getTime();
+
+    return timeDiff < MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY;
 };
 
 export const calculateImpliedOddsDifference = (impliedOddsA: number, impliedOddsB: number): number => {

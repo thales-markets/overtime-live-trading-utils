@@ -4,7 +4,7 @@ import { DRAW, MIN_ODDS_FOR_DIFF_CHECKING, MONEYLINE_TYPE_ID, ZERO } from '../co
 import { LAST_POLLED_TOO_OLD, NO_MARKETS_FOR_LEAGUE_ID } from '../constants/errors';
 import { MoneylineTypes } from '../enums/sports';
 import { HomeAwayTeams, Odds, OddsObject } from '../types/odds';
-import { ChildMarket, LeagueConfigInfo } from '../types/sports';
+import { ChildMarket, LastPolledArray, LeagueConfigInfo } from '../types/sports';
 import {
     checkOddsFromBookmakers,
     checkOddsFromBookmakersForChildMarkets,
@@ -130,7 +130,8 @@ export const getParentOdds = (
     defaultSpreadForLiveMarkets: number,
     maxPercentageDiffBetwenOdds: number,
     leagueInfo: LeagueConfigInfo[],
-    lastPolledMap: Map<string, number>
+    lastPolledMap: LastPolledArray,
+    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY: number
 ) => {
     const commonData = { homeTeam: oddsApiObject.homeTeam, awayTeam: oddsApiObject.awayTeam };
 
@@ -142,7 +143,7 @@ export const getParentOdds = (
 
     const isValidLastPolled = isLastPolledForBookmakersValid(
         lastPolledMap,
-        30_000,
+        MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY,
         primaryBookmaker,
         secondaryBookmaker
     );
@@ -212,7 +213,8 @@ export const createChildMarkets: (
     liveOddsProviders: any,
     defaultSpreadForLiveMarkets: any,
     leagueMap: any,
-    lastPolledMap: Map<string, number>
+    lastPolledMap: LastPolledArray,
+    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY: number
 ) => ChildMarket[] = (
     apiResponseWithOdds,
     spreadDataForSport,
@@ -220,7 +222,8 @@ export const createChildMarkets: (
     liveOddsProviders,
     defaultSpreadForLiveMarkets,
     leagueMap,
-    lastPolledMap
+    lastPolledMap,
+    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY
 ) => {
     const [spreadOdds, totalOdds, moneylineOdds, correctScoreOdds, doubleChanceOdds, ggOdds, childMarkets]: any[] = [
         [],
@@ -243,7 +246,8 @@ export const createChildMarkets: (
             allChildOdds,
             leagueInfo,
             liveOddsProviders,
-            lastPolledMap
+            lastPolledMap,
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY
         );
         checkedChildOdds.forEach((odd) => {
             if (odd.type === 'Total') {

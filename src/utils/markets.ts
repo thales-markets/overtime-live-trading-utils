@@ -1,6 +1,7 @@
 import * as oddslib from 'oddslib';
 import { ZERO_ODDS_AFTER_SPREAD_ADJUSTMENT } from '../constants/errors';
 import { OddsObject } from '../types/odds';
+import { LastPolledArray } from '../types/sports';
 import { createChildMarkets, getParentOdds } from './odds';
 import { getLeagueInfo } from './sports';
 import { adjustAddedSpread } from './spread';
@@ -28,7 +29,8 @@ export const processMarket = (
     defaultSpreadForLiveMarkets: any,
     maxPercentageDiffBetwenOdds: any,
     leagueMap: any,
-    lastPolledMap: Map<string, number>
+    lastPolledMap: LastPolledArray,
+    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY: number
 ) => {
     const sportSpreadData = spreadData.filter((data: any) => data.sportId === String(market.leagueId));
     const leagueInfo = getLeagueInfo(market.leagueId, leagueMap);
@@ -42,7 +44,8 @@ export const processMarket = (
         defaultSpreadForLiveMarkets,
         maxPercentageDiffBetwenOdds,
         leagueInfo,
-        lastPolledMap
+        lastPolledMap,
+        MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY
     );
 
     const oddsAfterSpread = adjustAddedSpread(moneylineOdds.odds, leagueInfo, market.typeId);
@@ -84,7 +87,8 @@ export const processMarket = (
         liveOddsProviders,
         defaultSpreadForLiveMarkets,
         leagueMap,
-        lastPolledMap
+        lastPolledMap,
+        MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY
     );
 
     const packedChildMarkets = childMarkets.map((childMarket: any) => {
