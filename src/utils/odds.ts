@@ -274,6 +274,7 @@ export const createChildMarkets: (
         ];
         const otherFormattedOdds = [...groupAndFormatCorrectScoreOdds(correctScoreOdds, commonData)];
 
+        // odds are converted to implied probability inside adjustSpreadOnChildOdds
         const homeAwayOddsWithSpreadAdjusted = adjustSpreadOnChildOdds(
             homeAwayFormattedOdds,
             spreadDataForSport,
@@ -289,18 +290,20 @@ export const createChildMarkets: (
                 odds: data.odds,
             };
             const leagueInfoByTypeId = leagueInfo.find((league) => Number(league.typeId) === Number(data.typeId));
-            const minOdds = leagueInfoByTypeId?.minOdds;
-            const maxOdds = leagueInfoByTypeId?.maxOdds;
-            if (
-                !(
-                    minOdds &&
-                    maxOdds &&
-                    (data.odds[0] >= minOdds ||
-                        data.odds[0] <= maxOdds ||
-                        data.odds[1] >= minOdds ||
-                        data.odds[1] <= maxOdds)
-                )
-            ) {
+            const minOdds = leagueInfoByTypeId?.minOdds; // minimum odds configured for child market (e.g. 0.95 implied probability)
+            const maxOdds = leagueInfoByTypeId?.maxOdds; // maximum odds configured for child market (e.g. 0.05 implied probability)
+
+            if (minOdds && maxOdds) {
+                let conditionToAddChildMarket = true;
+                data.odds.forEach((odd: number) => {
+                    if (odd >= minOdds && odd <= maxOdds) {
+                        conditionToAddChildMarket = false;
+                    }
+                });
+                if (conditionToAddChildMarket) {
+                    childMarkets.push(childMarket);
+                }
+            } else {
                 childMarkets.push(childMarket);
             }
         });
