@@ -1319,13 +1319,13 @@ describe('Resolution Utils', () => {
                 ).toBe(true);
             });
 
-            it('Should resolve overtime period typeId (10025)', () => {
+            it('Should NOT resolve overtime period typeId (10025) - overtime has no specific markets', () => {
                 const result = canResolveMarketsForEvent(
                     MockNFLCompletedWithOvertime,
                     10025,
                     SportPeriodType.QUARTERS_BASED
                 );
-                expect(result).toBe(true);
+                expect(result).toBe(false);
             });
 
             it('Should resolve full game typeIds for completed overtime game', () => {
@@ -1337,7 +1337,7 @@ describe('Resolution Utils', () => {
                 ).toBe(true);
             });
 
-            it('Should return all resolvable typeIds including overtime in batch check', () => {
+            it('Should return all resolvable typeIds excluding overtime in batch check', () => {
                 const typeIds = [10021, 10022, 10023, 10024, 10025, 10001];
                 const result = filterMarketsThatCanBeResolved(
                     MockNFLCompletedWithOvertime,
@@ -1345,7 +1345,8 @@ describe('Resolution Utils', () => {
                     SportPeriodType.QUARTERS_BASED
                 );
 
-                expect(result).toEqual(typeIds); // All should be resolvable (game completed with overtime)
+                // 10025 (overtime) should not be included as period 5 has no specific markets
+                expect(result).toEqual([10021, 10022, 10023, 10024, 10001]);
             });
 
             it('Should return false for 8th period typeId (period did not occur)', () => {
@@ -1367,15 +1368,15 @@ describe('Resolution Utils', () => {
             });
 
             it('Should not include non-existent periods in batch check', () => {
-                const typeIds = [10021, 10022, 10025, 10028, 10029];
+                const typeIds = [10021, 10022, 10023, 10024, 10025, 10028, 10029];
                 const result = filterMarketsThatCanBeResolved(
                     MockNFLCompletedWithOvertime,
                     typeIds,
                     SportPeriodType.QUARTERS_BASED
                 );
 
-                // Only periods 1, 2, and 5 occurred, so only their typeIds should be returned
-                expect(result).toEqual([10021, 10022, 10025]);
+                // Periods 1-4 are resolvable; period 5 (overtime) has no markets; periods 8-9 did not occur
+                expect(result).toEqual([10021, 10022, 10023, 10024]);
             });
         });
 
