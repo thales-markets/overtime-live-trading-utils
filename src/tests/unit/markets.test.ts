@@ -1,3 +1,4 @@
+import { MAX_IMPLIED_PERCENTAGE_DIFF } from '../../constants/common';
 import { NO_MARKETS_FOR_LEAGUE_ID } from '../../constants/errors';
 import { processMarket } from '../../utils/markets';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
@@ -21,7 +22,7 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                undefined,
+                MAX_IMPLIED_PERCENTAGE_DIFF,
                 LeagueMocks.leagueInfoOnlyParent,
                 lastPolledMap,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
@@ -40,7 +41,7 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                undefined,
+                MAX_IMPLIED_PERCENTAGE_DIFF,
                 LeagueMocks.leagueInfoMockDisabledChilds,
                 lastPolledMap,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
@@ -59,7 +60,7 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                undefined,
+                MAX_IMPLIED_PERCENTAGE_DIFF,
                 LeagueMocks.leagueInfoEnabledSpreadDisabledTotals,
                 lastPolledMap,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
@@ -82,7 +83,7 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                undefined,
+                MAX_IMPLIED_PERCENTAGE_DIFF,
                 LeagueMocks.leagueInfoEnabledSpeadAndTotals,
                 lastPolledMap,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
@@ -105,7 +106,7 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                undefined,
+                MAX_IMPLIED_PERCENTAGE_DIFF,
                 LeagueMocks.leagueInfoEnabledAll,
                 lastPolledMap,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
@@ -160,7 +161,7 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                undefined,
+                MAX_IMPLIED_PERCENTAGE_DIFF,
                 LeagueMocks.leagueInfoOnlyParentDiffSportId,
                 lastPolledMap,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST

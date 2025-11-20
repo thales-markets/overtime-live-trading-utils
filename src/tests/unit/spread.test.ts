@@ -1,3 +1,4 @@
+import { MAX_IMPLIED_PERCENTAGE_DIFF } from '../../constants/common';
 import { ZERO_ODDS_AFTER_SPREAD_ADJUSTMENT } from '../../constants/errors';
 import { processMarket } from '../../utils/markets';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
@@ -19,7 +20,7 @@ describe('Spread configuration', () => {
             [],
             false,
             undefined,
-            undefined,
+            MAX_IMPLIED_PERCENTAGE_DIFF,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledMap,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
@@ -46,7 +47,7 @@ describe('Spread configuration', () => {
                     [],
                     true,
                     undefined,
-                    undefined,
+                    MAX_IMPLIED_PERCENTAGE_DIFF,
                     LeagueMocks.leagueInfoOnlyParent,
                     lastPolledMap,
                     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
@@ -63,7 +64,7 @@ describe('Spread configuration', () => {
                     [],
                     true,
                     undefined,
-                    undefined,
+                    MAX_IMPLIED_PERCENTAGE_DIFF,
                     LeagueMocks.leagueInfoOnlyParentWithSpreadAdded,
                     lastPolledMap,
                     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
@@ -100,7 +101,7 @@ describe('Spread configuration', () => {
                     [],
                     true,
                     undefined,
-                    undefined,
+                    MAX_IMPLIED_PERCENTAGE_DIFF,
                     LeagueMocks.leagueInfoOnlyParent,
                     lastPolledMap,
                     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
@@ -117,7 +118,7 @@ describe('Spread configuration', () => {
                     [],
                     true,
                     undefined,
-                    undefined,
+                    MAX_IMPLIED_PERCENTAGE_DIFF,
                     LeagueMocks.leagueInfoOnlyParentWithSpreadAdded,
                     lastPolledMap,
                     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST

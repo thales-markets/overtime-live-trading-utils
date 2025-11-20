@@ -1,5 +1,5 @@
 import * as oddslib from 'oddslib';
-import { MAX_IMPLIED_PERCENTAGE_DIFF } from '../constants/common';
+import { MIN_ODDS_FOR_DIFF_CHECKING } from '../constants/common';
 import {
     DIFF_BETWEEN_BOOKMAKERS_MESSAGE,
     NO_MATCHING_BOOKMAKERS_MESSAGE,
@@ -205,7 +205,8 @@ export const checkOddsFromBookmakersForChildMarkets = (
     leagueInfos: LeagueConfigInfo[],
     oddsProviders: string[],
     lastPolledMap: LastPolledArray,
-    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY: number
+    maxAllowedProviderDataStaleDelay: number,
+    maxImpliedPercentageDifference: number
 ): OddsWithLeagueInfo => {
     const formattedOdds = Object.entries(odds as any).reduce((acc: any, [key, value]: [string, any]) => {
         const [sportsBookName, marketName, points, selection, selectionLine] = key.split('_');
@@ -219,7 +220,7 @@ export const checkOddsFromBookmakersForChildMarkets = (
 
             const isValidLastPolled = isLastPolledForBookmakersValid(
                 lastPolledMap,
-                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY,
+                maxAllowedProviderDataStaleDelay,
                 primaryBookmaker,
                 secondaryBookmaker
             );
@@ -240,9 +241,15 @@ export const checkOddsFromBookmakersForChildMarkets = (
                             const secondaryOdds = oddslib
                                 .from('decimal', secondaryBookmakerObject.price)
                                 .to('impliedProbability');
-
-                            const homeOddsDifference = calculateImpliedOddsDifference(primaryOdds, secondaryOdds);
-                            if (Number(homeOddsDifference) <= Number(MAX_IMPLIED_PERCENTAGE_DIFF)) {
+                            if (
+                                primaryOdds >= MIN_ODDS_FOR_DIFF_CHECKING &&
+                                secondaryOdds >= MIN_ODDS_FOR_DIFF_CHECKING
+                            ) {
+                                const homeOddsDifference = calculateImpliedOddsDifference(primaryOdds, secondaryOdds);
+                                if (Number(homeOddsDifference) <= Number(maxImpliedPercentageDifference)) {
+                                    acc.push(value);
+                                }
+                            } else {
                                 acc.push(value);
                             }
                         }
@@ -275,7 +282,7 @@ export const getPrimaryAndSecondaryBookmakerForTypeId = (
 
 export const isLastPolledForBookmakersValid = (
     lastPolledMap: LastPolledArray,
-    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY: number,
+    maxAllowedProviderDataStaleDelay: number,
     primaryBookmaker: string,
     secondaryBookmaker?: string
 ): boolean => {
@@ -298,7 +305,7 @@ export const isLastPolledForBookmakersValid = (
 
         const oddsDate = new Date(lastPolledTimeSecondary * 1000);
         const timeDiff = now.getTime() - oddsDate.getTime();
-        if (timeDiff > MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY) {
+        if (timeDiff > maxAllowedProviderDataStaleDelay) {
             return false;
         }
     }
@@ -306,7 +313,7 @@ export const isLastPolledForBookmakersValid = (
     const oddsDate = new Date(lastPolledTimePrimary * 1000);
     const timeDiff = now.getTime() - oddsDate.getTime();
 
-    return timeDiff < MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY;
+    return timeDiff <= maxAllowedProviderDataStaleDelay;
 };
 
 export const calculateImpliedOddsDifference = (impliedOddsA: number, impliedOddsB: number): number => {

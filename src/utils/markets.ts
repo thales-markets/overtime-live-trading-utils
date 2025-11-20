@@ -27,7 +27,7 @@ export const processMarket = (
     spreadData: any,
     isDrawAvailable: any,
     defaultSpreadForLiveMarkets: any,
-    maxPercentageDiffBetwenOdds: any,
+    maxPercentageDiffBetwenOdds: number,
     leagueMap: any,
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number
@@ -88,7 +88,8 @@ export const processMarket = (
         defaultSpreadForLiveMarkets,
         leagueMap,
         lastPolledData,
-        maxAllowedProviderDataStaleDelay
+        maxAllowedProviderDataStaleDelay,
+        maxPercentageDiffBetwenOdds
     );
 
     const packedChildMarkets = childMarkets.map((childMarket: any) => {

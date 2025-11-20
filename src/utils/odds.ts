@@ -214,7 +214,8 @@ export const createChildMarkets: (
     defaultSpreadForLiveMarkets: any,
     leagueMap: any,
     lastPolledData: LastPolledArray,
-    maxAllowedProviderDataStaleDelay: number
+    maxAllowedProviderDataStaleDelay: number,
+    maxImpliedPercentageDifference: number
 ) => ChildMarket[] = (
     apiResponseWithOdds,
     spreadDataForSport,
@@ -223,7 +224,8 @@ export const createChildMarkets: (
     defaultSpreadForLiveMarkets,
     leagueMap,
     lastPolledData,
-    maxAllowedProviderDataStaleDelay
+    maxAllowedProviderDataStaleDelay,
+    maxImpliedPercentageDifference
 ) => {
     const [spreadOdds, totalOdds, moneylineOdds, correctScoreOdds, doubleChanceOdds, ggOdds, childMarkets]: any[] = [
         [],
@@ -247,7 +249,8 @@ export const createChildMarkets: (
             leagueInfo,
             liveOddsProviders,
             lastPolledData,
-            maxAllowedProviderDataStaleDelay
+            maxAllowedProviderDataStaleDelay,
+            maxImpliedPercentageDifference
         );
         checkedChildOdds.forEach((odd) => {
             if (odd.type === 'Total') {
@@ -296,7 +299,7 @@ export const createChildMarkets: (
             if (minOdds && maxOdds) {
                 let conditionToAddChildMarket = true;
                 data.odds.forEach((odd: number) => {
-                    if (odd >= minOdds && odd <= maxOdds) {
+                    if (odd >= minOdds || odd <= maxOdds) {
                         conditionToAddChildMarket = false;
                     }
                 });
