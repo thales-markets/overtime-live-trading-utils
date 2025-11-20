@@ -130,7 +130,7 @@ export const getParentOdds = (
     defaultSpreadForLiveMarkets: number,
     maxPercentageDiffBetwenOdds: number,
     leagueInfo: LeagueConfigInfo[],
-    lastPolledMap: LastPolledArray,
+    lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number
 ) => {
     const commonData = { homeTeam: oddsApiObject.homeTeam, awayTeam: oddsApiObject.awayTeam };
@@ -142,7 +142,7 @@ export const getParentOdds = (
     );
 
     const isValidLastPolled = isLastPolledForBookmakersValid(
-        lastPolledMap,
+        lastPolledData,
         maxAllowedProviderDataStaleDelay,
         primaryBookmaker,
         secondaryBookmaker

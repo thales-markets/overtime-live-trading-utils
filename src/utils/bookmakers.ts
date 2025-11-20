@@ -204,7 +204,7 @@ export const checkOddsFromBookmakersForChildMarkets = (
     odds: any,
     leagueInfos: LeagueConfigInfo[],
     oddsProviders: string[],
-    lastPolledMap: LastPolledArray,
+    lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
     maxImpliedPercentageDifference: number
 ): OddsWithLeagueInfo => {
@@ -219,7 +219,7 @@ export const checkOddsFromBookmakersForChildMarkets = (
             );
 
             const isValidLastPolled = isLastPolledForBookmakersValid(
-                lastPolledMap,
+                lastPolledData,
                 maxAllowedProviderDataStaleDelay,
                 primaryBookmaker,
                 secondaryBookmaker
@@ -281,12 +281,12 @@ export const getPrimaryAndSecondaryBookmakerForTypeId = (
 };
 
 export const isLastPolledForBookmakersValid = (
-    lastPolledMap: LastPolledArray,
+    lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
     primaryBookmaker: string,
     secondaryBookmaker?: string
 ): boolean => {
-    const lastPolledTimePrimary = lastPolledMap.find(
+    const lastPolledTimePrimary = lastPolledData.find(
         (entry) => entry.sportsbook.toLowerCase() === primaryBookmaker.toLowerCase()
     )?.timestamp;
     if (typeof lastPolledTimePrimary !== 'number') {
@@ -295,7 +295,7 @@ export const isLastPolledForBookmakersValid = (
 
     const now = new Date();
     if (secondaryBookmaker) {
-        const lastPolledTimeSecondary = lastPolledMap.find(
+        const lastPolledTimeSecondary = lastPolledData.find(
             (entry) => entry.sportsbook.toLowerCase() === secondaryBookmaker.toLowerCase()
         )?.timestamp;
 

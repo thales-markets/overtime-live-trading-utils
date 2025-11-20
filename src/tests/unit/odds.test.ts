@@ -10,9 +10,9 @@ import {
     MockZeroOdds,
 } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
-import { getLastPolledMapForBookmakers, MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST } from '../utils/helper';
+import { getLastPolledDataForBookmakers, MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST } from '../utils/helper';
 
-const lastPolledMap = getLastPolledMapForBookmakers();
+const lastPolledData = getLastPolledDataForBookmakers();
 
 describe('Odds', () => {
     it('Should return odds for moneyline', () => {
@@ -27,7 +27,7 @@ describe('Odds', () => {
             undefined,
             MAX_IMPLIED_PERCENTAGE_DIFF,
             LeagueMocks.leagueInfoOnlyParent,
-            lastPolledMap,
+            lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
@@ -50,7 +50,7 @@ describe('Odds', () => {
             undefined,
             MAX_IMPLIED_PERCENTAGE_DIFF,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
-            lastPolledMap,
+            lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
@@ -75,7 +75,7 @@ describe('Odds', () => {
             undefined,
             MAX_IMPLIED_PERCENTAGE_DIFF,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
-            lastPolledMap,
+            lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
@@ -95,7 +95,7 @@ describe('Odds', () => {
             undefined,
             MAX_IMPLIED_PERCENTAGE_DIFF,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
-            lastPolledMap,
+            lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 

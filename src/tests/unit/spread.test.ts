@@ -5,9 +5,9 @@ import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
 import { LeagueMocks } from '../mock/MockLeagueMap';
 import { MockAfterSpreadZeroOdds1, MockOnlyMoneylineFavorite, MockOpticSoccer } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
-import { getLastPolledMapForBookmakers, MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST } from '../utils/helper';
+import { getLastPolledDataForBookmakers, MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST } from '../utils/helper';
 
-const lastPolledMap = getLastPolledMapForBookmakers();
+const lastPolledData = getLastPolledDataForBookmakers();
 
 describe('Spread configuration', () => {
     it('Should return zero odds for quotes that sum up total probability above 1', () => {
@@ -22,7 +22,7 @@ describe('Spread configuration', () => {
             undefined,
             MAX_IMPLIED_PERCENTAGE_DIFF,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
-            lastPolledMap,
+            lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
@@ -49,7 +49,7 @@ describe('Spread configuration', () => {
                     undefined,
                     MAX_IMPLIED_PERCENTAGE_DIFF,
                     LeagueMocks.leagueInfoOnlyParent,
-                    lastPolledMap,
+                    lastPolledData,
                     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
                 )
             )
@@ -66,7 +66,7 @@ describe('Spread configuration', () => {
                     undefined,
                     MAX_IMPLIED_PERCENTAGE_DIFF,
                     LeagueMocks.leagueInfoOnlyParentWithSpreadAdded,
-                    lastPolledMap,
+                    lastPolledData,
                     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
                 )
             )
@@ -103,7 +103,7 @@ describe('Spread configuration', () => {
                     undefined,
                     MAX_IMPLIED_PERCENTAGE_DIFF,
                     LeagueMocks.leagueInfoOnlyParent,
-                    lastPolledMap,
+                    lastPolledData,
                     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
                 )
             )
@@ -120,7 +120,7 @@ describe('Spread configuration', () => {
                     undefined,
                     MAX_IMPLIED_PERCENTAGE_DIFF,
                     LeagueMocks.leagueInfoOnlyParentWithSpreadAdded,
-                    lastPolledMap,
+                    lastPolledData,
                     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
                 )
             )

@@ -10,9 +10,9 @@ import {
     MockOnlyMoneylineWithDifferentSportsbook,
 } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
-import { getLastPolledMapForBookmakers, MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST } from '../utils/helper';
+import { getLastPolledDataForBookmakers, MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST } from '../utils/helper';
 
-const lastPolledMap = getLastPolledMapForBookmakers();
+const lastPolledData = getLastPolledDataForBookmakers();
 
 describe('Bookmakers', () => {
     it('Should return zero odds for moneyline when one of the bookmakers has no odds', () => {
@@ -27,7 +27,7 @@ describe('Bookmakers', () => {
             undefined,
             MAX_IMPLIED_PERCENTAGE_DIFF,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
-            lastPolledMap,
+            lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
@@ -52,7 +52,7 @@ describe('Bookmakers', () => {
             undefined,
             5,
             LeagueMocks.leagueInfoOnlyParent,
-            lastPolledMap,
+            lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
@@ -77,7 +77,7 @@ describe('Bookmakers', () => {
             undefined,
             MAX_IMPLIED_PERCENTAGE_DIFF,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
-            lastPolledMap,
+            lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
@@ -102,7 +102,7 @@ describe('Bookmakers', () => {
             undefined,
             MAX_IMPLIED_PERCENTAGE_DIFF,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
-            lastPolledMap,
+            lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
@@ -121,7 +121,7 @@ describe('Bookmakers', () => {
             undefined,
             MAX_IMPLIED_PERCENTAGE_DIFF,
             LeagueMocks.leaguInfoDifferentPrimaryBookmaker,
-            lastPolledMap,
+            lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
@@ -140,7 +140,7 @@ describe('Bookmakers', () => {
             undefined,
             MAX_IMPLIED_PERCENTAGE_DIFF,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
-            lastPolledMap,
+            lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
         );
 
