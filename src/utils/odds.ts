@@ -131,7 +131,7 @@ export const getParentOdds = (
     maxPercentageDiffBetwenOdds: number,
     leagueInfo: LeagueConfigInfo[],
     lastPolledMap: LastPolledArray,
-    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY: number
+    maxAllowedProviderDataStaleDelay: number
 ) => {
     const commonData = { homeTeam: oddsApiObject.homeTeam, awayTeam: oddsApiObject.awayTeam };
 
@@ -143,7 +143,7 @@ export const getParentOdds = (
 
     const isValidLastPolled = isLastPolledForBookmakersValid(
         lastPolledMap,
-        MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY,
+        maxAllowedProviderDataStaleDelay,
         primaryBookmaker,
         secondaryBookmaker
     );
@@ -213,8 +213,8 @@ export const createChildMarkets: (
     liveOddsProviders: any,
     defaultSpreadForLiveMarkets: any,
     leagueMap: any,
-    lastPolledMap: LastPolledArray,
-    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY: number
+    lastPolledData: LastPolledArray,
+    maxAllowedProviderDataStaleDelay: number
 ) => ChildMarket[] = (
     apiResponseWithOdds,
     spreadDataForSport,
@@ -222,8 +222,8 @@ export const createChildMarkets: (
     liveOddsProviders,
     defaultSpreadForLiveMarkets,
     leagueMap,
-    lastPolledMap,
-    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY
+    lastPolledData,
+    maxAllowedProviderDataStaleDelay
 ) => {
     const [spreadOdds, totalOdds, moneylineOdds, correctScoreOdds, doubleChanceOdds, ggOdds, childMarkets]: any[] = [
         [],
@@ -246,8 +246,8 @@ export const createChildMarkets: (
             allChildOdds,
             leagueInfo,
             liveOddsProviders,
-            lastPolledMap,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY
+            lastPolledData,
+            maxAllowedProviderDataStaleDelay
         );
         checkedChildOdds.forEach((odd) => {
             if (odd.type === 'Total') {

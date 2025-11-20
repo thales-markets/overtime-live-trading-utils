@@ -29,8 +29,8 @@ export const processMarket = (
     defaultSpreadForLiveMarkets: any,
     maxPercentageDiffBetwenOdds: any,
     leagueMap: any,
-    lastPolledMap: LastPolledArray,
-    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY: number
+    lastPolledData: LastPolledArray,
+    maxAllowedProviderDataStaleDelay: number
 ) => {
     const sportSpreadData = spreadData.filter((data: any) => data.sportId === String(market.leagueId));
     const leagueInfo = getLeagueInfo(market.leagueId, leagueMap);
@@ -44,8 +44,8 @@ export const processMarket = (
         defaultSpreadForLiveMarkets,
         maxPercentageDiffBetwenOdds,
         leagueInfo,
-        lastPolledMap,
-        MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY
+        lastPolledData,
+        maxAllowedProviderDataStaleDelay
     );
 
     const oddsAfterSpread = adjustAddedSpread(moneylineOdds.odds, leagueInfo, market.typeId);
@@ -87,8 +87,8 @@ export const processMarket = (
         liveOddsProviders,
         defaultSpreadForLiveMarkets,
         leagueMap,
-        lastPolledMap,
-        MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY
+        lastPolledData,
+        maxAllowedProviderDataStaleDelay
     );
 
     const packedChildMarkets = childMarkets.map((childMarket: any) => {
