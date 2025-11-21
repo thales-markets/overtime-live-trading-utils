@@ -32,7 +32,7 @@ export const getBookmakersArray = (
 };
 
 export const getBookmakersFromLeagueConfig = (sportId: string | number, leagueInfoArray: LeagueConfigInfo[]) => {
-    const uniqueBookmakers = [];
+    const uniqueBookmakers: string[] = [];
 
     for (const leagueInfo of leagueInfoArray) {
         if (Number(leagueInfo.sportId) === Number(sportId) && leagueInfo.enabled === 'true') {
@@ -204,7 +204,7 @@ export const checkOddsFromBookmakersForChildMarkets = (
     odds: any,
     leagueInfos: LeagueConfigInfo[],
     oddsProviders: string[],
-    lastPolledData: LastPolledArray,
+    lastPolledMap: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
     maxImpliedPercentageDifference: number
 ): OddsWithLeagueInfo => {
@@ -219,7 +219,7 @@ export const checkOddsFromBookmakersForChildMarkets = (
             );
 
             const isValidLastPolled = isLastPolledForBookmakersValid(
-                lastPolledData,
+                lastPolledMap,
                 maxAllowedProviderDataStaleDelay,
                 primaryBookmaker,
                 secondaryBookmaker
@@ -281,12 +281,12 @@ export const getPrimaryAndSecondaryBookmakerForTypeId = (
 };
 
 export const isLastPolledForBookmakersValid = (
-    lastPolledData: LastPolledArray,
+    lastPolledMap: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
     primaryBookmaker: string,
     secondaryBookmaker?: string
 ): boolean => {
-    const lastPolledTimePrimary = lastPolledData.find(
+    const lastPolledTimePrimary = lastPolledMap.find(
         (entry) => entry.sportsbook.toLowerCase() === primaryBookmaker.toLowerCase()
     )?.timestamp;
     if (typeof lastPolledTimePrimary !== 'number') {
@@ -295,7 +295,7 @@ export const isLastPolledForBookmakersValid = (
 
     const now = new Date();
     if (secondaryBookmaker) {
-        const lastPolledTimeSecondary = lastPolledData.find(
+        const lastPolledTimeSecondary = lastPolledMap.find(
             (entry) => entry.sportsbook.toLowerCase() === secondaryBookmaker.toLowerCase()
         )?.timestamp;
 
