@@ -204,7 +204,7 @@ export const checkOddsFromBookmakersForChildMarkets = (
     odds: any,
     leagueInfos: LeagueConfigInfo[],
     oddsProviders: string[],
-    lastPolledMap: LastPolledArray,
+    lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
     maxImpliedPercentageDifference: number
 ): OddsWithLeagueInfo => {
@@ -219,7 +219,7 @@ export const checkOddsFromBookmakersForChildMarkets = (
             );
 
             const isValidLastPolled = isLastPolledForBookmakersValid(
-                lastPolledMap,
+                lastPolledData,
                 maxAllowedProviderDataStaleDelay,
                 bookmakers
             );
