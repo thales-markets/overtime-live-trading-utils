@@ -10,6 +10,16 @@ const baseLeagueInfo: LeagueConfigInfo = {
     minOdds: 0.75,
 };
 
+const baseLeagueInfoNba: LeagueConfigInfo = {
+    sportId: 4,
+    enabled: 'true',
+    marketName: 'Moneyline',
+    typeId: 0,
+    type: 'moneyline',
+    maxOdds: 0.25,
+    minOdds: 0.75,
+};
+
 const spreadMock: LeagueConfigInfo = {
     sportId: 9806,
     enabled: 'true',
@@ -121,6 +131,20 @@ const teamTotal: LeagueConfigInfo = {
     primaryBookmaker: 'draftkings',
 };
 
+const PlayerAssist: LeagueConfigInfo[] = [
+    baseLeagueInfoNba,
+    {
+        sportId: 4,
+        enabled: 'true',
+        marketName: 'Player Assists',
+        typeId: 11039,
+        type: 'Total',
+        maxOdds: 0.25,
+        minOdds: 0.75,
+        primaryBookmaker: 'superbet',
+    },
+];
+
 const teamTotal2: LeagueConfigInfo = {
     sportId: 9806,
     enabled: 'true',
@@ -197,4 +221,5 @@ export const LeagueMocks = {
     leagueInfoEnabledAll,
     leagueInfoDisabledCorrectScoreAndDoubleChance,
     leaguInfoDifferentPrimaryBookmaker,
+    PlayerAssist,
 };

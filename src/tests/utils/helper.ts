@@ -4,6 +4,7 @@ export const getLastPolledDataForBookmakers = () => {
     const lastPolledData: LastPolledArray = [];
     lastPolledData.push({ sportsbook: 'draftkings', timestamp: Date.now() });
     lastPolledData.push({ sportsbook: 'bovada', timestamp: Date.now() });
+    lastPolledData.push({ sportsbook: 'superbet', timestamp: Date.now() });
     return lastPolledData;
 };
 
