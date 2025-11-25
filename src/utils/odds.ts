@@ -135,7 +135,7 @@ export const getParentOdds = (
 ) => {
     const commonData = { homeTeam: oddsApiObject.homeTeam, awayTeam: oddsApiObject.awayTeam };
 
-    const { primaryBookmaker, secondaryBookmaker } = getPrimaryAndSecondaryBookmakerForTypeId(
+    const bookmakers = getPrimaryAndSecondaryBookmakerForTypeId(
         liveOddsProviders,
         leagueInfo,
         0 // typeId for moneyline
@@ -144,8 +144,7 @@ export const getParentOdds = (
     const isValidLastPolled = isLastPolledForBookmakersValid(
         lastPolledData,
         maxAllowedProviderDataStaleDelay,
-        primaryBookmaker,
-        secondaryBookmaker
+        bookmakers
     );
 
     if (!isValidLastPolled) {
@@ -159,7 +158,7 @@ export const getParentOdds = (
     const moneylineOddsMap = filterOddsByMarketNameTeamNameBookmaker(
         oddsApiObject.odds,
         MoneylineTypes.MONEYLINE,
-        liveOddsProviders,
+        bookmakers,
         commonData,
         isTwoPositionalSport
     );
@@ -167,7 +166,7 @@ export const getParentOdds = (
     // CHECKING AND COMPARING ODDS FOR THE GIVEN BOOKMAKERS
     const oddsObject = checkOddsFromBookmakers(
         moneylineOddsMap,
-        liveOddsProviders,
+        bookmakers,
         isTwoPositionalSport,
         maxPercentageDiffBetwenOdds,
         MIN_ODDS_FOR_DIFF_CHECKING

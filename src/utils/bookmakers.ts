@@ -72,7 +72,7 @@ export const getBookmakersForLeague = (
 
 export const checkOddsFromBookmakers = (
     oddsMap: Map<string, any>,
-    arrayOfBookmakers: string[],
+    arrayOfBookmakers: any[],
     isTwoPositionalSport: boolean,
     maxImpliedPercentageDifference: number,
     minOddsForDiffChecking: number
@@ -212,7 +212,7 @@ export const checkOddsFromBookmakersForChildMarkets = (
         const [sportsBookName, marketName, points, selection, selectionLine] = key.split('_');
         const info = leagueInfos.find((leagueInfo) => leagueInfo.marketName.toLowerCase() === marketName.toLowerCase());
         if (info) {
-            const { primaryBookmaker, secondaryBookmaker } = getPrimaryAndSecondaryBookmakerForTypeId(
+            const bookmakers = getPrimaryAndSecondaryBookmakerForTypeId(
                 oddsProviders,
                 leagueInfos,
                 Number(info.typeId)
@@ -221,11 +221,12 @@ export const checkOddsFromBookmakersForChildMarkets = (
             const isValidLastPolled = isLastPolledForBookmakersValid(
                 lastPolledData,
                 maxAllowedProviderDataStaleDelay,
-                primaryBookmaker,
-                secondaryBookmaker
+                bookmakers
             );
 
             if (isValidLastPolled) {
+                const primaryBookmaker = bookmakers[0];
+                const secondaryBookmaker = bookmakers[1];
                 if (primaryBookmaker && !secondaryBookmaker) {
                     if (sportsBookName.toLowerCase() === primaryBookmaker.toLowerCase()) {
                         acc.push(value);
@@ -267,7 +268,7 @@ export const getPrimaryAndSecondaryBookmakerForTypeId = (
     defaultProviders: string[],
     leagueInfos: LeagueConfigInfo[], // LeagueConfigInfo for specific sport, not the entire list from csv
     typeId: number
-): { primaryBookmaker: string; secondaryBookmaker: string | undefined } => {
+): string[] => {
     const info = leagueInfos.find((leagueInfo) => Number(leagueInfo.typeId) === typeId);
     let primaryBookmaker = defaultProviders[0].toLowerCase();
     let secondaryBookmaker = defaultProviders[1] ? defaultProviders[1].toLowerCase() : undefined;
@@ -277,43 +278,29 @@ export const getPrimaryAndSecondaryBookmakerForTypeId = (
             secondaryBookmaker = info.secondaryBookmaker ? info.secondaryBookmaker.toLowerCase() : undefined;
         }
     }
-    return { primaryBookmaker, secondaryBookmaker };
+    return secondaryBookmaker ? [primaryBookmaker, secondaryBookmaker] : [primaryBookmaker];
 };
 
 export const isLastPolledForBookmakersValid = (
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
-    primaryBookmaker: string,
-    secondaryBookmaker?: string
+    bookmakers: string[]
 ): boolean => {
-    const lastPolledTimePrimary = lastPolledData.find(
-        (entry) => entry.sportsbook.toLowerCase() === primaryBookmaker.toLowerCase()
-    )?.timestamp;
-    if (typeof lastPolledTimePrimary !== 'number') {
-        return false;
-    }
-
     const now = new Date();
-    if (secondaryBookmaker) {
-        const lastPolledTimeSecondary = lastPolledData.find(
-            (entry) => entry.sportsbook.toLowerCase() === secondaryBookmaker.toLowerCase()
+    const isNotValid = bookmakers.some((bookmakerId) => {
+        const lastPolledTime = lastPolledData.find(
+            (entry) => entry.sportsbook.toLowerCase() === bookmakerId.toLowerCase()
         )?.timestamp;
-
-        if (typeof lastPolledTimeSecondary !== 'number') {
-            return false;
+        if (typeof lastPolledTime !== 'number') {
+            return true;
         }
-
-        const oddsDate = new Date(lastPolledTimeSecondary * 1000);
+        const oddsDate = new Date(lastPolledTime * 1000);
         const timeDiff = now.getTime() - oddsDate.getTime();
         if (timeDiff > maxAllowedProviderDataStaleDelay) {
-            return false;
+            return true;
         }
-    }
-
-    const oddsDate = new Date(lastPolledTimePrimary * 1000);
-    const timeDiff = now.getTime() - oddsDate.getTime();
-
-    return timeDiff <= maxAllowedProviderDataStaleDelay;
+    });
+    return !isNotValid;
 };
 
 export const calculateImpliedOddsDifference = (impliedOddsA: number, impliedOddsB: number): number => {
