@@ -32,7 +32,7 @@ export const getBookmakersArray = (
 };
 
 export const getBookmakersFromLeagueConfig = (sportId: string | number, leagueInfoArray: LeagueConfigInfo[]) => {
-    const uniqueBookmakers = [];
+    const uniqueBookmakers: string[] = [];
 
     for (const leagueInfo of leagueInfoArray) {
         if (Number(leagueInfo.sportId) === Number(sportId) && leagueInfo.enabled === 'true') {
@@ -204,7 +204,7 @@ export const checkOddsFromBookmakersForChildMarkets = (
     odds: any,
     leagueInfos: LeagueConfigInfo[],
     oddsProviders: string[],
-    lastPolledData: LastPolledArray,
+    lastPolledMap: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
     maxImpliedPercentageDifference: number
 ): OddsWithLeagueInfo => {
@@ -219,7 +219,7 @@ export const checkOddsFromBookmakersForChildMarkets = (
             );
 
             const isValidLastPolled = isLastPolledForBookmakersValid(
-                lastPolledData,
+                lastPolledMap,
                 maxAllowedProviderDataStaleDelay,
                 bookmakers
             );
