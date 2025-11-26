@@ -72,7 +72,7 @@ export const getBookmakersForLeague = (
 
 export const checkOddsFromBookmakers = (
     oddsMap: Map<string, any>,
-    arrayOfBookmakers: any[],
+    arrayOfBookmakers: string[],
     isTwoPositionalSport: boolean,
     maxImpliedPercentageDifference: number,
     minOddsForDiffChecking: number
