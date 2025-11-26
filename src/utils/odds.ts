@@ -141,9 +141,6 @@ export const getParentOdds = (
         0 // typeId for moneyline
     );
 
-    console.log('defaultProviders', liveOddsProviders);
-    console.log('bookmakers for moneyline', bookmakers);
-
     const isValidLastPolled = isLastPolledForBookmakersValid(
         lastPolledData,
         maxAllowedProviderDataStaleDelay,
