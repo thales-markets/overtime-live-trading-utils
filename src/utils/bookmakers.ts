@@ -299,6 +299,7 @@ export const isLastPolledForBookmakersValid = (
         if (timeDiff > maxAllowedProviderDataStaleDelay) {
             return true;
         }
+        return false;
     });
     return !isNotValid;
 };
