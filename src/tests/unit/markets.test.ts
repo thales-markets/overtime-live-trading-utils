@@ -1,9 +1,13 @@
+import { MAX_IMPLIED_PERCENTAGE_DIFF } from '../../constants/common';
 import { NO_MARKETS_FOR_LEAGUE_ID } from '../../constants/errors';
 import { processMarket } from '../../utils/markets';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
 import { LeagueMocks } from '../mock/MockLeagueMap';
 import { MockOnlyMoneyline, MockOpticSoccer } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
+import { getLastPolledDataForBookmakers, MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST } from '../utils/helper';
+
+const lastPolledData = getLastPolledDataForBookmakers();
 
 describe('Markets', () => {
     describe('LeagueMap configuration', () => {
@@ -18,8 +22,10 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                undefined,
-                LeagueMocks.leagueInfoOnlyParent
+                MAX_IMPLIED_PERCENTAGE_DIFF,
+                LeagueMocks.leagueInfoOnlyParent,
+                lastPolledData,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
             );
 
             expect(market.childMarkets).toHaveLength(0);
@@ -35,8 +41,10 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                undefined,
-                LeagueMocks.leagueInfoMockDisabledChilds
+                MAX_IMPLIED_PERCENTAGE_DIFF,
+                LeagueMocks.leagueInfoMockDisabledChilds,
+                lastPolledData,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
             );
 
             expect(market.childMarkets).toHaveLength(0);
@@ -52,8 +60,10 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                undefined,
-                LeagueMocks.leagueInfoEnabledSpreadDisabledTotals
+                MAX_IMPLIED_PERCENTAGE_DIFF,
+                LeagueMocks.leagueInfoEnabledSpreadDisabledTotals,
+                lastPolledData,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
             );
 
             const containsSpread = market.childMarkets.some((child: any) => child.type === 'spread');
@@ -73,8 +83,10 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                undefined,
-                LeagueMocks.leagueInfoEnabledSpeadAndTotals
+                MAX_IMPLIED_PERCENTAGE_DIFF,
+                LeagueMocks.leagueInfoEnabledSpeadAndTotals,
+                lastPolledData,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
             );
 
             const containsSpread = market.childMarkets.some((child: any) => child.type === 'spread');
@@ -94,8 +106,10 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                undefined,
-                LeagueMocks.leagueInfoEnabledAll
+                MAX_IMPLIED_PERCENTAGE_DIFF,
+                LeagueMocks.leagueInfoEnabledAll,
+                lastPolledData,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
             );
 
             const containsSpread = market.childMarkets.some((child: any) => child.type === 'spread');
@@ -117,6 +131,9 @@ describe('Markets', () => {
                 (child: any) => child.type === 'willThereBeOvertime'
             );
 
+            const containsTeamTotalHome = market.childMarkets.some((child: any) => child.type === 'totalHomeTeam');
+            const containsTeamTotalAway = market.childMarkets.some((child: any) => child.type === 'totalAwayTeam');
+
             expect(containsChildGG).toBe(true);
             expect(containsChildGG1stHalf).toBe(true);
             expect(containsChildGG2ndHalf).toBe(true);
@@ -128,6 +145,8 @@ describe('Markets', () => {
             expect(containsChildGG).toBe(true);
             expect(containsChildDrawNoBet).toBe(true);
             expect(containsWillThereBeOvertime).toBe(true);
+            expect(containsTeamTotalHome).toBe(true);
+            expect(containsTeamTotalAway).toBe(true);
         });
 
         it('Should return warning message that there are is no configuration available in league map csv', () => {
@@ -142,8 +161,10 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                undefined,
-                LeagueMocks.leagueInfoOnlyParentDiffSportId
+                MAX_IMPLIED_PERCENTAGE_DIFF,
+                LeagueMocks.leagueInfoOnlyParentDiffSportId,
+                lastPolledData,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
             );
 
             expect(warnSpy).toHaveBeenCalled();

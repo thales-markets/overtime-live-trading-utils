@@ -10,6 +10,16 @@ const baseLeagueInfo: LeagueConfigInfo = {
     minOdds: 0.75,
 };
 
+const baseLeagueInfoNba: LeagueConfigInfo = {
+    sportId: 4,
+    enabled: 'true',
+    marketName: 'Moneyline',
+    typeId: 0,
+    type: 'moneyline',
+    maxOdds: 0.25,
+    minOdds: 0.75,
+};
+
 const spreadMock: LeagueConfigInfo = {
     sportId: 9806,
     enabled: 'true',
@@ -110,6 +120,42 @@ const willThereBeOvertime: LeagueConfigInfo = {
     minOdds: 0.99,
 };
 
+const teamTotal: LeagueConfigInfo = {
+    sportId: 9806,
+    enabled: 'true',
+    marketName: 'Team Total',
+    typeId: 10017,
+    type: 'Total',
+    maxOdds: 0.25,
+    minOdds: 0.75,
+    primaryBookmaker: 'draftkings',
+};
+
+const PlayerAssist: LeagueConfigInfo[] = [
+    baseLeagueInfoNba,
+    {
+        sportId: 4,
+        enabled: 'true',
+        marketName: 'Player Assists',
+        typeId: 11039,
+        type: 'Total',
+        maxOdds: 0.25,
+        minOdds: 0.75,
+        primaryBookmaker: 'superbet',
+    },
+];
+
+const teamTotal2: LeagueConfigInfo = {
+    sportId: 9806,
+    enabled: 'true',
+    marketName: 'Team Total',
+    typeId: 10018,
+    type: 'Total',
+    maxOdds: 0.25,
+    minOdds: 0.75,
+    primaryBookmaker: 'draftkings',
+};
+
 const baseDiffSportId: LeagueConfigInfo = {
     ...baseLeagueInfo,
     sportId: 4,
@@ -155,6 +201,13 @@ const leagueInfoEnabledAll: LeagueConfigInfo[] = [
     bothTeamsToScoreMock2ndHalf,
     drawNoBetMock,
     willThereBeOvertime,
+    teamTotal,
+    teamTotal2,
+];
+
+const leaguInfoDifferentPrimaryBookmaker: LeagueConfigInfo[] = [
+    baseLeagueInfo,
+    { ...spreadMock, primaryBookmaker: 'draftkings' },
 ];
 
 // Grouped Exports
@@ -167,4 +220,6 @@ export const LeagueMocks = {
     leagueInfoEnabledSpeadAndTotals,
     leagueInfoEnabledAll,
     leagueInfoDisabledCorrectScoreAndDoubleChance,
+    leaguInfoDifferentPrimaryBookmaker,
+    PlayerAssist,
 };

@@ -1,6 +1,6 @@
 {
     "name": "overtime-live-trading-utils",
-    "version": "2.1.44",
+    "version": "3.0.1",
     "description": "",
     "main": "main.js",
     "scripts": {
@@ -14,7 +14,7 @@
     "dependencies": {
         "@types/node": "^20.8.10",
         "oddslib": "^2.1.1",
-        "overtime-utils": "^0.1.44",
+        "overtime-utils": "^0.1.50",
         "react": "^17.0.1"
     },
     "devDependencies": {

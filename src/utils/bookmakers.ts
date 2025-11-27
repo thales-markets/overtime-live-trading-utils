@@ -1,12 +1,20 @@
 import * as oddslib from 'oddslib';
+import { MIN_ODDS_FOR_DIFF_CHECKING } from '../constants/common';
 import {
     DIFF_BETWEEN_BOOKMAKERS_MESSAGE,
     NO_MATCHING_BOOKMAKERS_MESSAGE,
     ZERO_ODDS_MESSAGE,
     ZERO_ODDS_MESSAGE_SINGLE_BOOKMAKER,
 } from '../constants/errors';
+import { BookmakersConfig } from '../types/bookmakers';
+import { OddsWithLeagueInfo } from '../types/odds';
+import { LastPolledArray, LeagueConfigInfo } from '../types/sports';
 
-export const getBookmakersArray = (bookmakersData: any[], sportId: any, backupLiveOddsProviders: string[]) => {
+export const getBookmakersArray = (
+    bookmakersData: BookmakersConfig[],
+    sportId: any,
+    backupLiveOddsProviders: string[]
+) => {
     const sportBookmakersData = bookmakersData.find((data) => Number(data.sportId) === Number(sportId));
     if (sportBookmakersData) {
         if (sportBookmakersData.primaryBookmaker == '') {
@@ -21,6 +29,45 @@ export const getBookmakersArray = (bookmakersData: any[], sportId: any, backupLi
         return bookmakersArray;
     }
     return backupLiveOddsProviders;
+};
+
+export const getBookmakersFromLeagueConfig = (sportId: string | number, leagueInfoArray: LeagueConfigInfo[]) => {
+    const uniqueBookmakers: string[] = [];
+
+    for (const leagueInfo of leagueInfoArray) {
+        if (Number(leagueInfo.sportId) === Number(sportId) && leagueInfo.enabled === 'true') {
+            const primary = leagueInfo.primaryBookmaker?.toLowerCase();
+            const secondary = leagueInfo.secondaryBookmaker?.toLowerCase();
+            if (primary) {
+                uniqueBookmakers.push(primary);
+            }
+            if (secondary && secondary !== primary) {
+                uniqueBookmakers.push(secondary);
+            }
+            break;
+        }
+    }
+
+    return uniqueBookmakers;
+};
+
+export const getBookmakersForLeague = (
+    sportId: string | number,
+    configPerMarket: LeagueConfigInfo[],
+    configPerLeague: BookmakersConfig[],
+    defaultBookmakers: string[],
+    maxNumOfBookmakers = 5
+) => {
+    // bookmakers defined per market for league
+    const bookmakersPerMarket = getBookmakersFromLeagueConfig(sportId, configPerMarket);
+    // bookmakers defined generally per league
+    const bookmakersPerLeague = getBookmakersArray(configPerLeague, sportId, defaultBookmakers);
+    // all unique bookmakers defined from both configs
+    const uniqueBookmakers = [...new Set([...bookmakersPerMarket, ...bookmakersPerLeague])];
+
+    const bookmakers = uniqueBookmakers.filter((s) => s.length).slice(0, maxNumOfBookmakers);
+
+    return bookmakers;
 };
 
 export const checkOddsFromBookmakers = (
@@ -151,6 +198,110 @@ export const checkOddsFromBookmakers = (
         awayOdds: awayOdd,
         drawOdds: isTwoPositionalSport ? 0 : drawOdd,
     };
+};
+
+export const checkOddsFromBookmakersForChildMarkets = (
+    odds: any,
+    leagueInfos: LeagueConfigInfo[],
+    oddsProviders: string[],
+    lastPolledData: LastPolledArray,
+    maxAllowedProviderDataStaleDelay: number,
+    maxImpliedPercentageDifference: number
+): OddsWithLeagueInfo => {
+    const formattedOdds = Object.entries(odds as any).reduce((acc: any, [key, value]: [string, any]) => {
+        const [sportsBookName, marketName, points, selection, selectionLine] = key.split('_');
+        const info = leagueInfos.find((leagueInfo) => leagueInfo.marketName.toLowerCase() === marketName.toLowerCase());
+        if (info) {
+            const bookmakers = getPrimaryAndSecondaryBookmakerForTypeId(
+                oddsProviders,
+                leagueInfos,
+                Number(info.typeId)
+            );
+
+            const isValidLastPolled = isLastPolledForBookmakersValid(
+                lastPolledData,
+                maxAllowedProviderDataStaleDelay,
+                bookmakers
+            );
+
+            if (isValidLastPolled) {
+                const primaryBookmaker = bookmakers[0];
+                const secondaryBookmaker = bookmakers[1];
+                if (primaryBookmaker && !secondaryBookmaker) {
+                    if (sportsBookName.toLowerCase() === primaryBookmaker.toLowerCase()) {
+                        acc.push(value);
+                    }
+                } else {
+                    if (sportsBookName.toLowerCase() === primaryBookmaker) {
+                        const secondaryBookmakerObject =
+                            odds[
+                                `${secondaryBookmaker}_${marketName.toLowerCase()}_${points}_${selection}_${selectionLine}`
+                            ];
+                        if (secondaryBookmakerObject) {
+                            const primaryOdds = oddslib.from('decimal', value.price).to('impliedProbability');
+                            const secondaryOdds = oddslib
+                                .from('decimal', secondaryBookmakerObject.price)
+                                .to('impliedProbability');
+                            if (
+                                primaryOdds >= MIN_ODDS_FOR_DIFF_CHECKING &&
+                                secondaryOdds >= MIN_ODDS_FOR_DIFF_CHECKING
+                            ) {
+                                const homeOddsDifference = calculateImpliedOddsDifference(primaryOdds, secondaryOdds);
+                                if (Number(homeOddsDifference) <= Number(maxImpliedPercentageDifference)) {
+                                    acc.push(value);
+                                }
+                            } else {
+                                acc.push(value);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return acc;
+    }, []);
+    return formattedOdds;
+};
+
+export const getPrimaryAndSecondaryBookmakerForTypeId = (
+    defaultProviders: string[],
+    leagueInfos: LeagueConfigInfo[], // LeagueConfigInfo for specific sport, not the entire list from csv
+    typeId: number
+): string[] => {
+    const info = leagueInfos.find((leagueInfo) => Number(leagueInfo.typeId) === typeId);
+    let primaryBookmaker = defaultProviders[0].toLowerCase();
+    let secondaryBookmaker = defaultProviders[1] ? defaultProviders[1].toLowerCase() : undefined;
+    if (info) {
+        if (info.primaryBookmaker) {
+            primaryBookmaker = info.primaryBookmaker.toLowerCase();
+            secondaryBookmaker = info.secondaryBookmaker ? info.secondaryBookmaker.toLowerCase() : undefined;
+        }
+    }
+    return secondaryBookmaker ? [primaryBookmaker, secondaryBookmaker] : [primaryBookmaker];
+};
+
+export const isLastPolledForBookmakersValid = (
+    lastPolledData: LastPolledArray,
+    maxAllowedProviderDataStaleDelay: number,
+    bookmakers: string[]
+): boolean => {
+    const now = new Date();
+    const isNotValid = bookmakers.some((bookmakerId) => {
+        const lastPolledTime = lastPolledData.find(
+            (entry) => entry.sportsbook.toLowerCase() === bookmakerId.toLowerCase()
+        )?.timestamp;
+        if (typeof lastPolledTime !== 'number') {
+            return true;
+        }
+        const oddsDate = new Date(lastPolledTime * 1000);
+        const timeDiff = now.getTime() - oddsDate.getTime();
+        if (timeDiff > maxAllowedProviderDataStaleDelay) {
+            return true;
+        }
+        return false;
+    });
+    return !isNotValid;
 };
 
 export const calculateImpliedOddsDifference = (impliedOddsA: number, impliedOddsB: number): number => {
