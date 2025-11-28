@@ -30,7 +30,8 @@ export const processMarket = (
     maxPercentageDiffBetwenOdds: number,
     leagueMap: any,
     lastPolledData: LastPolledArray,
-    maxAllowedProviderDataStaleDelay: number
+    maxAllowedProviderDataStaleDelay: number,
+    playersMap: Map<string, number>
 ) => {
     const sportSpreadData = spreadData.filter((data: any) => data.sportId === String(market.leagueId));
     const leagueInfo = getLeagueInfo(market.leagueId, leagueMap);
@@ -89,7 +90,8 @@ export const processMarket = (
         leagueMap,
         lastPolledData,
         maxAllowedProviderDataStaleDelay,
-        maxPercentageDiffBetwenOdds
+        maxPercentageDiffBetwenOdds,
+        playersMap
     );
 
     const packedChildMarkets = childMarkets.map((childMarket: any) => {

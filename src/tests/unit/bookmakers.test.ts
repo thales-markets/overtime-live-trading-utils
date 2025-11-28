@@ -10,9 +10,14 @@ import {
     MockOnlyMoneylineWithDifferentSportsbook,
 } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
-import { getLastPolledDataForBookmakers, MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST } from '../utils/helper';
+import {
+    getLastPolledDataForBookmakers,
+    getPlayersMap,
+    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+} from '../utils/helper';
 
 const lastPolledData = getLastPolledDataForBookmakers();
+const playersMap = getPlayersMap();
 
 describe('Bookmakers', () => {
     it('Should return zero odds for moneyline when one of the bookmakers has no odds', () => {
@@ -28,7 +33,8 @@ describe('Bookmakers', () => {
             MAX_IMPLIED_PERCENTAGE_DIFF,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
         );
 
         const hasOdds = market.odds.some(
@@ -53,7 +59,8 @@ describe('Bookmakers', () => {
             5,
             LeagueMocks.leagueInfoOnlyParent,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
         );
 
         const hasOdds = market.odds.some(
@@ -78,7 +85,8 @@ describe('Bookmakers', () => {
             MAX_IMPLIED_PERCENTAGE_DIFF,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
         );
 
         const hasOdds = market.odds.some(
@@ -103,7 +111,8 @@ describe('Bookmakers', () => {
             MAX_IMPLIED_PERCENTAGE_DIFF,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
         );
 
         expect(market.childMarkets.length).toBe(2);
@@ -122,7 +131,8 @@ describe('Bookmakers', () => {
             MAX_IMPLIED_PERCENTAGE_DIFF,
             LeagueMocks.leaguInfoDifferentPrimaryBookmaker,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
         );
 
         expect(market.childMarkets.length).toBe(3);
@@ -141,7 +151,8 @@ describe('Bookmakers', () => {
             MAX_IMPLIED_PERCENTAGE_DIFF,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
         );
 
         expect(market.childMarkets.length).toBe(1);
