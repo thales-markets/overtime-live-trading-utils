@@ -286,10 +286,13 @@ export const createChildMarkets: (
         );
 
         homeAwayOddsWithSpreadAdjusted.forEach((data) => {
-            let playerProps = undefined;
+            let playerProps = {
+                playerId: 0,
+                playerName: '',
+            };
             if (data.playerProps) {
                 playerProps = {
-                    playerId: playersMap.get(data.playerProps.playerId.toString()), // convert from opticOdds playerId to our internal playerId
+                    playerId: playersMap.get(data.playerProps.playerId.toString()) || 0, // convert from opticOdds playerId to our internal playerId
                     playerName: data.playerProps.playerName,
                 };
             }
