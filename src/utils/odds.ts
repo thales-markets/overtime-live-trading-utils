@@ -286,24 +286,29 @@ export const createChildMarkets: (
         );
 
         homeAwayOddsWithSpreadAdjusted.forEach((data) => {
-            let playerProps = {
-                playerId: 0,
-                playerName: '',
-            };
-            if (data.playerProps) {
-                playerProps = {
-                    playerId: playersMap.get(data.playerProps.playerId.toString()) || 0, // convert from opticOdds playerId to our internal playerId
-                    playerName: data.playerProps.playerName,
-                };
-            }
-            const childMarket = {
+            let childMarket = {
                 leagueId: Number(data.sportId),
                 typeId: Number(data.typeId),
                 type: MarketTypeMap[data.typeId as MarketType]?.key || '',
                 line: Number(data.line || 0),
                 odds: data.odds,
-                playerProps,
+                playerProps: {
+                    playerId: 0,
+                    playerName: '',
+                },
+                isPlayerPropsMarket: false,
             };
+            if (data.playerProps) {
+                childMarket = {
+                    ...childMarket,
+                    playerProps: {
+                        playerId: playersMap.get(data.playerProps.playerId.toString()) || 0, // convert from opticOdds playerId to our internal playerId
+                        playerName: data.playerProps.playerName,
+                    },
+                    isPlayerPropsMarket: true,
+                };
+            }
+
             const leagueInfoByTypeId = leagueInfo.find((league) => Number(league.typeId) === Number(data.typeId));
             const minOdds = leagueInfoByTypeId?.minOdds; // minimum odds configured for child market (e.g. 0.95 implied probability)
             const maxOdds = leagueInfoByTypeId?.maxOdds; // maximum odds configured for child market (e.g. 0.05 implied probability)
