@@ -32,22 +32,12 @@ export const getBookmakersArray = (
 };
 
 export const getBookmakersFromLeagueConfig = (sportId: string | number, leagueInfoArray: LeagueConfigInfo[]) => {
-    const bookmakersSet = new Set<string>();
+    const leagueInfoArrayFiltered: string[] = leagueInfoArray
+        .filter((leagueInfo) => Number(leagueInfo.sportId) === Number(sportId) && leagueInfo.enabled === 'true')
+        .flatMap((item) => [item.primaryBookmaker?.toLowerCase(), item.secondaryBookmaker?.toLowerCase()])
+        .filter((item): item is string => !!item && item.length > 0);
 
-    for (const leagueInfo of leagueInfoArray) {
-        if (Number(leagueInfo.sportId) === Number(sportId) && leagueInfo.enabled === 'true') {
-            const primary = leagueInfo.primaryBookmaker?.toLowerCase();
-            const secondary = leagueInfo.secondaryBookmaker?.toLowerCase();
-            if (primary) {
-                bookmakersSet.add(primary);
-            }
-            if (secondary) {
-                bookmakersSet.add(secondary);
-            }
-        }
-    }
-
-    return [...bookmakersSet];
+    return [...new Set(leagueInfoArrayFiltered)];
 };
 
 export const getBookmakersForLeague = (
