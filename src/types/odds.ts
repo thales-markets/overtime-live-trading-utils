@@ -76,3 +76,8 @@ export type ScoresObject = {
 };
 
 export type HomeAwayTeams = { homeTeam: string; awayTeam: string };
+
+export type Anchor = {
+    our: number;
+    otherMin: number;
+};

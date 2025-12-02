@@ -1,9 +1,9 @@
 import * as oddslib from 'oddslib';
 import { MarketType, MarketTypeMap } from 'overtime-utils';
-import { DRAW, MIN_ODDS_FOR_DIFF_CHECKING, MONEYLINE_TYPE_ID, ZERO } from '../constants/common';
+import { DRAW, MONEYLINE_TYPE_ID, ZERO } from '../constants/common';
 import { LAST_POLLED_TOO_OLD, NO_MARKETS_FOR_LEAGUE_ID } from '../constants/errors';
 import { MoneylineTypes } from '../enums/sports';
-import { HomeAwayTeams, Odds, OddsObject } from '../types/odds';
+import { Anchor, HomeAwayTeams, Odds, OddsObject } from '../types/odds';
 import { ChildMarket, LastPolledArray, LeagueConfigInfo } from '../types/sports';
 import {
     checkOddsFromBookmakers,
@@ -128,7 +128,7 @@ export const getParentOdds = (
     oddsApiObject: OddsObject,
     sportId: string,
     defaultSpreadForLiveMarkets: number,
-    maxPercentageDiffBetwenOdds: number,
+    anchors: Anchor[],
     leagueInfo: LeagueConfigInfo[],
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number
@@ -164,13 +164,7 @@ export const getParentOdds = (
     );
 
     // CHECKING AND COMPARING ODDS FOR THE GIVEN BOOKMAKERS
-    const oddsObject = checkOddsFromBookmakers(
-        moneylineOddsMap,
-        bookmakers,
-        isTwoPositionalSport,
-        maxPercentageDiffBetwenOdds,
-        MIN_ODDS_FOR_DIFF_CHECKING
-    );
+    const oddsObject = checkOddsFromBookmakers(moneylineOddsMap, bookmakers, isTwoPositionalSport, anchors);
 
     if (oddsObject.errorMessage) {
         return {
@@ -214,7 +208,7 @@ export const createChildMarkets: (
     leagueMap: any,
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
-    maxImpliedPercentageDifference: number,
+    anchors: Anchor[],
     playersMap: Map<string, number>
 ) => ChildMarket[] = (
     apiResponseWithOdds,
@@ -225,7 +219,7 @@ export const createChildMarkets: (
     leagueMap,
     lastPolledData,
     maxAllowedProviderDataStaleDelay,
-    maxImpliedPercentageDifference,
+    anchors,
     playersMap
 ) => {
     const [spreadOdds, totalOdds, moneylineOdds, correctScoreOdds, doubleChanceOdds, ggOdds, childMarkets]: any[] = [
@@ -251,7 +245,7 @@ export const createChildMarkets: (
             liveOddsProviders,
             lastPolledData,
             maxAllowedProviderDataStaleDelay,
-            maxImpliedPercentageDifference
+            anchors
         );
         checkedChildOdds.forEach((odd) => {
             if (odd.type === 'Total') {

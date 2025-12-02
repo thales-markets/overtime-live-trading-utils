@@ -1,6 +1,6 @@
 import * as oddslib from 'oddslib';
 import { ZERO_ODDS_AFTER_SPREAD_ADJUSTMENT } from '../constants/errors';
-import { OddsObject } from '../types/odds';
+import { Anchor, OddsObject } from '../types/odds';
 import { LastPolledArray } from '../types/sports';
 import { createChildMarkets, getParentOdds } from './odds';
 import { getLeagueInfo } from './sports';
@@ -16,8 +16,10 @@ import { adjustAddedSpread } from './spread';
  * @param {Array} spreadData - Spread data for odds.
  * @param {Boolean} isDrawAvailable - Is it two or three-positional sport
  * @param {Number} defaultSpreadForLiveMarkets - Default spread for live markets
- * @param {Number} maxPercentageDiffBetwenOdds - Maximum allowed percentage difference between same position odds from different providers
- * @param {Boolean} isTestnet - Flag showing should we process for testnet or mainnet
+ * @param {Object} leagueMap - League map for additional league information
+ * @param {LastPolledArray} lastPolledData - Array containing last polled timestamps for bookmakers
+ * @param {Number} maxAllowedProviderDataStaleDelay - Maximum allowed delay for provider data to be considered fresh
+ * @param {Map<string, number>} playersMap - Map of player OO IDs to our internal player ID
  * @returns {Promise<Object|null>} A promise that resolves to the processed event object or null if the event is invalid or mapping fails.
  */
 export const processMarket = (
@@ -27,7 +29,7 @@ export const processMarket = (
     spreadData: any,
     isDrawAvailable: any,
     defaultSpreadForLiveMarkets: any,
-    maxPercentageDiffBetwenOdds: number,
+    anchors: Anchor[],
     leagueMap: any,
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
@@ -43,7 +45,7 @@ export const processMarket = (
         apiResponseWithOdds,
         market.leagueId,
         defaultSpreadForLiveMarkets,
-        maxPercentageDiffBetwenOdds,
+        anchors,
         leagueInfo,
         lastPolledData,
         maxAllowedProviderDataStaleDelay
@@ -90,7 +92,7 @@ export const processMarket = (
         leagueMap,
         lastPolledData,
         maxAllowedProviderDataStaleDelay,
-        maxPercentageDiffBetwenOdds,
+        anchors,
         playersMap
     );
 

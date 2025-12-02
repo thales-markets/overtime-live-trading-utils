@@ -1,5 +1,5 @@
-import { MAX_IMPLIED_PERCENTAGE_DIFF } from '../../constants/common';
 import { NO_MARKETS_FOR_LEAGUE_ID } from '../../constants/errors';
+import { ODDS_THRESHOLD_ANCHORS } from '../../constants/odds';
 import { processMarket } from '../../utils/markets';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
 import { LeagueMocks } from '../mock/MockLeagueMap';
@@ -29,7 +29,7 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                MAX_IMPLIED_PERCENTAGE_DIFF,
+                ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoOnlyParent,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
@@ -49,7 +49,7 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                MAX_IMPLIED_PERCENTAGE_DIFF,
+                ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoMockDisabledChilds,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
@@ -69,7 +69,7 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                MAX_IMPLIED_PERCENTAGE_DIFF,
+                ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoEnabledSpreadDisabledTotals,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
@@ -93,7 +93,7 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                MAX_IMPLIED_PERCENTAGE_DIFF,
+                ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoEnabledSpeadAndTotals,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
@@ -117,7 +117,7 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                MAX_IMPLIED_PERCENTAGE_DIFF,
+                ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoEnabledAll,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
@@ -173,7 +173,7 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                MAX_IMPLIED_PERCENTAGE_DIFF,
+                ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoOnlyParentDiffSportId,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
@@ -197,7 +197,7 @@ describe('Markets', () => {
                 [],
                 true,
                 undefined,
-                MAX_IMPLIED_PERCENTAGE_DIFF,
+                ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.PlayerAssist, // league map with player props configured
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,

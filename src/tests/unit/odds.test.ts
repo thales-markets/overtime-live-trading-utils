@@ -1,5 +1,5 @@
-import { MAX_IMPLIED_PERCENTAGE_DIFF } from '../../constants/common';
 import { ZERO_ODDS_MESSAGE_SINGLE_BOOKMAKER } from '../../constants/errors';
+import { ODDS_THRESHOLD_ANCHORS } from '../../constants/odds';
 import { processMarket } from '../../utils/markets';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
 import { LeagueMocks } from '../mock/MockLeagueMap';
@@ -30,7 +30,7 @@ describe('Odds', () => {
             [],
             true,
             undefined,
-            MAX_IMPLIED_PERCENTAGE_DIFF,
+            ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoOnlyParent,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
@@ -54,7 +54,7 @@ describe('Odds', () => {
             [],
             true,
             undefined,
-            MAX_IMPLIED_PERCENTAGE_DIFF,
+            ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
@@ -80,7 +80,7 @@ describe('Odds', () => {
             [],
             true,
             undefined,
-            MAX_IMPLIED_PERCENTAGE_DIFF,
+            ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
@@ -101,7 +101,7 @@ describe('Odds', () => {
             [],
             true,
             undefined,
-            MAX_IMPLIED_PERCENTAGE_DIFF,
+            ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
