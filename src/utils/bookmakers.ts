@@ -137,7 +137,7 @@ export const checkOddsFromBookmakers = (
             if (
                 shouldBlockOdds(homeOdd, otherHomeOdd, anchors) ||
                 shouldBlockOdds(awayOdd, otherAwayOdd, anchors) ||
-                shouldBlockOdds(drawOdd, otherDrawOdd, anchors)
+                (!isTwoPositionalSport && shouldBlockOdds(drawOdd, otherDrawOdd, anchors))
             ) {
                 return true;
             }
