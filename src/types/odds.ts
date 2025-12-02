@@ -7,22 +7,20 @@ export type Fixture = {
     awayTeam: string;
 };
 
-export type Odds = [
-    {
-        id: string;
-        sportsBookName: string;
-        name: string;
-        price: number;
-        timestamp: number;
-        points: number;
-        isMain: boolean;
-        isLive: boolean;
-        marketName: string;
-        playerId: string;
-        selection: string;
-        selectionLine: string;
-    }
-];
+export type Odds = {
+    id: string;
+    sportsBookName: string;
+    name: string;
+    price: number;
+    timestamp: number;
+    points: number;
+    isMain: boolean;
+    isLive: boolean;
+    marketName: string;
+    playerId: string;
+    selection: string;
+    selectionLine: string;
+}[];
 
 export type OddsObject = {
     gameId: string;
