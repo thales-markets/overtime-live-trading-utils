@@ -1,5 +1,5 @@
-import { MAX_IMPLIED_PERCENTAGE_DIFF } from '../../constants/common';
 import { ZERO_ODDS_MESSAGE_SINGLE_BOOKMAKER } from '../../constants/errors';
+import { ODDS_THRESHOLD_ANCHORS } from '../../constants/odds';
 import { processMarket } from '../../utils/markets';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
 import { LeagueMocks } from '../mock/MockLeagueMap';
@@ -10,9 +10,14 @@ import {
     MockZeroOdds,
 } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
-import { getLastPolledDataForBookmakers, MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST } from '../utils/helper';
+import {
+    getLastPolledDataForBookmakers,
+    getPlayersMap,
+    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+} from '../utils/helper';
 
 const lastPolledData = getLastPolledDataForBookmakers();
+const playersMap = getPlayersMap();
 
 describe('Odds', () => {
     it('Should return odds for moneyline', () => {
@@ -25,10 +30,11 @@ describe('Odds', () => {
             [],
             true,
             undefined,
-            MAX_IMPLIED_PERCENTAGE_DIFF,
+            ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoOnlyParent,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
         );
 
         const hasOdds = market.odds.some(
@@ -48,10 +54,11 @@ describe('Odds', () => {
             [],
             true,
             undefined,
-            MAX_IMPLIED_PERCENTAGE_DIFF,
+            ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
         );
 
         const hasOdds = market.odds.some(
@@ -73,10 +80,11 @@ describe('Odds', () => {
             [],
             true,
             undefined,
-            MAX_IMPLIED_PERCENTAGE_DIFF,
+            ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
         );
 
         const hasChildMarkets = market.childMarkets.length > 0;
@@ -93,10 +101,11 @@ describe('Odds', () => {
             [],
             true,
             undefined,
-            MAX_IMPLIED_PERCENTAGE_DIFF,
+            ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
         );
 
         expect(market.childMarkets).toHaveLength(0);

@@ -1,5 +1,5 @@
-import { MAX_IMPLIED_PERCENTAGE_DIFF } from '../../constants/common';
 import { DIFF_BETWEEN_BOOKMAKERS_MESSAGE, ZERO_ODDS_MESSAGE } from '../../constants/errors';
+import { ODDS_THRESHOLD_ANCHORS } from '../../constants/odds';
 import { processMarket } from '../../utils/markets';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
 import { LeagueMocks } from '../mock/MockLeagueMap';
@@ -10,9 +10,14 @@ import {
     MockOnlyMoneylineWithDifferentSportsbook,
 } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
-import { getLastPolledDataForBookmakers, MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST } from '../utils/helper';
+import {
+    getLastPolledDataForBookmakers,
+    getPlayersMap,
+    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+} from '../utils/helper';
 
 const lastPolledData = getLastPolledDataForBookmakers();
+const playersMap = getPlayersMap();
 
 describe('Bookmakers', () => {
     it('Should return zero odds for moneyline when one of the bookmakers has no odds', () => {
@@ -25,10 +30,11 @@ describe('Bookmakers', () => {
             [],
             true,
             undefined,
-            MAX_IMPLIED_PERCENTAGE_DIFF,
+            ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
         );
 
         const hasOdds = market.odds.some(
@@ -50,10 +56,11 @@ describe('Bookmakers', () => {
             [],
             true,
             undefined,
-            5,
+            ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoOnlyParent,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
         );
 
         const hasOdds = market.odds.some(
@@ -75,10 +82,11 @@ describe('Bookmakers', () => {
             [],
             true,
             undefined,
-            MAX_IMPLIED_PERCENTAGE_DIFF,
+            ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
         );
 
         const hasOdds = market.odds.some(
@@ -100,10 +108,11 @@ describe('Bookmakers', () => {
             [],
             true,
             undefined,
-            MAX_IMPLIED_PERCENTAGE_DIFF,
+            ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
         );
 
         expect(market.childMarkets.length).toBe(2);
@@ -119,10 +128,11 @@ describe('Bookmakers', () => {
             [],
             true,
             undefined,
-            MAX_IMPLIED_PERCENTAGE_DIFF,
+            ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leaguInfoDifferentPrimaryBookmaker,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
         );
 
         expect(market.childMarkets.length).toBe(3);
@@ -138,10 +148,11 @@ describe('Bookmakers', () => {
             [],
             true,
             undefined,
-            MAX_IMPLIED_PERCENTAGE_DIFF,
+            ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
         );
 
         expect(market.childMarkets.length).toBe(1);

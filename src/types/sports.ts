@@ -17,6 +17,11 @@ export type ChildMarket = {
     type: string;
     line: number;
     odds: Array<number>;
+    playerProps: {
+        playerId: number;
+        playerName: string;
+    };
+    isPlayerPropsMarket: boolean;
 };
 
 export type LastPolledArray = { sportsbook: string; timestamp: number }[];
