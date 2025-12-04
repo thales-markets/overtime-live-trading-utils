@@ -22,6 +22,7 @@ export type ChildMarket = {
         playerName: string;
     };
     isPlayerPropsMarket: boolean;
+    positionNames?: string[];
 };
 
 export type LastPolledArray = { sportsbook: string; timestamp: number }[];
