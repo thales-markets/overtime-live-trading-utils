@@ -475,16 +475,16 @@ export const groupAndFormatTotalOdds = (oddsArray: any[], commonData: HomeAwayTe
         // if we have away team in total odds we know the market is team total and we need to increase typeId by one.
         // if this is false typeId is already mapped correctly
         const shouldIncreaseTypeId = selection === commonData.awayTeam && !(value as any).playerProps;
-
-        acc.push({
-            line: line as any,
-            odds: [(value as any).over, (value as any).under].filter((odd) => odd !== null),
-            typeId: !shouldIncreaseTypeId ? (value as any).typeId : Number((value as any).typeId) + 1,
-            sportId: (value as any).sportId,
-            type: (value as any).type,
-            playerProps: (value as any).playerProps,
-        });
-
+        if ((value as any).over !== null && (value as any).under !== null) {
+            acc.push({
+                line: line as any,
+                odds: [(value as any).over, (value as any).under],
+                typeId: !shouldIncreaseTypeId ? (value as any).typeId : Number((value as any).typeId) + 1,
+                sportId: (value as any).sportId,
+                type: (value as any).type,
+                playerProps: (value as any).playerProps,
+            });
+        }
         return acc;
     }, []);
 
