@@ -13,9 +13,7 @@ import { adjustAddedSpread } from './spread';
  * @param {Object} market - The market API object to process
  * @param {Object} apiResponseWithOdds - Provider's API object to process
  * @param {Array} liveOddsProviders - Odds providers for live odds
- * @param {Array} spreadData - Spread data for odds.
  * @param {Boolean} isDrawAvailable - Is it two or three-positional sport
- * @param {Number} defaultSpreadForLiveMarkets - Default spread for live markets
  * @param {Object} leagueMap - League map for additional league information
  * @param {LastPolledArray} lastPolledData - Array containing last polled timestamps for bookmakers
  * @param {Number} maxAllowedProviderDataStaleDelay - Maximum allowed delay for provider data to be considered fresh
