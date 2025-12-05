@@ -1,6 +1,6 @@
 import * as oddslib from 'oddslib';
 import { MarketType, MarketTypeMap } from 'overtime-utils';
-import { DRAW, MONEYLINE_TYPE_ID, ZERO } from '../constants/common';
+import { DRAW, ZERO } from '../constants/common';
 import { LAST_POLLED_TOO_OLD, NO_MARKETS_FOR_LEAGUE_ID } from '../constants/errors';
 import { MoneylineTypes } from '../enums/sports';
 import { Anchor, HomeAwayTeams, Odds, OddsObject } from '../types/odds';
@@ -12,7 +12,7 @@ import {
     isLastPolledForBookmakersValid,
 } from './bookmakers';
 import { getLeagueInfo } from './sports';
-import { adjustSpreadOnOdds, getSpreadData } from './spread';
+import { sanityCheckForOdds } from './spread';
 
 /**
  * Converts a given odds value from one format to another.
@@ -123,11 +123,8 @@ export const filterOddsByMarketNameTeamNameBookmaker = (
  */
 export const getParentOdds = (
     isTwoPositionalSport: boolean,
-    sportSpreadData: any[],
     liveOddsProviders: any[],
     oddsApiObject: OddsObject,
-    sportId: string,
-    defaultSpreadForLiveMarkets: number,
     anchors: Anchor[],
     leagueInfo: LeagueConfigInfo[],
     lastPolledData: LastPolledArray,
@@ -177,14 +174,8 @@ export const getParentOdds = (
         : [oddsObject.homeOdds, oddsObject.awayOdds, oddsObject.drawOdds];
 
     let parentOdds = primaryBookmakerOdds.map((odd) => convertOddsToImpl(odd));
-    const spreadData = getSpreadData(sportSpreadData, sportId, MONEYLINE_TYPE_ID, defaultSpreadForLiveMarkets);
+    parentOdds = sanityCheckForOdds(parentOdds);
 
-    if (spreadData !== null) {
-        parentOdds = adjustSpreadOnOdds(parentOdds, spreadData.minSpread, spreadData.targetSpread);
-    } else {
-        // Use min spread by sport if available, otherwise use default min spread
-        parentOdds = adjustSpreadOnOdds(parentOdds, defaultSpreadForLiveMarkets, 0);
-    }
     return { odds: parentOdds };
 };
 
@@ -201,10 +192,8 @@ export const getParentOdds = (
  */
 export const createChildMarkets: (
     apiResponseWithOdds: OddsObject,
-    spreadDataForSport: any,
     leagueId: number,
     liveOddsProviders: any,
-    defaultSpreadForLiveMarkets: any,
     leagueMap: any,
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
@@ -212,10 +201,8 @@ export const createChildMarkets: (
     playersMap: Map<string, number>
 ) => ChildMarket[] = (
     apiResponseWithOdds,
-    spreadDataForSport,
     leagueId,
     liveOddsProviders,
-    defaultSpreadForLiveMarkets,
     leagueMap,
     lastPolledData,
     maxAllowedProviderDataStaleDelay,
@@ -273,11 +260,7 @@ export const createChildMarkets: (
         const otherFormattedOdds = [...groupAndFormatCorrectScoreOdds(correctScoreOdds, commonData)];
 
         // odds are converted to implied probability inside adjustSpreadOnChildOdds
-        const homeAwayOddsWithSpreadAdjusted = adjustSpreadOnChildOdds(
-            homeAwayFormattedOdds,
-            spreadDataForSport,
-            defaultSpreadForLiveMarkets
-        );
+        const homeAwayOddsWithSpreadAdjusted = adjustSpreadOnChildOdds(homeAwayFormattedOdds);
 
         homeAwayOddsWithSpreadAdjusted.forEach((data) => {
             let childMarket = {
@@ -936,41 +919,19 @@ export const groupAndFormatDoubleChanceOdds = (oddsArray: any[], commonData: Hom
 };
 
 // used for home/away markets
-export const adjustSpreadOnChildOdds = (
-    iterableGroupedOdds: any[],
-    spreadDataForSport: any,
-    defaultSpreadForLiveMarkets: any
-) => {
+export const adjustSpreadOnChildOdds = (iterableGroupedOdds: any[]) => {
     const result: any[] = [];
     iterableGroupedOdds.forEach((data) => {
-        const odds = data.odds.map((odd: number) => convertOddsToImpl(odd) || ZERO);
-        const isZeroOddsChild = odds.includes(ZERO);
-        if (!isZeroOddsChild) {
-            if (data.odds.length === 1) {
-                result.push({
-                    ...data,
-                    odds: odds,
-                });
-            } else if (data.odds.length > 1) {
-                const spreadData = getSpreadData(
-                    spreadDataForSport,
-                    data.sportId,
-                    data.typeId,
-                    defaultSpreadForLiveMarkets
-                );
-
-                let adjustedOdds;
-                if (spreadData !== null) {
-                    adjustedOdds = adjustSpreadOnOdds(odds, spreadData.minSpread, spreadData.targetSpread);
-                } else {
-                    adjustedOdds = adjustSpreadOnOdds(odds, defaultSpreadForLiveMarkets, 0);
-                }
-
-                result.push({
-                    ...data,
-                    odds: adjustedOdds,
-                });
+        let odds = data.odds.map((odd: number) => convertOddsToImpl(odd) || ZERO);
+        if (data.odds.length > 0) {
+            if (data.odds.length > 1) {
+                odds = sanityCheckForOdds(odds);
             }
+
+            result.push({
+                ...data,
+                odds,
+            });
         }
     });
     return result;

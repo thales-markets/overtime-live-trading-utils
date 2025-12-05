@@ -26,25 +26,19 @@ export const processMarket = (
     market: any,
     apiResponseWithOdds: OddsObject,
     liveOddsProviders: any,
-    spreadData: any,
     isDrawAvailable: any,
-    defaultSpreadForLiveMarkets: any,
     anchors: Anchor[],
     leagueMap: any,
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
     playersMap: Map<string, number>
 ) => {
-    const sportSpreadData = spreadData.filter((data: any) => data.sportId === String(market.leagueId));
     const leagueInfo = getLeagueInfo(market.leagueId, leagueMap);
 
     const moneylineOdds = getParentOdds(
         !isDrawAvailable,
-        sportSpreadData,
         liveOddsProviders,
         apiResponseWithOdds,
-        market.leagueId,
-        defaultSpreadForLiveMarkets,
         anchors,
         leagueInfo,
         lastPolledData,
@@ -85,10 +79,8 @@ export const processMarket = (
 
     const childMarkets = createChildMarkets(
         apiResponseWithOdds,
-        sportSpreadData,
         market.leagueId,
         liveOddsProviders,
-        defaultSpreadForLiveMarkets,
         leagueMap,
         lastPolledData,
         maxAllowedProviderDataStaleDelay,
