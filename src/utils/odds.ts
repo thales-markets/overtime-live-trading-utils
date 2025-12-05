@@ -475,16 +475,16 @@ export const groupAndFormatTotalOdds = (oddsArray: any[], commonData: HomeAwayTe
         // if we have away team in total odds we know the market is team total and we need to increase typeId by one.
         // if this is false typeId is already mapped correctly
         const shouldIncreaseTypeId = selection === commonData.awayTeam && !(value as any).playerProps;
-        if ((value as any).over !== null && (value as any).under !== null) {
-            acc.push({
-                line: line as any,
-                odds: [(value as any).over, (value as any).under],
-                typeId: !shouldIncreaseTypeId ? (value as any).typeId : Number((value as any).typeId) + 1,
-                sportId: (value as any).sportId,
-                type: (value as any).type,
-                playerProps: (value as any).playerProps,
-            });
-        }
+
+        acc.push({
+            line: line as any,
+            odds: [(value as any).over, (value as any).under].filter((odd) => odd !== null),
+            typeId: !shouldIncreaseTypeId ? (value as any).typeId : Number((value as any).typeId) + 1,
+            sportId: (value as any).sportId,
+            type: (value as any).type,
+            playerProps: (value as any).playerProps,
+        });
+
         return acc;
     }, []);
 
@@ -946,24 +946,31 @@ export const adjustSpreadOnChildOdds = (
         const odds = data.odds.map((odd: number) => convertOddsToImpl(odd) || ZERO);
         const isZeroOddsChild = odds.includes(ZERO);
         if (!isZeroOddsChild) {
-            const spreadData = getSpreadData(
-                spreadDataForSport,
-                data.sportId,
-                data.typeId,
-                defaultSpreadForLiveMarkets
-            );
+            if (data.odds.length === 1) {
+                result.push({
+                    ...data,
+                    odds: odds,
+                });
+            } else if (data.odds.length > 1) {
+                const spreadData = getSpreadData(
+                    spreadDataForSport,
+                    data.sportId,
+                    data.typeId,
+                    defaultSpreadForLiveMarkets
+                );
 
-            let adjustedOdds;
-            if (spreadData !== null) {
-                adjustedOdds = adjustSpreadOnOdds(odds, spreadData.minSpread, spreadData.targetSpread);
-            } else {
-                adjustedOdds = adjustSpreadOnOdds(odds, defaultSpreadForLiveMarkets, 0);
+                let adjustedOdds;
+                if (spreadData !== null) {
+                    adjustedOdds = adjustSpreadOnOdds(odds, spreadData.minSpread, spreadData.targetSpread);
+                } else {
+                    adjustedOdds = adjustSpreadOnOdds(odds, defaultSpreadForLiveMarkets, 0);
+                }
+
+                result.push({
+                    ...data,
+                    odds: adjustedOdds,
+                });
             }
-
-            result.push({
-                ...data,
-                odds: adjustedOdds,
-            });
         }
     });
     return result;

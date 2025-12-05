@@ -17267,3 +17267,8 @@ export const MockNbaData = {
     ...MockBaseNBAEvent,
     odds: MockOdds,
 };
+
+export const MockOddsOnlyOver = {
+    ...MockBaseNBAEvent,
+    odds: MockOdds.filter((odd) => odd.selection_line === 'over'),
+};

@@ -5,7 +5,7 @@ import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
 import { LeagueMocks } from '../mock/MockLeagueMap';
 import { MockOnlyMoneyline, MockOpticSoccer } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
-import { MockNbaData } from '../mock/OpticOddsMock/MockNBA';
+import { MockNbaData, MockOddsOnlyOver } from '../mock/OpticOddsMock/MockNBA';
 import { MockRedisNba } from '../mock/OpticOddsMock/MockRedisNba';
 import {
     getLastPolledDataForBookmakers,
@@ -190,6 +190,30 @@ describe('Markets', () => {
         it('Should return child markets with player props', () => {
             const freshMockSoccer = JSON.parse(JSON.stringify(MockRedisNba));
             const freshMockOpticSoccer = JSON.parse(JSON.stringify(MockNbaData));
+            const market = processMarket(
+                freshMockSoccer,
+                mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
+                ['bovada', 'draftkings'], // this will be ignored as primaryBookmaker is defined in LeagueMap
+                [],
+                true,
+                undefined,
+                ODDS_THRESHOLD_ANCHORS,
+                LeagueMocks.PlayerAssist, // league map with player props configured
+                lastPolledData,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                playersMap
+            );
+
+            market.childMarkets.forEach((child: any) => {
+                expect(child.playerProps).toBeDefined();
+                expect(child.playerProps.playerId).toBeDefined();
+                expect(child.playerProps.playerName).toBeDefined();
+            });
+        });
+
+        it('Should return child markets with player props that have some over odds', () => {
+            const freshMockSoccer = JSON.parse(JSON.stringify(MockRedisNba));
+            const freshMockOpticSoccer = JSON.parse(JSON.stringify(MockOddsOnlyOver));
             const market = processMarket(
                 freshMockSoccer,
                 mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
