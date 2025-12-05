@@ -943,13 +943,8 @@ export const adjustSpreadOnChildOdds = (
 ) => {
     const result: any[] = [];
     iterableGroupedOdds.forEach((data) => {
-        const hasDrawOdds = data.odds.length === 3;
-        const homeTeamOdds = convertOddsToImpl(data.odds[0]) || ZERO;
-        const awayTeamOdds = convertOddsToImpl(data.odds[1]) || ZERO;
-        const drawOdds = convertOddsToImpl(data.odds[2]) || ZERO;
-        const odds = hasDrawOdds ? [homeTeamOdds, awayTeamOdds, drawOdds] : [homeTeamOdds, awayTeamOdds];
-
-        const isZeroOddsChild = homeTeamOdds === ZERO || awayTeamOdds === ZERO || (hasDrawOdds && drawOdds === ZERO);
+        const odds = data.odds.map((odd: number) => convertOddsToImpl(odd) || ZERO);
+        const isZeroOddsChild = odds.includes(ZERO);
         if (!isZeroOddsChild) {
             const spreadData = getSpreadData(
                 spreadDataForSport,
