@@ -1,7 +1,7 @@
 import { NO_MARKETS_FOR_LEAGUE_ID } from '../../constants/errors';
-import { ODDS_THRESHOLD_ANCHORS } from '../../constants/odds';
 import { processMarket } from '../../utils/markets';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
+import { ODDS_THRESHOLD_ANCHORS } from '../mock/MockAnchors';
 import { LeagueMocks } from '../mock/MockLeagueMap';
 import { MockOnlyMoneyline, MockOpticSoccer } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';

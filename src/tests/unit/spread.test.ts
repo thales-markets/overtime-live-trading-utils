@@ -1,7 +1,7 @@
 import { ZERO_ODDS_AFTER_SPREAD_ADJUSTMENT } from '../../constants/errors';
-import { ODDS_THRESHOLD_ANCHORS } from '../../constants/odds';
 import { processMarket } from '../../utils/markets';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
+import { ODDS_THRESHOLD_ANCHORS } from '../mock/MockAnchors';
 import { LeagueMocks } from '../mock/MockLeagueMap';
 import { MockAfterSpreadZeroOdds1, MockOnlyMoneylineFavorite, MockOpticSoccer } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';

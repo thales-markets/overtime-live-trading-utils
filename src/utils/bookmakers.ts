@@ -295,3 +295,6 @@ const shouldBlockOdds = (ourOdds: number, otherOdds: number, anchors: Anchor[]) 
     // Block if the other book is below the required threshold
     return otherOdds < requiredOther;
 };
+
+// Export only when running tests
+export const __test__ = { getRequiredOtherOdds, shouldBlockOdds };
