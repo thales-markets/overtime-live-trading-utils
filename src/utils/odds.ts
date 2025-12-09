@@ -291,12 +291,10 @@ export const createChildMarkets: (
             const maxOdds = leagueInfoByTypeId?.maxOdds; // maximum odds configured for child market (e.g. 0.05 implied probability)
 
             if (minOdds && maxOdds) {
-                let conditionToAddChildMarket = true;
-                data.odds.forEach((odd: number) => {
-                    if (odd >= minOdds || odd <= maxOdds) {
-                        conditionToAddChildMarket = false;
-                    }
-                });
+                const isTotalMarketType = data.type === 'Total';
+                const conditionToAddChildMarket = data.odds.every(
+                    (odd: number) => (odd < minOdds && odd > maxOdds) || (isTotalMarketType && odd === ZERO)
+                );
                 if (conditionToAddChildMarket) {
                     childMarkets.push(childMarket);
                 }
@@ -459,9 +457,12 @@ export const groupAndFormatTotalOdds = (oddsArray: any[], commonData: HomeAwayTe
         // if this is false typeId is already mapped correctly
         const shouldIncreaseTypeId = selection === commonData.awayTeam && !(value as any).playerProps;
 
+        const odds = [(value as any).over, (value as any).under];
+        const hasOdds = odds.some((odd) => odd !== null);
+
         acc.push({
             line: line as any,
-            odds: [(value as any).over, (value as any).under].filter((odd) => odd !== null),
+            odds: hasOdds ? odds.map((odd) => odd || ZERO) : [],
             typeId: !shouldIncreaseTypeId ? (value as any).typeId : Number((value as any).typeId) + 1,
             sportId: (value as any).sportId,
             type: (value as any).type,
