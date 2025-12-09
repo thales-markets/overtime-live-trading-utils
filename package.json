@@ -14,7 +14,7 @@
     "dependencies": {
         "@types/node": "^20.8.10",
         "oddslib": "^2.1.1",
-        "overtime-utils": "^0.1.59",
+        "overtime-utils": "^0.1.61",
         "react": "^17.0.1"
     },
     "devDependencies": {
