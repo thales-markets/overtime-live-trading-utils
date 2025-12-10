@@ -291,9 +291,9 @@ export const createChildMarkets: (
             const maxOdds = leagueInfoByTypeId?.maxOdds; // maximum odds configured for child market (e.g. 0.05 implied probability)
 
             if (minOdds && maxOdds) {
-                const isTotalMarketType = data.type === 'Total';
+                const allowZeroOdds = ['Total'].includes(data.type);
                 const conditionToAddChildMarket = data.odds.every(
-                    (odd: number) => (odd < minOdds && odd > maxOdds) || (isTotalMarketType && odd === ZERO)
+                    (odd: number) => (odd < minOdds && odd > maxOdds) || (allowZeroOdds && odd === ZERO)
                 );
                 if (conditionToAddChildMarket) {
                     childMarkets.push(childMarket);
