@@ -1,5 +1,5 @@
 import * as oddslib from 'oddslib';
-import { isOneSidePlayerPropsMarket, MarketType, MarketTypeMap } from 'overtime-utils';
+import { isOneSideExtendedPlayerPropsMarket, MarketType, MarketTypeMap } from 'overtime-utils';
 import { DRAW, ZERO } from '../constants/common';
 import { LAST_POLLED_TOO_OLD, NO_MARKETS_FOR_LEAGUE_ID } from '../constants/errors';
 import { MoneylineTypes } from '../enums/sports';
@@ -463,7 +463,7 @@ export const groupAndFormatTotalOdds = (oddsArray: any[], commonData: HomeAwayTe
         acc.push({
             line: line as any,
             odds: hasOdds
-                ? isOneSidePlayerPropsMarket((value as any).typeId)
+                ? isOneSideExtendedPlayerPropsMarket(Number((value as any).typeId))
                     ? odds.filter((odd) => odd !== null)
                     : odds.map((odd) => odd || ZERO)
                 : [],
