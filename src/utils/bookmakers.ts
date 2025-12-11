@@ -150,7 +150,7 @@ export const checkOddsFromBookmakers = (
     };
 };
 
-export const checkOddsFromBookmakersForChildMarkets = (
+export const checkOdds = (
     odds: any,
     leagueInfos: LeagueConfigInfo[],
     oddsProviders: string[],

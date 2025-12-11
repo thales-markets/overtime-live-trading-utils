@@ -28,7 +28,6 @@ describe('Bookmakers', () => {
             freshMockSoccer,
             mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
             ['draftkings', 'bovada'],
-            true,
             ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
@@ -52,7 +51,6 @@ describe('Bookmakers', () => {
             freshMockSoccer,
             mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
             ['draftkings', 'bovada'],
-            true,
             ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoOnlyParent,
             lastPolledData,
@@ -76,7 +74,6 @@ describe('Bookmakers', () => {
             freshMockSoccer,
             mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
             ['bovada', 'draftkings'],
-            true,
             ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
@@ -100,8 +97,6 @@ describe('Bookmakers', () => {
             freshMockSoccer,
             mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
             ['bovada', 'draftkings'],
-            true,
-
             ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
@@ -119,8 +114,6 @@ describe('Bookmakers', () => {
             freshMockSoccer,
             mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
             ['bovada', 'draftkings'],
-            true,
-
             ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leaguInfoDifferentPrimaryBookmaker,
             lastPolledData,
@@ -138,9 +131,6 @@ describe('Bookmakers', () => {
             freshMockSoccer,
             mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
             ['bovada', 'draftkings'],
-
-            true,
-
             ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,

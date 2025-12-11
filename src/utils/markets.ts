@@ -1,8 +1,7 @@
 import * as oddslib from 'oddslib';
-import { ZERO_ODDS_AFTER_SPREAD_ADJUSTMENT } from '../constants/errors';
 import { Anchor, OddsObject } from '../types/odds';
 import { LastPolledArray } from '../types/sports';
-import { createChildMarkets, getParentOdds } from './odds';
+import { generateMarkets } from './odds';
 import { getLeagueInfo } from './sports';
 import { adjustAddedSpread } from './spread';
 /**
@@ -24,7 +23,6 @@ export const processMarket = (
     market: any,
     apiResponseWithOdds: OddsObject,
     liveOddsProviders: any,
-    isDrawAvailable: any,
     anchors: Anchor[],
     leagueMap: any,
     lastPolledData: LastPolledArray,
@@ -33,49 +31,7 @@ export const processMarket = (
 ) => {
     const leagueInfo = getLeagueInfo(market.leagueId, leagueMap);
 
-    const moneylineOdds = getParentOdds(
-        !isDrawAvailable,
-        liveOddsProviders,
-        apiResponseWithOdds,
-        anchors,
-        leagueInfo,
-        lastPolledData,
-        maxAllowedProviderDataStaleDelay
-    );
-
-    const oddsAfterSpread = adjustAddedSpread(moneylineOdds.odds, leagueInfo, market.typeId);
-
-    if (moneylineOdds.errorMessage) {
-        market.odds = market.odds.map(() => {
-            return {
-                american: 0,
-                decimal: 0,
-                normalizedImplied: 0,
-            };
-        });
-
-        market.errorMessage = moneylineOdds.errorMessage;
-    } else {
-        // Pack market odds for UI
-        market.odds = oddsAfterSpread.map((probability) => {
-            if (probability != 0) {
-                return {
-                    american: oddslib.from('impliedProbability', probability).to('moneyline'),
-                    decimal: Number(oddslib.from('impliedProbability', probability).to('decimal').toFixed(10)),
-                    normalizedImplied: probability,
-                };
-            } else {
-                market.errorMessage = ZERO_ODDS_AFTER_SPREAD_ADJUSTMENT;
-                return {
-                    american: 0,
-                    decimal: 0,
-                    normalizedImplied: 0,
-                };
-            }
-        });
-    }
-
-    const childMarkets = createChildMarkets(
+    const allMarkets = generateMarkets(
         apiResponseWithOdds,
         market.leagueId,
         liveOddsProviders,
@@ -86,11 +42,20 @@ export const processMarket = (
         playersMap
     );
 
-    const packedChildMarkets = childMarkets.map((childMarket: any) => {
-        const preparedMarket = { ...market, ...childMarket };
-        const oddsAfterSpread = adjustAddedSpread(preparedMarket.odds, leagueInfo, preparedMarket.typeId);
-        if (preparedMarket.odds.length > 0) {
-            preparedMarket.odds = oddsAfterSpread.map((probability) => {
+    market.odds = market.odds.map(() => {
+        return {
+            american: 0,
+            decimal: 0,
+            normalizedImplied: 0,
+        };
+    });
+
+    const packedChildMarkets = allMarkets.map((childMarket: any) => {
+        // parent odds
+        if (childMarket.typeId === 0) {
+            console.log('Adjusting parent market odds with added spread if applicable');
+            const oddsAfterSpread = adjustAddedSpread(childMarket.odds, leagueInfo, childMarket.typeId);
+            market.odds = oddsAfterSpread.map((probability) => {
                 if (probability == 0) {
                     return {
                         american: 0,
@@ -105,8 +70,28 @@ export const processMarket = (
                     normalizedImplied: probability,
                 };
             });
+        } else {
+            const preparedMarket = { ...market, ...childMarket };
+            const oddsAfterSpread = adjustAddedSpread(preparedMarket.odds, leagueInfo, preparedMarket.typeId);
+            if (preparedMarket.odds.length > 0) {
+                preparedMarket.odds = oddsAfterSpread.map((probability) => {
+                    if (probability == 0) {
+                        return {
+                            american: 0,
+                            decimal: 0,
+                            normalizedImplied: 0,
+                        };
+                    }
+
+                    return {
+                        american: oddslib.from('impliedProbability', probability).to('moneyline'),
+                        decimal: Number(oddslib.from('impliedProbability', probability).to('decimal').toFixed(10)),
+                        normalizedImplied: probability,
+                    };
+                });
+            }
+            return preparedMarket;
         }
-        return preparedMarket;
     });
     market.childMarkets = packedChildMarkets;
 

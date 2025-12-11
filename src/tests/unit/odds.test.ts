@@ -1,4 +1,3 @@
-import { ZERO_ODDS_MESSAGE_SINGLE_BOOKMAKER } from '../../constants/errors';
 import { processMarket } from '../../utils/markets';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
 import { ODDS_THRESHOLD_ANCHORS } from '../mock/MockAnchors';
@@ -27,15 +26,14 @@ describe('Odds', () => {
             freshMockSoccer,
             mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
             ['draftkings'],
-
-            true,
-
             ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoOnlyParent,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap
         );
+
+        console.log(market.odds);
 
         const hasOdds = market.odds.some(
             (odd: any) => odd.american !== 0 || odd.decimal !== 0 || odd.normalizedImplied !== 0
@@ -51,9 +49,6 @@ describe('Odds', () => {
             freshMockSoccer,
             mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
             ['draftkings'],
-
-            true,
-
             ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
@@ -61,13 +56,13 @@ describe('Odds', () => {
             playersMap
         );
 
-        const hasOdds = market.odds.some(
-            (odd: any) => odd.american !== 0 || odd.decimal !== 0 || odd.normalizedImplied !== 0
+        console.log(market.odds);
+
+        const hasOdds = market.odds.every(
+            (odd: any) => odd.american === 0 || odd.decimal === 0 || odd.normalizedImplied === 0
         );
 
         expect(hasOdds).toBe(false);
-        expect(market).toHaveProperty('errorMessage');
-        expect(market.errorMessage).toBe(ZERO_ODDS_MESSAGE_SINGLE_BOOKMAKER);
     });
 
     it('Should contain child markets for good odds', () => {
@@ -77,9 +72,6 @@ describe('Odds', () => {
             freshMockSoccer,
             mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
             ['draftkings'],
-
-            true,
-
             ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
@@ -98,9 +90,6 @@ describe('Odds', () => {
             freshMockSoccer,
             mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
             ['draftkings'],
-
-            true,
-
             ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,

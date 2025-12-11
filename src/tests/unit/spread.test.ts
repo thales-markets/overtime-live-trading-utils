@@ -22,7 +22,6 @@ describe('Spread configuration', () => {
             freshMockSoccer,
             mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
             ['draftkings'],
-            false,
             ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
@@ -48,9 +47,6 @@ describe('Spread configuration', () => {
                     freshMockSoccer,
                     mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                     ['draftkings'],
-
-                    true,
-
                     ODDS_THRESHOLD_ANCHORS,
                     LeagueMocks.leagueInfoOnlyParent,
                     lastPolledData,
@@ -66,9 +62,6 @@ describe('Spread configuration', () => {
                     freshMockSoccer,
                     mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                     ['draftkings'],
-
-                    true,
-
                     ODDS_THRESHOLD_ANCHORS,
                     LeagueMocks.leagueInfoOnlyParentWithSpreadAdded,
                     lastPolledData,
@@ -104,9 +97,6 @@ describe('Spread configuration', () => {
                     freshMockSoccer,
                     mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                     ['draftkings'],
-
-                    true,
-
                     ODDS_THRESHOLD_ANCHORS,
                     LeagueMocks.leagueInfoOnlyParent,
                     lastPolledData,
@@ -122,9 +112,6 @@ describe('Spread configuration', () => {
                     freshMockSoccer,
                     mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                     ['draftkings'],
-
-                    true,
-
                     ODDS_THRESHOLD_ANCHORS,
                     LeagueMocks.leagueInfoOnlyParentWithSpreadAdded,
                     lastPolledData,
