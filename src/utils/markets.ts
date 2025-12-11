@@ -53,7 +53,6 @@ export const processMarket = (
     const packedChildMarkets = allMarkets.map((childMarket: any) => {
         // parent odds
         if (childMarket.typeId === 0) {
-            console.log('Adjusting parent market odds with added spread if applicable');
             const oddsAfterSpread = adjustAddedSpread(childMarket.odds, leagueInfo, childMarket.typeId);
             market.odds = oddsAfterSpread.map((probability) => {
                 if (probability == 0) {

@@ -33,8 +33,6 @@ describe('Odds', () => {
             playersMap
         );
 
-        console.log(market.odds);
-
         const hasOdds = market.odds.some(
             (odd: any) => odd.american !== 0 || odd.decimal !== 0 || odd.normalizedImplied !== 0
         );
@@ -56,13 +54,11 @@ describe('Odds', () => {
             playersMap
         );
 
-        console.log(market.odds);
-
-        const hasOdds = market.odds.every(
+        const allZeroes = market.odds.every(
             (odd: any) => odd.american === 0 || odd.decimal === 0 || odd.normalizedImplied === 0
         );
 
-        expect(hasOdds).toBe(false);
+        expect(allZeroes).toBe(true);
     });
 
     it('Should contain child markets for good odds', () => {

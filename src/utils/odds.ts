@@ -235,17 +235,17 @@ export const generateMarkets: (
             anchors
         );
         checkedOdds.forEach((odd) => {
-            if (odd.type === 'Total') {
+            if (odd.type.toLowerCase() === 'total') {
                 if (Math.abs(Number(odd.points) % 1) === 0.5) totalOdds.push(odd);
-            } else if (odd.type === 'Spread') {
+            } else if (odd.type.toLowerCase() === 'spread') {
                 if (Math.abs(Number(odd.points) % 1) === 0.5) spreadOdds.push(odd);
-            } else if (odd.type === 'Moneyline') {
+            } else if (odd.type.toLowerCase() === 'moneyline') {
                 moneylineOdds.push(odd);
-            } else if (odd.type === 'Correct Score') {
+            } else if (odd.type.toLowerCase() === 'correct score') {
                 correctScoreOdds.push(odd);
-            } else if (odd.type === 'Double Chance') {
+            } else if (odd.type.toLowerCase() === 'double chance') {
                 doubleChanceOdds.push(odd);
-            } else if (odd.type === 'Both Teams To Score') {
+            } else if (odd.type.toLowerCase() === 'both teams to score') {
                 ggOdds.push(odd);
             }
         });

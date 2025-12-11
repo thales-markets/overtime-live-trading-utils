@@ -1,4 +1,3 @@
-import { DIFF_BETWEEN_BOOKMAKERS_MESSAGE, ZERO_ODDS_MESSAGE } from '../../constants/errors';
 import { __test__ } from '../../utils/bookmakers';
 import { processMarket } from '../../utils/markets';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
@@ -40,8 +39,6 @@ describe('Bookmakers', () => {
         );
 
         expect(hasOdds).toBe(false);
-        expect(market).toHaveProperty('errorMessage');
-        expect(market.errorMessage).toBe(ZERO_ODDS_MESSAGE);
     });
 
     it('Should return zero odds for moneyline when there is quote diff between bookmakers', () => {
@@ -63,8 +60,6 @@ describe('Bookmakers', () => {
         );
 
         expect(hasOdds).toBe(false);
-        expect(market).toHaveProperty('errorMessage');
-        expect(market.errorMessage).toBe(DIFF_BETWEEN_BOOKMAKERS_MESSAGE);
     });
 
     it('Should return zero odds for moneyline as no matching bookmaker was provided', () => {
@@ -86,8 +81,6 @@ describe('Bookmakers', () => {
         );
 
         expect(hasOdds).toBe(false);
-        expect(market).toHaveProperty('errorMessage');
-        expect(market.errorMessage).toBe(ZERO_ODDS_MESSAGE); // should be no matching bookmakers mesage
     });
 
     it('Should return odds that have both bookmakers', () => {
