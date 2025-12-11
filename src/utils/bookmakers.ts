@@ -1,5 +1,3 @@
-import * as oddslib from 'oddslib';
-import { MIN_ODDS_FOR_DIFF_CHECKING } from '../constants/common';
 import {
     DIFF_BETWEEN_BOOKMAKERS_MESSAGE,
     NO_MATCHING_BOOKMAKERS_MESSAGE,
@@ -7,7 +5,7 @@ import {
     ZERO_ODDS_MESSAGE_SINGLE_BOOKMAKER,
 } from '../constants/errors';
 import { BookmakersConfig } from '../types/bookmakers';
-import { OddsWithLeagueInfo } from '../types/odds';
+import { Anchor, OddsWithLeagueInfo } from '../types/odds';
 import { LastPolledArray, LeagueConfigInfo } from '../types/sports';
 
 export const getBookmakersArray = (
@@ -63,8 +61,7 @@ export const checkOddsFromBookmakers = (
     oddsMap: Map<string, any>,
     arrayOfBookmakers: string[],
     isTwoPositionalSport: boolean,
-    maxImpliedPercentageDifference: number,
-    minOddsForDiffChecking: number
+    anchors: Anchor[]
 ) => {
     // Main bookmaker odds
     const firstBookmakerOdds = oddsMap.get(arrayOfBookmakers[0].toLowerCase());
@@ -126,46 +123,10 @@ export const checkOddsFromBookmakers = (
             const otherAwayOdd = line.awayOdds;
             const otherDrawOdd = line.drawOdds;
 
-            const homeOddsImplied = oddslib.from('decimal', homeOdd).to('impliedProbability');
-
-            const awayOddsImplied = oddslib.from('decimal', awayOdd).to('impliedProbability');
-
-            // Calculate implied odds for the "draw" if it's not a two-positions sport
-            const drawOddsImplied = isTwoPositionalSport
-                ? 0
-                : oddslib.from('decimal', drawOdd).to('impliedProbability');
-
-            const otherHomeOddImplied = oddslib.from('decimal', otherHomeOdd).to('impliedProbability');
-
-            const otherAwayOddImplied = oddslib.from('decimal', otherAwayOdd).to('impliedProbability');
-
-            // Calculate implied odds for the "draw" if it's not a two-positions sport
-            const otherDrawOddImplied = isTwoPositionalSport
-                ? 0
-                : oddslib.from('decimal', otherDrawOdd).to('impliedProbability');
-
-            // Calculate the percentage difference for implied odds
-            const homeOddsDifference = calculateImpliedOddsDifference(homeOddsImplied, otherHomeOddImplied);
-
-            const awayOddsDifference = calculateImpliedOddsDifference(awayOddsImplied, otherAwayOddImplied);
-
-            // Check implied odds difference for the "draw" only if it's not a two-positions sport
-            const drawOddsDifference = isTwoPositionalSport
-                ? 0
-                : calculateImpliedOddsDifference(drawOddsImplied, otherDrawOddImplied);
-
-            // Check if the percentage difference exceeds the threshold
             if (
-                (homeOddsDifference > maxImpliedPercentageDifference &&
-                    homeOddsImplied > minOddsForDiffChecking &&
-                    otherHomeOddImplied > minOddsForDiffChecking) ||
-                (awayOddsDifference > maxImpliedPercentageDifference &&
-                    awayOddsImplied > minOddsForDiffChecking &&
-                    otherAwayOddImplied > minOddsForDiffChecking) ||
-                (!isTwoPositionalSport &&
-                    drawOddsDifference > maxImpliedPercentageDifference &&
-                    drawOddsImplied > minOddsForDiffChecking &&
-                    otherDrawOddImplied > minOddsForDiffChecking)
+                shouldBlockOdds(homeOdd, otherHomeOdd, anchors) ||
+                shouldBlockOdds(awayOdd, otherAwayOdd, anchors) ||
+                (!isTwoPositionalSport && shouldBlockOdds(drawOdd, otherDrawOdd, anchors))
             ) {
                 return true;
             }
@@ -195,7 +156,7 @@ export const checkOddsFromBookmakersForChildMarkets = (
     oddsProviders: string[],
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
-    maxImpliedPercentageDifference: number
+    anchors: Anchor[]
 ): OddsWithLeagueInfo => {
     const formattedOdds = Object.entries(odds as any).reduce((acc: any, [key, value]: [string, any]) => {
         const [sportsBookName, marketName, points, selection, selectionLine] = key.split('_');
@@ -227,21 +188,12 @@ export const checkOddsFromBookmakersForChildMarkets = (
                                 `${secondaryBookmaker}_${marketName.toLowerCase()}_${points}_${selection}_${selectionLine}`
                             ];
                         if (secondaryBookmakerObject) {
-                            const primaryOdds = oddslib.from('decimal', value.price).to('impliedProbability');
-                            const secondaryOdds = oddslib
-                                .from('decimal', secondaryBookmakerObject.price)
-                                .to('impliedProbability');
-                            if (
-                                primaryOdds >= MIN_ODDS_FOR_DIFF_CHECKING &&
-                                secondaryOdds >= MIN_ODDS_FOR_DIFF_CHECKING
-                            ) {
-                                const homeOddsDifference = calculateImpliedOddsDifference(primaryOdds, secondaryOdds);
-                                if (Number(homeOddsDifference) <= Number(maxImpliedPercentageDifference)) {
-                                    acc.push(value);
-                                }
-                            } else {
-                                acc.push(value);
+                            if (shouldBlockOdds(value.price, secondaryBookmakerObject.price, anchors)) {
+                                // Block this odd
+                                return acc;
                             }
+
+                            acc.push(value);
                         }
                     }
                 }
@@ -297,3 +249,52 @@ export const calculateImpliedOddsDifference = (impliedOddsA: number, impliedOdds
     const percentageDifference = (Math.abs(impliedOddsA - impliedOddsB) / impliedOddsA) * 100;
     return percentageDifference;
 };
+
+const getRequiredOtherOdds = (odds: number, anchors: Anchor[]) => {
+    // If below the first anchor, extrapolate using first segment
+    if (odds <= anchors[0].our) {
+        const a = anchors[0];
+        const b = anchors[1];
+        const t = (odds - a.our) / (b.our - a.our);
+        return a.otherMin + t * (b.otherMin - a.otherMin);
+    }
+
+    // If above the last anchor, extrapolate using last segment
+    const last = anchors[anchors.length - 1];
+    const prev = anchors[anchors.length - 2];
+    if (odds >= last.our) {
+        const t = (odds - prev.our) / (last.our - prev.our);
+        return prev.otherMin + t * (last.otherMin - prev.otherMin);
+    }
+
+    // Otherwise, find the segment we fall into and interpolate
+    for (let i = 1; i < anchors.length; i++) {
+        const a = anchors[i - 1];
+        const b = anchors[i];
+
+        if (odds <= b.our) {
+            const t = (odds - a.our) / (b.our - a.our);
+            return a.otherMin + t * (b.otherMin - a.otherMin);
+        }
+    }
+
+    // Fallback (should never hit)
+    return last.otherMin;
+};
+
+const shouldBlockOdds = (ourOdds: number, otherOdds: number, anchors: Anchor[]) => {
+    // basic sanity check
+    if (ourOdds <= 1 || otherOdds <= 1) return true;
+
+    // If we are equal or shorter than the other book,
+    // we are not at risk.
+    if (ourOdds <= otherOdds) return false;
+
+    const requiredOther = getRequiredOtherOdds(ourOdds, anchors);
+
+    // Block if the other book is below the required threshold
+    return otherOdds < requiredOther;
+};
+
+// Export only when running tests
+export const __test__ = { getRequiredOtherOdds, shouldBlockOdds };

@@ -1,6 +1,6 @@
 import * as oddslib from 'oddslib';
 import { ZERO_ODDS_AFTER_SPREAD_ADJUSTMENT } from '../constants/errors';
-import { OddsObject } from '../types/odds';
+import { Anchor, OddsObject } from '../types/odds';
 import { LastPolledArray } from '../types/sports';
 import { createChildMarkets, getParentOdds } from './odds';
 import { getLeagueInfo } from './sports';
@@ -13,36 +13,31 @@ import { adjustAddedSpread } from './spread';
  * @param {Object} market - The market API object to process
  * @param {Object} apiResponseWithOdds - Provider's API object to process
  * @param {Array} liveOddsProviders - Odds providers for live odds
- * @param {Array} spreadData - Spread data for odds.
  * @param {Boolean} isDrawAvailable - Is it two or three-positional sport
- * @param {Number} defaultSpreadForLiveMarkets - Default spread for live markets
- * @param {Number} maxPercentageDiffBetwenOdds - Maximum allowed percentage difference between same position odds from different providers
- * @param {Boolean} isTestnet - Flag showing should we process for testnet or mainnet
+ * @param {Object} leagueMap - League map for additional league information
+ * @param {LastPolledArray} lastPolledData - Array containing last polled timestamps for bookmakers
+ * @param {Number} maxAllowedProviderDataStaleDelay - Maximum allowed delay for provider data to be considered fresh
+ * @param {Map<string, number>} playersMap - Map of player OO IDs to our internal player ID
  * @returns {Promise<Object|null>} A promise that resolves to the processed event object or null if the event is invalid or mapping fails.
  */
 export const processMarket = (
     market: any,
     apiResponseWithOdds: OddsObject,
     liveOddsProviders: any,
-    spreadData: any,
     isDrawAvailable: any,
-    defaultSpreadForLiveMarkets: any,
-    maxPercentageDiffBetwenOdds: number,
+    anchors: Anchor[],
     leagueMap: any,
     lastPolledData: LastPolledArray,
-    maxAllowedProviderDataStaleDelay: number
+    maxAllowedProviderDataStaleDelay: number,
+    playersMap: Map<string, number>
 ) => {
-    const sportSpreadData = spreadData.filter((data: any) => data.sportId === String(market.leagueId));
     const leagueInfo = getLeagueInfo(market.leagueId, leagueMap);
 
     const moneylineOdds = getParentOdds(
         !isDrawAvailable,
-        sportSpreadData,
         liveOddsProviders,
         apiResponseWithOdds,
-        market.leagueId,
-        defaultSpreadForLiveMarkets,
-        maxPercentageDiffBetwenOdds,
+        anchors,
         leagueInfo,
         lastPolledData,
         maxAllowedProviderDataStaleDelay
@@ -82,14 +77,13 @@ export const processMarket = (
 
     const childMarkets = createChildMarkets(
         apiResponseWithOdds,
-        sportSpreadData,
         market.leagueId,
         liveOddsProviders,
-        defaultSpreadForLiveMarkets,
         leagueMap,
         lastPolledData,
         maxAllowedProviderDataStaleDelay,
-        maxPercentageDiffBetwenOdds
+        anchors,
+        playersMap
     );
 
     const packedChildMarkets = childMarkets.map((childMarket: any) => {

@@ -1,13 +1,18 @@
-import { MAX_IMPLIED_PERCENTAGE_DIFF } from '../../constants/common';
 import { ZERO_ODDS_AFTER_SPREAD_ADJUSTMENT } from '../../constants/errors';
 import { processMarket } from '../../utils/markets';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
+import { ODDS_THRESHOLD_ANCHORS } from '../mock/MockAnchors';
 import { LeagueMocks } from '../mock/MockLeagueMap';
 import { MockAfterSpreadZeroOdds1, MockOnlyMoneylineFavorite, MockOpticSoccer } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
-import { getLastPolledDataForBookmakers, MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST } from '../utils/helper';
+import {
+    getLastPolledDataForBookmakers,
+    getPlayersMap,
+    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+} from '../utils/helper';
 
 const lastPolledData = getLastPolledDataForBookmakers();
+const playersMap = getPlayersMap();
 
 describe('Spread configuration', () => {
     it('Should return zero odds for quotes that sum up total probability above 1', () => {
@@ -17,13 +22,12 @@ describe('Spread configuration', () => {
             freshMockSoccer,
             mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
             ['draftkings'],
-            [],
             false,
-            undefined,
-            MAX_IMPLIED_PERCENTAGE_DIFF,
+            ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
         );
 
         const hasOdds = market.odds.some(
@@ -44,13 +48,14 @@ describe('Spread configuration', () => {
                     freshMockSoccer,
                     mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                     ['draftkings'],
-                    [],
+
                     true,
-                    undefined,
-                    MAX_IMPLIED_PERCENTAGE_DIFF,
+
+                    ODDS_THRESHOLD_ANCHORS,
                     LeagueMocks.leagueInfoOnlyParent,
                     lastPolledData,
-                    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+                    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                    playersMap
                 )
             )
         );
@@ -61,13 +66,14 @@ describe('Spread configuration', () => {
                     freshMockSoccer,
                     mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                     ['draftkings'],
-                    [],
+
                     true,
-                    undefined,
-                    MAX_IMPLIED_PERCENTAGE_DIFF,
+
+                    ODDS_THRESHOLD_ANCHORS,
                     LeagueMocks.leagueInfoOnlyParentWithSpreadAdded,
                     lastPolledData,
-                    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+                    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                    playersMap
                 )
             )
         );
@@ -98,13 +104,14 @@ describe('Spread configuration', () => {
                     freshMockSoccer,
                     mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                     ['draftkings'],
-                    [],
+
                     true,
-                    undefined,
-                    MAX_IMPLIED_PERCENTAGE_DIFF,
+
+                    ODDS_THRESHOLD_ANCHORS,
                     LeagueMocks.leagueInfoOnlyParent,
                     lastPolledData,
-                    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+                    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                    playersMap
                 )
             )
         );
@@ -115,13 +122,14 @@ describe('Spread configuration', () => {
                     freshMockSoccer,
                     mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                     ['draftkings'],
-                    [],
+
                     true,
-                    undefined,
-                    MAX_IMPLIED_PERCENTAGE_DIFF,
+
+                    ODDS_THRESHOLD_ANCHORS,
                     LeagueMocks.leagueInfoOnlyParentWithSpreadAdded,
                     lastPolledData,
-                    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST
+                    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                    playersMap
                 )
             )
         );

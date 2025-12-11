@@ -1,6 +1,6 @@
 import { LeagueConfigInfo } from '../types/sports';
 
-export const adjustSpreadOnOdds = (impliedProbs: number[], minSpread: number, targetSpread: number) => {
+export const sanityCheckForOdds = (impliedProbs: number[]) => {
     // Step 1: Check if any implied probability is zero
     if (impliedProbs.some((prob) => prob === 0)) {
         return impliedProbs;
@@ -14,44 +14,7 @@ export const adjustSpreadOnOdds = (impliedProbs: number[], minSpread: number, ta
         return Array(impliedProbs.length).fill(0);
     }
 
-    // Step 4: Check if targetSpread is zero
-    if (targetSpread === 0) {
-        const currentSpread = (totalImpliedProbs - 1) * 100;
-        // If minSpread is set and greater than current spread, use minSpread
-        if (minSpread > currentSpread) {
-            targetSpread = minSpread;
-        } else {
-            // If minSpread is less than current spread, return odds as they are
-            return impliedProbs;
-        }
-    }
-
-    // Step 5: Calculate the target total implied probabilities
-    const targetTotalImpliedProbs = 1 + targetSpread / 100;
-
-    // Step 6: Calculate the adjustment factor
-    const adjustmentFactor = targetTotalImpliedProbs / totalImpliedProbs;
-
-    // Step 7: Adjust the probabilities to reflect the target spread
-    let adjustedImpliedProbs = impliedProbs.map((prob) => prob * adjustmentFactor);
-
-    // Step 8: Check if any adjusted probability equals or exceeds 1
-    if (adjustedImpliedProbs.some((prob) => prob >= 1)) {
-        return Array(impliedProbs.length).fill(0);
-    }
-
-    // Step 9: Ensure the sum of the adjusted probabilities equals the target total implied probabilities
-    const sumAdjustedProbs = adjustedImpliedProbs.reduce((sum, prob) => sum + prob, 0);
-
-    // Step 10: If the sum of the adjusted probabilities is less than 1, return zeros
-    if (sumAdjustedProbs < 1) {
-        return Array(impliedProbs.length).fill(0);
-    }
-
-    const normalizationFactor = targetTotalImpliedProbs / sumAdjustedProbs;
-    adjustedImpliedProbs = adjustedImpliedProbs.map((prob) => prob * normalizationFactor);
-
-    return adjustedImpliedProbs;
+    return impliedProbs;
 };
 
 export const getSpreadData = (
