@@ -318,6 +318,11 @@ export const createChildMarkets: (
                     return !minOdds || !maxOdds || impliedOdds >= minOdds || impliedOdds <= maxOdds ? 0 : impliedOdds;
                 }),
                 positionNames: data.positionNames,
+                playerProps: {
+                    playerId: 0,
+                    playerName: '',
+                },
+                isPlayerPropsMarket: false,
             };
             childMarkets.push(childMarket);
         });
