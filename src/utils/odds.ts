@@ -308,7 +308,7 @@ export const generateMarkets: (
             const minOdds = leagueInfoByTypeId?.minOdds;
             const maxOdds = leagueInfoByTypeId?.maxOdds;
 
-            const childMarket = {
+            const childMarket: ChildMarket = {
                 leagueId: Number(data.sportId),
                 typeId: Number(data.typeId),
                 type: MarketTypeMap[data.typeId as MarketType]?.key || '',
@@ -318,6 +318,11 @@ export const generateMarkets: (
                     return !minOdds || !maxOdds || impliedOdds >= minOdds || impliedOdds <= maxOdds ? 0 : impliedOdds;
                 }),
                 positionNames: data.positionNames,
+                playerProps: {
+                    playerId: 0,
+                    playerName: '',
+                },
+                isPlayerPropsMarket: false,
             };
             childMarkets.push(childMarket);
         });
