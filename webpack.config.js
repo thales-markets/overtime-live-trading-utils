@@ -2,6 +2,8 @@ const path = require('path');
 
 module.exports = {
     entry: './index.ts',
+    mode: 'production', // ensures minification + tree-shaking
+    performance: { hints: false }, // Webpack’s size limits are for web apps, not shared libraries
     module: {
         rules: [
             {
