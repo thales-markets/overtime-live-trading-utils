@@ -12,6 +12,14 @@ import {
 } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
 import {
+    MockPlayerPropsWithLowPoints,
+    MockPlayerPropsWithNegativeOnePointDiff,
+    MockPlayerPropsWithNoMatchingLine,
+    MockPlayerPropsWithOnePointDiff,
+    MockPlayerPropsWithTwoPointDiff,
+} from '../mock/OpticOddsMock/MockNBAPlayerPropsAdjustment';
+import { MockRedisNbaPlayerPropsAdjustment } from '../mock/OpticOddsMock/MockRedisNbaPlayerPropsAdjustment';
+import {
     getLastPolledDataForBookmakers,
     getPlayersMap,
     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
@@ -175,5 +183,151 @@ describe('Bookmakers', () => {
         ];
 
         expect(__test__.shouldBlockOdds(OUR_ODDS, OTHER_ODDS, THRESHOLDS)).toBe(true);
+    });
+});
+
+describe('Bookmakers - Player Props Point Adjustment', () => {
+    it('Should find matching line when secondary bookmaker has 1 point higher', () => {
+        const freshMockRedis = JSON.parse(JSON.stringify(MockRedisNbaPlayerPropsAdjustment));
+        const freshMockOptic = JSON.parse(JSON.stringify(MockPlayerPropsWithOnePointDiff));
+
+        const market = processMarket(
+            freshMockRedis,
+            mapOpticOddsApiFixtureOdds([freshMockOptic])[0],
+            ['superbet', 'draftkings'],
+            true,
+            ODDS_THRESHOLD_ANCHORS,
+            LeagueMocks.PlayerAssistWithSecondaryBookmaker,
+            lastPolledData,
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
+        );
+
+        // Should have child markets for player props
+        expect(market.childMarkets.length).toBeGreaterThan(0);
+        // Check that the player props were matched despite the 1 point difference
+        const playerPropsMarket = market.childMarkets.find((child: any) => child.playerProps?.playerId == 54321);
+        expect(playerPropsMarket).toBeDefined();
+        expect(playerPropsMarket.playerProps.playerName).toContain('James Harden');
+    });
+
+    it('Should find matching line when secondary bookmaker has 1 point lower', () => {
+        const freshMockRedis = JSON.parse(JSON.stringify(MockRedisNbaPlayerPropsAdjustment));
+        const freshMockOptic = JSON.parse(JSON.stringify(MockPlayerPropsWithNegativeOnePointDiff));
+
+        const market = processMarket(
+            freshMockRedis,
+            mapOpticOddsApiFixtureOdds([freshMockOptic])[0],
+            ['superbet', 'draftkings'],
+            true,
+            ODDS_THRESHOLD_ANCHORS,
+            LeagueMocks.PlayerAssistWithSecondaryBookmaker,
+            lastPolledData,
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
+        );
+
+        // Should have child markets for player props
+        expect(market.childMarkets.length).toBeGreaterThan(0);
+
+        // Check that the player props were matched despite the -1 point difference
+        const playerPropsMarket = market.childMarkets.find((child: any) => child.playerProps?.playerId === 77889);
+        expect(playerPropsMarket).toBeDefined();
+        expect(playerPropsMarket.playerProps.playerName).toContain('LeBron James');
+    });
+
+    it('Should find matching line when secondary bookmaker has 2 points higher', () => {
+        const freshMockRedis = JSON.parse(JSON.stringify(MockRedisNbaPlayerPropsAdjustment));
+        const freshMockOptic = JSON.parse(JSON.stringify(MockPlayerPropsWithTwoPointDiff));
+
+        const market = processMarket(
+            freshMockRedis,
+            mapOpticOddsApiFixtureOdds([freshMockOptic])[0],
+            ['superbet', 'draftkings'],
+            true,
+            ODDS_THRESHOLD_ANCHORS,
+            LeagueMocks.PlayerAssistWithSecondaryBookmaker,
+            lastPolledData,
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
+        );
+
+        // Should have child markets for player props
+        expect(market.childMarkets.length).toBeGreaterThan(0);
+
+        // Check that the player props were matched despite the 2 point difference
+        const playerPropsMarket = market.childMarkets.find((child: any) => child.playerProps?.playerId === 99001);
+        expect(playerPropsMarket).toBeDefined();
+        expect(playerPropsMarket.playerProps.playerName).toContain('Stephen Curry');
+    });
+
+    it('Should NOT find matching line when difference is too large (beyond step range)', () => {
+        const freshMockRedis = JSON.parse(JSON.stringify(MockRedisNbaPlayerPropsAdjustment));
+        const freshMockOptic = JSON.parse(JSON.stringify(MockPlayerPropsWithNoMatchingLine));
+
+        const market = processMarket(
+            freshMockRedis,
+            mapOpticOddsApiFixtureOdds([freshMockOptic])[0],
+            ['superbet', 'draftkings'],
+            true,
+            ODDS_THRESHOLD_ANCHORS,
+            LeagueMocks.PlayerAssistWithSecondaryBookmaker,
+            lastPolledData,
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
+        );
+
+        // Check that the player props were NOT matched (5 point difference is too large for 25.5 points)
+        const playerPropsMarket = market.childMarkets.find((child: any) => child.playerProps?.playerId === 44556);
+        expect(playerPropsMarket).toBeUndefined();
+    });
+
+    it('Should find matching line with low point values using appropriate step calculation', () => {
+        const freshMockRedis = JSON.parse(JSON.stringify(MockRedisNbaPlayerPropsAdjustment));
+        const freshMockOptic = JSON.parse(JSON.stringify(MockPlayerPropsWithLowPoints));
+
+        const market = processMarket(
+            freshMockRedis,
+            mapOpticOddsApiFixtureOdds([freshMockOptic])[0],
+            ['superbet', 'draftkings'],
+            true,
+            ODDS_THRESHOLD_ANCHORS,
+            LeagueMocks.PlayerAssistWithSecondaryBookmaker,
+            lastPolledData,
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
+        );
+
+        // Should have child markets for player props
+        expect(market.childMarkets.length).toBeGreaterThan(0);
+
+        // Check that the player props were matched with low points (10.5 vs 11.5)
+        const playerPropsMarket = market.childMarkets.find((child: any) => child.playerProps?.playerId === 11223);
+        expect(playerPropsMarket).toBeDefined();
+        expect(playerPropsMarket.playerProps.playerName).toContain('Anthony Davis');
+    });
+
+    it('Should work correctly with only primary bookmaker (no adjustment needed)', () => {
+        const freshMockRedis = JSON.parse(JSON.stringify(MockRedisNbaPlayerPropsAdjustment));
+        const freshMockOptic = JSON.parse(JSON.stringify(MockPlayerPropsWithOnePointDiff));
+
+        const market = processMarket(
+            freshMockRedis,
+            mapOpticOddsApiFixtureOdds([freshMockOptic])[0],
+            ['superbet'], // Only primary bookmaker
+            true,
+            ODDS_THRESHOLD_ANCHORS,
+            LeagueMocks.PlayerAssist, // Config without secondary bookmaker
+            lastPolledData,
+            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap
+        );
+
+        // Should still have child markets for player props
+        expect(market.childMarkets.length).toBeGreaterThan(0);
+
+        // Check that the player props were included (no adjustment logic needed)
+        const playerPropsMarket = market.childMarkets.find((child: any) => child.playerProps?.playerId === 54321);
+        expect(playerPropsMarket).toBeDefined();
     });
 });

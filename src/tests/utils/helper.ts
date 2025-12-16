@@ -10,9 +10,15 @@ export const getLastPolledDataForBookmakers = () => {
 
 export const getPlayersMap = () => {
     const playersMap: Map<string, number> = new Map<string, number>();
-    playersMap.set('0C07D14CC5DC', 13234);
-    playersMap.set('AD91EA260284', 56789);
-    playersMap.set('674851E026BC', 98765);
+    playersMap
+        .set('0C07D14CC5DC', 13234)
+        .set('AD91EA260284', 56789)
+        .set('674851E026BC', 98765)
+        .set('CC707B1EADE5', 54321)
+        .set('JKL012', 11223)
+        .set('GHI789', 44556)
+        .set('ABC123', 77889)
+        .set('DEF456', 99001);
     return playersMap;
 };
 
