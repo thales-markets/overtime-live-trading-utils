@@ -183,6 +183,7 @@ export const checkOddsFromBookmakersForChildMarkets = (
                     }
                 } else {
                     if (sportsBookName.toLowerCase() === primaryBookmaker) {
+                        if (value.playerId && !value.isMain) return acc; // Skip if not main for player props
                         const secondaryBookmakerObject =
                             odds[
                                 `${secondaryBookmaker}_${marketName.toLowerCase()}_${points}_${selection}_${selectionLine}`
@@ -194,6 +195,24 @@ export const checkOddsFromBookmakersForChildMarkets = (
                             }
 
                             acc.push(value);
+                        } else {
+                            // if its player props and we didnt find the correct line, try adjusting points by steps defined and search again
+                            if (value.playerId) {
+                                const steps = getStepsForPointAdjustment(Number(points));
+                                for (const step of steps) {
+                                    const adjustedPoints = (Number(points) + step).toString();
+
+                                    const secondaryBookmakerObject =
+                                        odds[
+                                            `${secondaryBookmaker}_${marketName.toLowerCase()}_${adjustedPoints}_${selection}_${selectionLine}`
+                                        ];
+
+                                    if (secondaryBookmakerObject) {
+                                        acc.push(value);
+                                        break;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -294,6 +313,16 @@ const shouldBlockOdds = (ourOdds: number, otherOdds: number, anchors: Anchor[]) 
 
     // Block if the other book is below the required threshold
     return otherOdds < requiredOther;
+};
+
+const getStepsForPointAdjustment = (points: number): number[] => {
+    const stepsDelta = Math.round(points / 10); // Example logic: 10% of the points value
+    const steps: number[] = [];
+    for (let index = 1; index <= stepsDelta; index++) {
+        steps.push(-index, index);
+    }
+
+    return steps;
 };
 
 // Export only when running tests

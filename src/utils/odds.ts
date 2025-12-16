@@ -351,8 +351,8 @@ export const filterOdds = (oddsArray: Odds, leagueInfos: LeagueConfigInfo[], pla
         .map((leagueInfo) => leagueInfo.marketName.toLowerCase());
     return oddsArray.reduce((acc: any, odd: any) => {
         if (allChildMarketsTypes.includes(odd.marketName.toLowerCase())) {
-            const { points, marketName, selection, selectionLine, sportsBookName, playerId, isMain } = odd;
-            if (playerId && (!playersMap.has(playerId) || !isMain)) {
+            const { points, marketName, selection, selectionLine, sportsBookName, playerId } = odd;
+            if (playerId && !playersMap.has(playerId)) {
                 return acc;
             }
             const key = `${sportsBookName.toLowerCase()}_${marketName.toLowerCase()}_${points}_${selection}_${selectionLine}`;
