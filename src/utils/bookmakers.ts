@@ -156,7 +156,8 @@ export const checkOddsFromBookmakersForChildMarkets = (
     oddsProviders: string[],
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
-    anchors: Anchor[]
+    anchors: Anchor[],
+    percentageDiffForPPLines: number
 ): OddsWithLeagueInfo => {
     const formattedOdds = Object.entries(odds as any).reduce((acc: any, [key, value]: [string, any]) => {
         const [sportsBookName, marketName, points, selection, selectionLine] = key.split('_');
@@ -198,7 +199,7 @@ export const checkOddsFromBookmakersForChildMarkets = (
                         } else {
                             // if its player props and we didnt find the correct line, try adjusting points by steps defined and search again
                             if (value.playerId) {
-                                const steps = getStepsForPointAdjustment(Number(points));
+                                const steps = getStepsForPointAdjustment(Number(points), percentageDiffForPPLines);
                                 for (const step of steps) {
                                     const adjustedPoints = (Number(points) + step).toString();
 
@@ -315,8 +316,8 @@ const shouldBlockOdds = (ourOdds: number, otherOdds: number, anchors: Anchor[]) 
     return otherOdds < requiredOther;
 };
 
-const getStepsForPointAdjustment = (points: number): number[] => {
-    const stepsDelta = Math.round(points / 10); // Example logic: 10% of the points value
+const getStepsForPointAdjustment = (points: number, percentageDiffForPPLines: number): number[] => {
+    const stepsDelta = Math.round((points * percentageDiffForPPLines) / 100); // Example logic: 10% of the points value
     const steps: number[] = [];
     for (let index = 1; index <= stepsDelta; index++) {
         steps.push(-index, index);

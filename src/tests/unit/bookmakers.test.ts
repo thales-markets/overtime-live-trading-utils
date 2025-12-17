@@ -23,6 +23,7 @@ import {
     getLastPolledDataForBookmakers,
     getPlayersMap,
     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+    PERCENTAGE_DIFF_FOR_PP_LINES,
 } from '../utils/helper';
 
 const lastPolledData = getLastPolledDataForBookmakers();
@@ -41,7 +42,8 @@ describe('Bookmakers', () => {
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap
+            playersMap,
+            PERCENTAGE_DIFF_FOR_PP_LINES
         );
 
         const hasOdds = market.odds.some(
@@ -65,7 +67,8 @@ describe('Bookmakers', () => {
             LeagueMocks.leagueInfoOnlyParent,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap
+            playersMap,
+            PERCENTAGE_DIFF_FOR_PP_LINES
         );
 
         const hasOdds = market.odds.some(
@@ -89,7 +92,8 @@ describe('Bookmakers', () => {
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap
+            playersMap,
+            PERCENTAGE_DIFF_FOR_PP_LINES
         );
 
         const hasOdds = market.odds.some(
@@ -109,12 +113,12 @@ describe('Bookmakers', () => {
             mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
             ['bovada', 'draftkings'],
             true,
-
             ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap
+            playersMap,
+            PERCENTAGE_DIFF_FOR_PP_LINES
         );
 
         expect(market.childMarkets.length).toBe(2);
@@ -128,12 +132,12 @@ describe('Bookmakers', () => {
             mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
             ['bovada', 'draftkings'],
             true,
-
             ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leaguInfoDifferentPrimaryBookmaker,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap
+            playersMap,
+            PERCENTAGE_DIFF_FOR_PP_LINES
         );
 
         expect(market.childMarkets.length).toBe(3);
@@ -146,14 +150,13 @@ describe('Bookmakers', () => {
             freshMockSoccer,
             mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
             ['bovada', 'draftkings'],
-
             true,
-
             ODDS_THRESHOLD_ANCHORS,
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap
+            playersMap,
+            PERCENTAGE_DIFF_FOR_PP_LINES
         );
 
         expect(market.childMarkets.length).toBe(1);
@@ -200,7 +203,8 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             LeagueMocks.PlayerAssistWithSecondaryBookmaker,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap
+            playersMap,
+            PERCENTAGE_DIFF_FOR_PP_LINES
         );
 
         // Should have child markets for player props
@@ -224,7 +228,8 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             LeagueMocks.PlayerAssistWithSecondaryBookmaker,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap
+            playersMap,
+            PERCENTAGE_DIFF_FOR_PP_LINES
         );
 
         // Should have child markets for player props
@@ -249,7 +254,8 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             LeagueMocks.PlayerAssistWithSecondaryBookmaker,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap
+            playersMap,
+            PERCENTAGE_DIFF_FOR_PP_LINES
         );
 
         // Should have child markets for player props
@@ -274,7 +280,8 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             LeagueMocks.PlayerAssistWithSecondaryBookmaker,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap
+            playersMap,
+            PERCENTAGE_DIFF_FOR_PP_LINES
         );
 
         // Check that the player props were NOT matched (5 point difference is too large for 25.5 points)
@@ -295,7 +302,8 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             LeagueMocks.PlayerAssistWithSecondaryBookmaker,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap
+            playersMap,
+            PERCENTAGE_DIFF_FOR_PP_LINES
         );
 
         // Should have child markets for player props
@@ -320,7 +328,8 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             LeagueMocks.PlayerAssist, // Config without secondary bookmaker
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap
+            playersMap,
+            PERCENTAGE_DIFF_FOR_PP_LINES
         );
 
         // Should still have child markets for player props

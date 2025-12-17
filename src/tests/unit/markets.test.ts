@@ -11,6 +11,7 @@ import {
     getLastPolledDataForBookmakers,
     getPlayersMap,
     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+    PERCENTAGE_DIFF_FOR_PP_LINES,
 } from '../utils/helper';
 
 const lastPolledData = getLastPolledDataForBookmakers();
@@ -31,7 +32,8 @@ describe('Markets', () => {
                 LeagueMocks.leagueInfoOnlyParent,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                playersMap
+                playersMap,
+                PERCENTAGE_DIFF_FOR_PP_LINES
             );
 
             expect(market.childMarkets).toHaveLength(0);
@@ -49,7 +51,8 @@ describe('Markets', () => {
                 LeagueMocks.leagueInfoMockDisabledChilds,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                playersMap
+                playersMap,
+                PERCENTAGE_DIFF_FOR_PP_LINES
             );
 
             expect(market.childMarkets).toHaveLength(0);
@@ -67,7 +70,8 @@ describe('Markets', () => {
                 LeagueMocks.leagueInfoEnabledSpreadDisabledTotals,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                playersMap
+                playersMap,
+                PERCENTAGE_DIFF_FOR_PP_LINES
             );
 
             const containsSpread = market.childMarkets.some((child: any) => child.type === 'spread');
@@ -89,7 +93,8 @@ describe('Markets', () => {
                 LeagueMocks.leagueInfoEnabledSpeadAndTotals,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                playersMap
+                playersMap,
+                PERCENTAGE_DIFF_FOR_PP_LINES
             );
 
             const containsSpread = market.childMarkets.some((child: any) => child.type === 'spread');
@@ -111,7 +116,8 @@ describe('Markets', () => {
                 LeagueMocks.leagueInfoEnabledAll,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                playersMap
+                playersMap,
+                PERCENTAGE_DIFF_FOR_PP_LINES
             );
 
             const containsSpread = market.childMarkets.some((child: any) => child.type === 'spread');
@@ -165,7 +171,8 @@ describe('Markets', () => {
                 LeagueMocks.leagueInfoOnlyParentDiffSportId,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                playersMap
+                playersMap,
+                PERCENTAGE_DIFF_FOR_PP_LINES
             );
 
             expect(warnSpy).toHaveBeenCalled();
@@ -187,7 +194,8 @@ describe('Markets', () => {
                 LeagueMocks.PlayerAssist, // league map with player props configured
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                playersMap
+                playersMap,
+                PERCENTAGE_DIFF_FOR_PP_LINES
             );
 
             market.childMarkets.forEach((child: any) => {
@@ -209,7 +217,8 @@ describe('Markets', () => {
                 LeagueMocks.PlayerAssist, // league map with player props configured
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                playersMap
+                playersMap,
+                PERCENTAGE_DIFF_FOR_PP_LINES
             );
 
             market.childMarkets.forEach((child: any) => {

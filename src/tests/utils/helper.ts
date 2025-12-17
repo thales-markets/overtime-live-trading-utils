@@ -21,5 +21,6 @@ export const getPlayersMap = () => {
         .set('DEF456', 99001);
     return playersMap;
 };
+export const PERCENTAGE_DIFF_FOR_PP_LINES = 10; // 10%, used for tests, the production value is from env variable
 
 export const MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST = 30000; // 30 seconds

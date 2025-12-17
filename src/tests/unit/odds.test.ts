@@ -14,6 +14,7 @@ import {
     getLastPolledDataForBookmakers,
     getPlayersMap,
     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+    PERCENTAGE_DIFF_FOR_PP_LINES,
 } from '../utils/helper';
 
 const lastPolledData = getLastPolledDataForBookmakers();
@@ -32,7 +33,8 @@ describe('Odds', () => {
             LeagueMocks.leagueInfoOnlyParent,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap
+            playersMap,
+            PERCENTAGE_DIFF_FOR_PP_LINES
         );
 
         const hasOdds = market.odds.some(
@@ -54,7 +56,8 @@ describe('Odds', () => {
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap
+            playersMap,
+            PERCENTAGE_DIFF_FOR_PP_LINES
         );
 
         const hasOdds = market.odds.some(
@@ -78,7 +81,8 @@ describe('Odds', () => {
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap
+            playersMap,
+            PERCENTAGE_DIFF_FOR_PP_LINES
         );
 
         const hasChildMarkets = market.childMarkets.length > 0;
@@ -97,7 +101,8 @@ describe('Odds', () => {
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap
+            playersMap,
+            PERCENTAGE_DIFF_FOR_PP_LINES
         );
 
         expect(market.childMarkets).toHaveLength(0);
