@@ -11,7 +11,7 @@ import {
     getLastPolledDataForBookmakers,
     getPlayersMap,
     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-    PERCENTAGE_DIFF_FOR_PP_LINES,
+    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
 } from '../utils/helper';
 
 const lastPolledData = getLastPolledDataForBookmakers();
@@ -33,7 +33,7 @@ describe('Markets', () => {
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
                 playersMap,
-                PERCENTAGE_DIFF_FOR_PP_LINES
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
 
             expect(market.childMarkets).toHaveLength(0);
@@ -52,7 +52,7 @@ describe('Markets', () => {
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
                 playersMap,
-                PERCENTAGE_DIFF_FOR_PP_LINES
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
 
             expect(market.childMarkets).toHaveLength(0);
@@ -71,7 +71,7 @@ describe('Markets', () => {
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
                 playersMap,
-                PERCENTAGE_DIFF_FOR_PP_LINES
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
 
             const containsSpread = market.childMarkets.some((child: any) => child.type === 'spread');
@@ -94,7 +94,7 @@ describe('Markets', () => {
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
                 playersMap,
-                PERCENTAGE_DIFF_FOR_PP_LINES
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
 
             const containsSpread = market.childMarkets.some((child: any) => child.type === 'spread');
@@ -117,7 +117,7 @@ describe('Markets', () => {
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
                 playersMap,
-                PERCENTAGE_DIFF_FOR_PP_LINES
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
 
             const containsSpread = market.childMarkets.some((child: any) => child.type === 'spread');
@@ -172,7 +172,7 @@ describe('Markets', () => {
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
                 playersMap,
-                PERCENTAGE_DIFF_FOR_PP_LINES
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
 
             expect(warnSpy).toHaveBeenCalled();
@@ -195,7 +195,7 @@ describe('Markets', () => {
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
                 playersMap,
-                PERCENTAGE_DIFF_FOR_PP_LINES
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
 
             market.childMarkets.forEach((child: any) => {
@@ -218,7 +218,7 @@ describe('Markets', () => {
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
                 playersMap,
-                PERCENTAGE_DIFF_FOR_PP_LINES
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
 
             market.childMarkets.forEach((child: any) => {

@@ -30,7 +30,7 @@ export const processMarket = (
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
     playersMap: Map<string, number>,
-    percentageDiffForPPLines: number
+    maxPercentageDiffForPPLines: number
 ) => {
     const leagueInfo = getLeagueInfo(market.leagueId, leagueMap);
 
@@ -85,7 +85,7 @@ export const processMarket = (
         maxAllowedProviderDataStaleDelay,
         anchors,
         playersMap,
-        percentageDiffForPPLines
+        maxPercentageDiffForPPLines
     );
 
     const packedChildMarkets = childMarkets.map((childMarket: any) => {

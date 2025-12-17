@@ -199,7 +199,7 @@ export const createChildMarkets: (
     maxAllowedProviderDataStaleDelay: number,
     anchors: Anchor[],
     playersMap: Map<string, number>,
-    percentageDiffForPPLines: number
+    maxPercentageDiffForPPLines: number
 ) => ChildMarket[] = (
     apiResponseWithOdds,
     leagueId,
@@ -209,7 +209,7 @@ export const createChildMarkets: (
     maxAllowedProviderDataStaleDelay,
     anchors,
     playersMap,
-    percentageDiffForPPLines
+    maxPercentageDiffForPPLines
 ) => {
     const [spreadOdds, totalOdds, moneylineOdds, correctScoreOdds, doubleChanceOdds, ggOdds, childMarkets]: any[] = [
         [],
@@ -235,7 +235,7 @@ export const createChildMarkets: (
             lastPolledData,
             maxAllowedProviderDataStaleDelay,
             anchors,
-            percentageDiffForPPLines
+            maxPercentageDiffForPPLines
         );
         checkedChildOdds.forEach((odd) => {
             if (odd.type === 'Total') {

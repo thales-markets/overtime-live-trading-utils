@@ -23,7 +23,7 @@ import {
     getLastPolledDataForBookmakers,
     getPlayersMap,
     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-    PERCENTAGE_DIFF_FOR_PP_LINES,
+    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
 } from '../utils/helper';
 
 const lastPolledData = getLastPolledDataForBookmakers();
@@ -43,7 +43,7 @@ describe('Bookmakers', () => {
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            PERCENTAGE_DIFF_FOR_PP_LINES
+            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
         );
 
         const hasOdds = market.odds.some(
@@ -68,7 +68,7 @@ describe('Bookmakers', () => {
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            PERCENTAGE_DIFF_FOR_PP_LINES
+            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
         );
 
         const hasOdds = market.odds.some(
@@ -93,7 +93,7 @@ describe('Bookmakers', () => {
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            PERCENTAGE_DIFF_FOR_PP_LINES
+            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
         );
 
         const hasOdds = market.odds.some(
@@ -118,7 +118,7 @@ describe('Bookmakers', () => {
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            PERCENTAGE_DIFF_FOR_PP_LINES
+            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
         );
 
         expect(market.childMarkets.length).toBe(2);
@@ -137,7 +137,7 @@ describe('Bookmakers', () => {
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            PERCENTAGE_DIFF_FOR_PP_LINES
+            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
         );
 
         expect(market.childMarkets.length).toBe(3);
@@ -156,7 +156,7 @@ describe('Bookmakers', () => {
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            PERCENTAGE_DIFF_FOR_PP_LINES
+            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
         );
 
         expect(market.childMarkets.length).toBe(1);
@@ -204,7 +204,7 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            PERCENTAGE_DIFF_FOR_PP_LINES
+            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
         );
 
         // Should have child markets for player props
@@ -229,7 +229,7 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            PERCENTAGE_DIFF_FOR_PP_LINES
+            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
         );
 
         // Should have child markets for player props
@@ -255,7 +255,7 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            PERCENTAGE_DIFF_FOR_PP_LINES
+            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
         );
 
         // Should have child markets for player props
@@ -281,7 +281,7 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            PERCENTAGE_DIFF_FOR_PP_LINES
+            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
         );
 
         // Check that the player props were NOT matched (5 point difference is too large for 25.5 points)
@@ -303,7 +303,7 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            PERCENTAGE_DIFF_FOR_PP_LINES
+            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
         );
 
         // Should have child markets for player props
@@ -329,7 +329,7 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            PERCENTAGE_DIFF_FOR_PP_LINES
+            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
         );
 
         // Should still have child markets for player props

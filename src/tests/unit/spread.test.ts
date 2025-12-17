@@ -9,7 +9,7 @@ import {
     getLastPolledDataForBookmakers,
     getPlayersMap,
     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-    PERCENTAGE_DIFF_FOR_PP_LINES,
+    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
 } from '../utils/helper';
 
 const lastPolledData = getLastPolledDataForBookmakers();
@@ -29,7 +29,7 @@ describe('Spread configuration', () => {
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            PERCENTAGE_DIFF_FOR_PP_LINES
+            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
         );
 
         const hasOdds = market.odds.some(
@@ -56,7 +56,7 @@ describe('Spread configuration', () => {
                     lastPolledData,
                     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
                     playersMap,
-                    PERCENTAGE_DIFF_FOR_PP_LINES
+                    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
                 )
             )
         );
@@ -73,7 +73,7 @@ describe('Spread configuration', () => {
                     lastPolledData,
                     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
                     playersMap,
-                    PERCENTAGE_DIFF_FOR_PP_LINES
+                    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
                 )
             )
         );
@@ -110,7 +110,7 @@ describe('Spread configuration', () => {
                     lastPolledData,
                     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
                     playersMap,
-                    PERCENTAGE_DIFF_FOR_PP_LINES
+                    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
                 )
             )
         );
@@ -127,7 +127,7 @@ describe('Spread configuration', () => {
                     lastPolledData,
                     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
                     playersMap,
-                    PERCENTAGE_DIFF_FOR_PP_LINES
+                    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
                 )
             )
         );
