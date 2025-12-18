@@ -395,7 +395,7 @@ export const groupAndFormatGGOdds = (oddsArray: any[]) => {
         const key = typeId;
 
         if (!acc[key]) {
-            acc[key] = { home: null, away: null, draw: null, typeId: null, sportId: null };
+            acc[key] = { home: null, away: null, typeId: null, sportId: null };
         }
 
         if (selection.toLowerCase() === 'yes') acc[key].home = price;
@@ -411,9 +411,7 @@ export const groupAndFormatGGOdds = (oddsArray: any[]) => {
     // Format the grouped odds into the desired output
     const formattedOdds = Object.entries(groupedOdds as any).reduce((acc: any, [_key, value]) => {
         acc.push({
-            odds: (value as any).draw
-                ? [(value as any).home, (value as any).away, (value as any).draw]
-                : [(value as any).home, (value as any).away],
+            odds: [(value as any).home, (value as any).away],
             typeId: (value as any).typeId,
             sportId: (value as any).sportId,
             type: (value as any).type,
@@ -787,7 +785,7 @@ export const sanityCheck = (iterableGroupedOdds: any[]) => {
         let odds = data.odds.map((odd: number) => convertOddsToImpl(odd) || ZERO);
         if (data.odds.length > 0) {
             if (data.odds.length > 1) {
-                odds = sanityCheckForOdds(odds, data.sportId);
+                odds = sanityCheckForOdds(odds, data);
             }
 
             result.push({

@@ -1,7 +1,7 @@
 import { getLeagueIsDrawAvailable } from 'overtime-utils';
 import { LeagueConfigInfo } from '../types/sports';
 
-export const sanityCheckForOdds = (impliedProbs: number[], sportId: number) => {
+export const sanityCheckForOdds = (impliedProbs: number[], data: any) => {
     // Step 1: Check if any implied probability is zero
     if (impliedProbs.some((prob) => prob === 0)) {
         return impliedProbs;
@@ -12,8 +12,8 @@ export const sanityCheckForOdds = (impliedProbs: number[], sportId: number) => {
 
     if (totalImpliedProbs <= 1) {
         if (impliedProbs.length === 2) {
-            const isDrawAvailable = getLeagueIsDrawAvailable(sportId);
-            if (isDrawAvailable) {
+            const isDrawAvailable = getLeagueIsDrawAvailable(data.sportId);
+            if (isDrawAvailable && data.type.toLowerCase() === 'moneyline') {
                 return impliedProbs;
             }
         }
