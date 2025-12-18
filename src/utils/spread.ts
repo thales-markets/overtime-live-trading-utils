@@ -1,6 +1,7 @@
+import { getLeagueIsDrawAvailable } from 'overtime-utils';
 import { LeagueConfigInfo } from '../types/sports';
 
-export const sanityCheckForOdds = (impliedProbs: number[]) => {
+export const sanityCheckForOdds = (impliedProbs: number[], sportId: number) => {
     // Step 1: Check if any implied probability is zero
     if (impliedProbs.some((prob) => prob === 0)) {
         return impliedProbs;
@@ -9,24 +10,12 @@ export const sanityCheckForOdds = (impliedProbs: number[]) => {
     // Step 2: Calculate the current total implied probabilities
     const totalImpliedProbs = impliedProbs.reduce((sum, prob) => sum + prob, 0);
 
-    // Step 3: Check if the sum of implied probabilities is greater than 1
-    // Special case: If we have exactly 2 odds and sum <= 1, this likely indicates
-    // a 3-positional sport where the bookmaker didn't provide the draw odds.
-    // However, we need to ensure the odds are reasonable (not artificially similar).
     if (totalImpliedProbs <= 1) {
         if (impliedProbs.length === 2) {
-            // Check if odds are suspiciously similar (within 5% of each other)
-            // which would suggest bad data rather than a legitimate missing draw
-            const [prob1, prob2] = impliedProbs;
-            const ratio = Math.max(prob1, prob2) / Math.min(prob1, prob2);
-
-            // If ratio is close to 1 (within 1.15), odds are too similar - reject them
-            if (ratio < 1.15) {
-                return Array(impliedProbs.length).fill(0);
+            const isDrawAvailable = getLeagueIsDrawAvailable(sportId);
+            if (isDrawAvailable) {
+                return impliedProbs;
             }
-
-            // Odds are different enough, likely a valid missing draw case
-            return impliedProbs;
         }
         return Array(impliedProbs.length).fill(0);
     }

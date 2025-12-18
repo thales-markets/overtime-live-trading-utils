@@ -787,7 +787,7 @@ export const sanityCheck = (iterableGroupedOdds: any[]) => {
         let odds = data.odds.map((odd: number) => convertOddsToImpl(odd) || ZERO);
         if (data.odds.length > 0) {
             if (data.odds.length > 1) {
-                odds = sanityCheckForOdds(odds);
+                odds = sanityCheckForOdds(odds, data.sportId);
             }
 
             result.push({

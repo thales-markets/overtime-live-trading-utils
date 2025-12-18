@@ -15,7 +15,7 @@ const lastPolledData = getLastPolledDataForBookmakers();
 const playersMap = getPlayersMap();
 
 describe('Spread configuration', () => {
-    it('Should return zero odds for quotes that sum up total probability above 1', () => {
+    it('Should return odds even when total probability is below 1 as draw is missing for 3-way sport', () => {
         const freshMockSoccer = JSON.parse(JSON.stringify(mockSoccer));
         const freshMockOpticSoccer = JSON.parse(JSON.stringify(MockAfterSpreadZeroOdds1));
         const market = processMarket(
@@ -34,7 +34,7 @@ describe('Spread configuration', () => {
             (odd: any) => odd.american !== 0 || odd.decimal !== 0 || odd.normalizedImplied !== 0
         );
 
-        expect(hasOdds).toBe(false);
+        expect(hasOdds).toBe(true);
     });
 
     it('Should have diff between odds equal to 3%', () => {

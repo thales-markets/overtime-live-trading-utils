@@ -1,4 +1,5 @@
 import * as oddslib from 'oddslib';
+import { getLeagueIsDrawAvailable } from 'overtime-utils';
 import { Anchor, OddsObject } from '../types/odds';
 import { LastPolledArray } from '../types/sports';
 import { generateMarkets } from './odds';
@@ -12,7 +13,6 @@ import { adjustAddedSpread } from './spread';
  * @param {Object} market - The market API object to process
  * @param {Object} apiResponseWithOdds - Provider's API object to process
  * @param {Array} liveOddsProviders - Odds providers for live odds
- * @param {Boolean} isDrawAvailable - Is it two or three-positional sport
  * @param {Object} leagueMap - League map for additional league information
  * @param {LastPolledArray} lastPolledData - Array containing last polled timestamps for bookmakers
  * @param {Number} maxAllowedProviderDataStaleDelay - Maximum allowed delay for provider data to be considered fresh
@@ -33,7 +33,7 @@ export const processMarket = (
     const leagueInfo = getLeagueInfo(market.leagueId, leagueMap);
 
     // Determine if this is a 3-positional sport based on the prematch odds array length
-    const isThreePositionalSport = market.odds.length === 3;
+    const isThreePositionalSport = getLeagueIsDrawAvailable(market.leagueId);
 
     const allMarkets = generateMarkets(
         apiResponseWithOdds,
