@@ -53,7 +53,8 @@ export const generateMarkets: (
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
     anchors: Anchor[],
-    playersMap: Map<string, number>
+    playersMap: Map<string, number>,
+    maxPercentageDiffForPPLines: number
 ) => ChildMarket[] = (
     apiResponseWithOdds,
     leagueId,
@@ -62,7 +63,8 @@ export const generateMarkets: (
     lastPolledData,
     maxAllowedProviderDataStaleDelay,
     anchors,
-    playersMap
+    playersMap,
+    maxPercentageDiffForPPLines
 ) => {
     const [spreadOdds, totalOdds, moneylineOdds, correctScoreOdds, doubleChanceOdds, ggOdds, childMarkets]: any[] = [
         [],
@@ -87,7 +89,8 @@ export const generateMarkets: (
             liveOddsProviders,
             lastPolledData,
             maxAllowedProviderDataStaleDelay,
-            anchors
+            anchors,
+            maxPercentageDiffForPPLines
         );
         checkedOdds.forEach((odd) => {
             if (odd.type.toLowerCase() === 'total') {
@@ -202,8 +205,8 @@ export const filterOdds = (oddsArray: Odds, leagueInfos: LeagueConfigInfo[], pla
         .map((leagueInfo) => leagueInfo.marketName.toLowerCase());
     return oddsArray.reduce((acc: any, odd: any) => {
         if (allMarketsTypes.includes(odd.marketName.toLowerCase())) {
-            const { points, marketName, selection, selectionLine, sportsBookName, playerId, isMain } = odd;
-            if (playerId && (!playersMap.has(playerId) || !isMain)) {
+            const { points, marketName, selection, selectionLine, sportsBookName, playerId } = odd;
+            if (playerId && !playersMap.has(playerId)) {
                 return acc;
             }
             const key = `${sportsBookName.toLowerCase()}_${marketName.toLowerCase()}_${points}_${selection}_${selectionLine}`;

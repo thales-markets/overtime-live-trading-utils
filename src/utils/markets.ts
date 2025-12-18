@@ -27,7 +27,8 @@ export const processMarket = (
     leagueMap: any,
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
-    playersMap: Map<string, number>
+    playersMap: Map<string, number>,
+    maxPercentageDiffForPPLines: number
 ) => {
     const leagueInfo = getLeagueInfo(market.leagueId, leagueMap);
 
@@ -39,7 +40,8 @@ export const processMarket = (
         lastPolledData,
         maxAllowedProviderDataStaleDelay,
         anchors,
-        playersMap
+        playersMap,
+        maxPercentageDiffForPPLines
     );
 
     market.odds = market.odds.map(() => {
