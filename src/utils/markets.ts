@@ -32,6 +32,9 @@ export const processMarket = (
 ) => {
     const leagueInfo = getLeagueInfo(market.leagueId, leagueMap);
 
+    // Determine if this is a 3-positional sport based on the prematch odds array length
+    const isThreePositionalSport = market.odds.length === 3;
+
     const allMarkets = generateMarkets(
         apiResponseWithOdds,
         market.leagueId,
@@ -55,7 +58,13 @@ export const processMarket = (
     const packedChildMarkets = allMarkets.map((childMarket: any) => {
         // parent odds
         if (childMarket.typeId === 0) {
-            const oddsAfterSpread = adjustAddedSpread(childMarket.odds, leagueInfo, childMarket.typeId);
+            let oddsAfterSpread = adjustAddedSpread(childMarket.odds, leagueInfo, childMarket.typeId);
+
+            // If this is a 3-positional sport but only 2 odds are available (missing draw), pad with zero
+            if (isThreePositionalSport && oddsAfterSpread.length === 2) {
+                oddsAfterSpread = [...oddsAfterSpread, 0];
+            }
+
             market.odds = oddsAfterSpread.map((probability) => {
                 if (probability == 0) {
                     return {
