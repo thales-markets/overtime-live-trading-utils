@@ -1,16 +1,10 @@
 import * as oddslib from 'oddslib';
 import { isOneSideExtendedPlayerPropsMarket, MarketType, MarketTypeMap } from 'overtime-utils';
 import { DRAW, ZERO } from '../constants/common';
-import { LAST_POLLED_TOO_OLD, NO_MARKETS_FOR_LEAGUE_ID } from '../constants/errors';
-import { MoneylineTypes } from '../enums/sports';
+import { NO_MARKETS_FOR_LEAGUE_ID } from '../constants/errors';
 import { Anchor, HomeAwayTeams, Odds, OddsObject } from '../types/odds';
 import { ChildMarket, LastPolledArray, LeagueConfigInfo } from '../types/sports';
-import {
-    checkOdds,
-    checkOddsFromBookmakers,
-    getPrimaryAndSecondaryBookmakerForTypeId,
-    isLastPolledForBookmakersValid,
-} from './bookmakers';
+import { checkOdds } from './bookmakers';
 import { getLeagueInfo } from './sports';
 import { sanityCheckForOdds } from './spread';
 
@@ -38,145 +32,6 @@ export const getOddsFromTo = (from: string, to: string, input: number): number =
     } catch (error) {
         return 0;
     }
-};
-
-/**
- * Filters the odds array to find entries matching the specified market name and bookmaker.
- *
- * @param {Array} oddsArray - The array of odds objects.
- * @param {string} marketName - The market name to filter by.
- * @param {Array} liveOddsProviders - Odds providers for live odds
- * @param {Object} commonData - The common data object.
- * @param {boolean} isTwoPositionalSport - Indicates if the sport is a two positional sport.,
- * @returns {Map} The filtered map for odds per provider.
- */
-export const filterOddsByMarketNameTeamNameBookmaker = (
-    oddsArray: Odds,
-    marketName: MoneylineTypes,
-    liveOddsProviders: any[],
-    commonData: HomeAwayTeams,
-    isTwoPositionalSport: boolean
-) => {
-    const linesMap = new Map<any, any>();
-    liveOddsProviders.forEach((oddsProvider) => {
-        let homeOdds = 0;
-        const homeTeamOddsObject = oddsArray.filter((odd) => {
-            return (
-                odd &&
-                odd.marketName.toLowerCase() === marketName.toLowerCase() &&
-                odd.sportsBookName.toLowerCase() == oddsProvider.toLowerCase() &&
-                odd.selection.toLowerCase() === commonData.homeTeam.toLowerCase()
-            );
-        });
-        if (homeTeamOddsObject.length !== 0) {
-            homeOdds = homeTeamOddsObject[0].price;
-        }
-
-        let awayOdds = 0;
-        const awayTeamOddsObject = oddsArray.filter(
-            (odd) =>
-                odd &&
-                odd.marketName.toLowerCase() === marketName.toLowerCase() &&
-                odd.sportsBookName.toLowerCase() == oddsProvider.toLowerCase() &&
-                odd.selection.toLowerCase() === commonData.awayTeam.toLowerCase()
-        );
-
-        if (awayTeamOddsObject.length !== 0) {
-            awayOdds = awayTeamOddsObject[0].price;
-        }
-
-        let drawOdds = 0;
-        if (!isTwoPositionalSport) {
-            const drawOddsObject = oddsArray.filter(
-                (odd) =>
-                    odd &&
-                    odd.marketName.toLowerCase() === marketName.toLowerCase() &&
-                    odd.sportsBookName.toLowerCase() == oddsProvider.toLowerCase() &&
-                    odd.selection.toLowerCase() === DRAW.toLowerCase()
-            );
-
-            if (drawOddsObject.length !== 0) {
-                drawOdds = drawOddsObject[0].price;
-            }
-        }
-
-        linesMap.set(oddsProvider.toLowerCase(), {
-            homeOdds: homeOdds,
-            awayOdds: awayOdds,
-            drawOdds: drawOdds,
-        });
-    });
-    return linesMap;
-};
-
-/**
- * Retrieves the parent odds for the given event.
- *
- * @param {boolean} isTwoPositionalSport - Indicates if the sport is a two positional sport.
- * @param {Array} sportSpreadData - Spread data specific to the sport.
- * @param {Array} liveOddsProviders - Odds providers for live odds
- * @param {Object} oddsApiObject - Odds data from the API.
- * @param {String} sportId - Sport ID API.
- * @param {Number} defaultSpreadForLiveMarkets - Default spread for live markets,
- * @param {Number} maxPercentageDiffBetwenOdds - Maximum allowed percentage difference between same position odds from different providers
- * @returns {Array} The parent odds for the event [homeOdds, awayOdds, drawOdds].
- */
-export const getParentOdds = (
-    isTwoPositionalSport: boolean,
-    liveOddsProviders: any[],
-    oddsApiObject: OddsObject,
-    anchors: Anchor[],
-    leagueInfo: LeagueConfigInfo[],
-    lastPolledData: LastPolledArray,
-    maxAllowedProviderDataStaleDelay: number
-) => {
-    const commonData = { homeTeam: oddsApiObject.homeTeam, awayTeam: oddsApiObject.awayTeam };
-
-    const bookmakers = getPrimaryAndSecondaryBookmakerForTypeId(
-        liveOddsProviders,
-        leagueInfo,
-        0 // typeId for moneyline
-    );
-
-    const isValidLastPolled = isLastPolledForBookmakersValid(
-        lastPolledData,
-        maxAllowedProviderDataStaleDelay,
-        bookmakers
-    );
-
-    if (!isValidLastPolled) {
-        return {
-            odds: isTwoPositionalSport ? [0, 0] : [0, 0, 0],
-            errorMessage: LAST_POLLED_TOO_OLD,
-        };
-    }
-
-    // EXTRACTING ODDS FROM THE RESPONSE PER MARKET NAME AND BOOKMAKER
-    const moneylineOddsMap = filterOddsByMarketNameTeamNameBookmaker(
-        oddsApiObject.odds,
-        MoneylineTypes.MONEYLINE,
-        bookmakers,
-        commonData,
-        isTwoPositionalSport
-    );
-
-    // CHECKING AND COMPARING ODDS FOR THE GIVEN BOOKMAKERS
-    const oddsObject = checkOddsFromBookmakers(moneylineOddsMap, bookmakers, isTwoPositionalSport, anchors);
-
-    if (oddsObject.errorMessage) {
-        return {
-            odds: isTwoPositionalSport ? [0, 0] : [0, 0, 0],
-            errorMessage: oddsObject.errorMessage,
-        };
-    }
-    const primaryBookmakerOdds = isTwoPositionalSport
-        ? [oddsObject.homeOdds, oddsObject.awayOdds]
-        : [oddsObject.homeOdds, oddsObject.awayOdds, oddsObject.drawOdds];
-
-    let parentOdds = primaryBookmakerOdds.map((odd) => convertOddsToImpl(odd));
-    parentOdds = sanityCheckForOdds(parentOdds);
-
-    return { odds: parentOdds };
 };
 
 /**
