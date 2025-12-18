@@ -94,7 +94,7 @@ export const processMarket = (
             return preparedMarket;
         }
     });
-    market.childMarkets = packedChildMarkets;
+    market.childMarkets = packedChildMarkets.filter((m: any) => m !== undefined);
 
     return market;
 };

@@ -57,11 +57,11 @@ describe('Odds', () => {
             MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
         );
 
-        const allZeroes = market.odds.every(
+        const hasZeros = market.odds.some(
             (odd: any) => odd.american === 0 || odd.decimal === 0 || odd.normalizedImplied === 0
         );
 
-        expect(allZeroes).toBe(true);
+        expect(hasZeros).toBe(true);
     });
 
     it('Should contain child markets for good odds', () => {

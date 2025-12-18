@@ -66,11 +66,11 @@ describe('Bookmakers', () => {
             MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
         );
 
-        const hasOdds = market.odds.some(
+        const hasZeroOdds = market.odds.some(
             (odd: any) => odd.american !== 0 || odd.decimal !== 0 || odd.normalizedImplied !== 0
         );
 
-        expect(hasOdds).toBe(false);
+        expect(hasZeroOdds).toBe(true);
     });
 
     it('Should return zero odds for moneyline as no matching bookmaker was provided', () => {

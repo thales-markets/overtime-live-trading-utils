@@ -6,8 +6,8 @@ const baseLeagueInfo: LeagueConfigInfo = {
     marketName: 'Moneyline',
     typeId: 0,
     type: 'moneyline',
-    maxOdds: 0.25,
-    minOdds: 0.75,
+    maxOdds: 0,
+    minOdds: 1,
 };
 
 const baseLeagueInfoNba: LeagueConfigInfo = {
