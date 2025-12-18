@@ -27,7 +27,6 @@ describe('Markets', () => {
                 freshMockSoccer,
                 mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                 ['draftkings'],
-                true,
                 ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoOnlyParent,
                 lastPolledData,
@@ -46,7 +45,6 @@ describe('Markets', () => {
                 freshMockSoccer,
                 mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                 ['draftkings'],
-                true,
                 ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoMockDisabledChilds,
                 lastPolledData,
@@ -65,7 +63,6 @@ describe('Markets', () => {
                 freshMockSoccer,
                 mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                 ['draftkings'],
-                true,
                 ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoEnabledSpreadDisabledTotals,
                 lastPolledData,
@@ -88,7 +85,6 @@ describe('Markets', () => {
                 freshMockSoccer,
                 mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                 ['draftkings'],
-                true,
                 ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoEnabledSpeadAndTotals,
                 lastPolledData,
@@ -111,7 +107,6 @@ describe('Markets', () => {
                 freshMockSoccer,
                 mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                 ['draftkings'],
-                true,
                 ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoEnabledAll,
                 lastPolledData,
@@ -166,7 +161,6 @@ describe('Markets', () => {
                 freshMockSoccer,
                 mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                 ['draftkings'],
-                true,
                 ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoOnlyParentDiffSportId,
                 lastPolledData,
@@ -189,7 +183,6 @@ describe('Markets', () => {
                 freshMockSoccer,
                 mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                 ['bovada', 'draftkings'], // this will be ignored as primaryBookmaker is defined in LeagueMap
-                true,
                 ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.PlayerAssist, // league map with player props configured
                 lastPolledData,
@@ -212,7 +205,6 @@ describe('Markets', () => {
                 freshMockSoccer,
                 mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                 ['bovada', 'draftkings'], // this will be ignored as primaryBookmaker is defined in LeagueMap
-                true,
                 ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.PlayerAssist, // league map with player props configured
                 lastPolledData,
