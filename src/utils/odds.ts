@@ -2,7 +2,7 @@ import * as oddslib from 'oddslib';
 import { isOneSideExtendedPlayerPropsMarket, MarketType, MarketTypeMap } from 'overtime-utils';
 import { DRAW, ZERO } from '../constants/common';
 import { NO_MARKETS_FOR_LEAGUE_ID } from '../constants/errors';
-import { Anchor, HomeAwayTeams, Odds, OddsObject } from '../types/odds';
+import { Anchor, HomeAwayTeams, Odd, OddsObject, OddsWithLeagueInfo } from '../types/odds';
 import { ChildMarket, LastPolledArray, LeagueConfigInfo } from '../types/sports';
 import { checkOdds } from './bookmakers';
 import { getLeagueInfo } from './sports';
@@ -199,7 +199,11 @@ export const generateMarkets: (
  * @param {string} oddsProvider - The main odds provider to filter by.
  * @returns {Array} The filtered odds array.
  */
-export const filterOdds = (oddsArray: Odds, leagueInfos: LeagueConfigInfo[], playersMap: Map<string, number>): any => {
+export const filterOdds = (
+    oddsArray: Odd[],
+    leagueInfos: LeagueConfigInfo[],
+    playersMap: Map<string, number>
+): { [key: string]: OddsWithLeagueInfo } => {
     const allMarketsTypes = leagueInfos
         .filter((leagueInfo) => leagueInfo.enabled === 'true')
         .map((leagueInfo) => leagueInfo.marketName.toLowerCase());

@@ -151,14 +151,14 @@ export const checkOddsFromBookmakers = (
 };
 
 export const checkOdds = (
-    odds: any,
+    odds: { [key: string]: OddsWithLeagueInfo },
     leagueInfos: LeagueConfigInfo[],
     oddsProviders: string[],
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
     anchors: Anchor[],
     percentageDiffForPPLines: number
-): OddsWithLeagueInfo => {
+): OddsWithLeagueInfo[] => {
     const formattedOdds = Object.entries(odds as any).reduce((acc: any, [key, value]: [string, any]) => {
         const [sportsBookName, marketName, points, selection, selectionLine] = key.split('_');
         const info = leagueInfos.find((leagueInfo) => leagueInfo.marketName.toLowerCase() === marketName.toLowerCase());
