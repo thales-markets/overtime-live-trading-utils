@@ -4,6 +4,7 @@ import {
     ZERO_ODDS_MESSAGE,
     ZERO_ODDS_MESSAGE_SINGLE_BOOKMAKER,
 } from '../constants/errors';
+import { ChildMarketType } from '../enums/sports';
 import { BookmakersConfig } from '../types/bookmakers';
 import { Anchor, OddsWithLeagueInfo } from '../types/odds';
 import { LastPolledArray, LeagueConfigInfo } from '../types/sports';
@@ -157,8 +158,8 @@ export const checkOdds = (
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
     anchors: Anchor[],
-    percentageDiffForPPLines: number
-): OddsWithLeagueInfo[] => {
+    maxPercentageDiffForLines: number
+): OddsWithLeagueInfo => {
     const formattedOdds = Object.entries(odds as any).reduce((acc: any, [key, value]: [string, any]) => {
         const [sportsBookName, marketName, points, selection, selectionLine] = key.split('_');
         const info = leagueInfos.find((leagueInfo) => leagueInfo.marketName.toLowerCase() === marketName.toLowerCase());
@@ -197,9 +198,12 @@ export const checkOdds = (
 
                             acc.push(value);
                         } else {
-                            // if its player props and we didnt find the correct line, try adjusting points by steps defined and search again
-                            if (value.playerId) {
-                                const steps = getStepsForPointAdjustment(Number(points), percentageDiffForPPLines);
+                            // if the market is Total or Spread and we didnt find the correct line, try adjusting points by steps defined and search again
+                            if (info.type === ChildMarketType.SPREAD || info.type === ChildMarketType.TOTAL) {
+                                const steps = getStepsForPointAdjustment(
+                                    Number(points),
+                                    info.percentageDiffForLines ?? maxPercentageDiffForLines // use the value defined in csv if available, else use default from env variable
+                                );
                                 for (const step of steps) {
                                     const adjustedPoints = (Number(points) + step).toString();
 
