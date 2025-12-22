@@ -321,14 +321,12 @@ const shouldBlockOdds = (ourOdds: number, otherOdds: number, anchors: Anchor[]) 
 };
 
 const getStepsForPointAdjustment = (points: number, percentageDiffForPPLines: number): number[] => {
-    const stepsDelta = Math.round((points * percentageDiffForPPLines) / 100); // Example logic: 10% of the points value
+    const stepsDelta = Math.round((points * percentageDiffForPPLines) / 100);
     const steps: number[] = [];
-    for (let index = 1; index <= stepsDelta; index++) {
+    for (let index = 0.5; index <= stepsDelta; index += 0.5) {
         steps.push(-index, index);
     }
-
     return steps;
 };
-
 // Export only when running tests
 export const __test__ = { getRequiredOtherOdds, shouldBlockOdds };
