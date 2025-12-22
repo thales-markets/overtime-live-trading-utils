@@ -1,3 +1,4 @@
+import { ChildMarketType } from '../../enums/sports';
 import { LeagueConfigInfo } from '../../types/sports';
 
 const baseLeagueInfo: LeagueConfigInfo = {
@@ -5,7 +6,7 @@ const baseLeagueInfo: LeagueConfigInfo = {
     enabled: 'true',
     marketName: 'Moneyline',
     typeId: 0,
-    type: 'moneyline',
+    type: ChildMarketType.MONEYLINE,
     maxOdds: 0.25,
     minOdds: 0.75,
 };
@@ -15,7 +16,7 @@ const baseLeagueInfoNba: LeagueConfigInfo = {
     enabled: 'true',
     marketName: 'Moneyline',
     typeId: 0,
-    type: 'moneyline',
+    type: ChildMarketType.MONEYLINE,
     maxOdds: 0.25,
     minOdds: 0.75,
 };
@@ -25,7 +26,7 @@ const spreadMock: LeagueConfigInfo = {
     enabled: 'true',
     marketName: 'Goal Spread',
     typeId: 10001,
-    type: 'Spread',
+    type: ChildMarketType.SPREAD,
     maxOdds: 0.25,
     minOdds: 0.75,
 };
@@ -35,7 +36,7 @@ const totalMock: LeagueConfigInfo = {
     enabled: 'true',
     marketName: 'Total Goals',
     typeId: 10002,
-    type: 'Total',
+    type: ChildMarketType.TOTAL,
     maxOdds: 0.25,
     minOdds: 0.75,
 };
@@ -45,7 +46,7 @@ const doubleChanceMock: LeagueConfigInfo = {
     enabled: 'true',
     marketName: 'Double Chance',
     typeId: 10003,
-    type: 'Double Chance',
+    type: ChildMarketType.DOUBLE_CHANCE,
     maxOdds: 0.01,
     minOdds: 0.99,
 };
@@ -55,7 +56,7 @@ const correctScoreMock: LeagueConfigInfo = {
     enabled: 'true',
     marketName: 'Correct Score',
     typeId: 10100,
-    type: 'Correct Score',
+    type: ChildMarketType.CORRECT_SCORE,
     maxOdds: 0.25,
     minOdds: 0.75,
 };
@@ -65,7 +66,7 @@ const childMoneylineMock: LeagueConfigInfo = {
     enabled: 'true',
     marketName: '1st Half Moneyline',
     typeId: 10022,
-    type: 'Moneyline',
+    type: ChildMarketType.MONEYLINE,
     maxOdds: 0.25,
     minOdds: 0.75,
 };
@@ -75,7 +76,7 @@ const bothTeamsToScoreMock: LeagueConfigInfo = {
     enabled: 'true',
     marketName: 'Both Teams To Score',
     typeId: 10009,
-    type: 'Both Teams To Score',
+    type: ChildMarketType.BOTH_TEAMS_TO_SCORE,
     maxOdds: 0.01,
     minOdds: 0.99,
 };
@@ -85,7 +86,7 @@ const bothTeamsToScoreMock1stHalf: LeagueConfigInfo = {
     enabled: 'true',
     marketName: '1st Half Both Teams To Score',
     typeId: 10101,
-    type: 'Both Teams To Score',
+    type: ChildMarketType.BOTH_TEAMS_TO_SCORE,
     maxOdds: 0.01,
     minOdds: 0.99,
 };
@@ -95,7 +96,7 @@ const bothTeamsToScoreMock2ndHalf: LeagueConfigInfo = {
     enabled: 'true',
     marketName: '2nd Half Both Teams To Score',
     typeId: 10102,
-    type: 'Both Teams To Score',
+    type: ChildMarketType.BOTH_TEAMS_TO_SCORE,
     maxOdds: 0.01,
     minOdds: 0.99,
 };
@@ -105,7 +106,7 @@ const drawNoBetMock: LeagueConfigInfo = {
     enabled: 'true',
     marketName: 'Draw No Bet',
     typeId: 10010,
-    type: 'Moneyline',
+    type: ChildMarketType.MONEYLINE,
     maxOdds: 0.01,
     minOdds: 0.99,
 };
@@ -115,7 +116,7 @@ const willThereBeOvertime: LeagueConfigInfo = {
     enabled: 'true',
     marketName: 'Will There Be Overtime',
     typeId: 10131,
-    type: 'Both Teams To Score',
+    type: ChildMarketType.BOTH_TEAMS_TO_SCORE,
     maxOdds: 0.01,
     minOdds: 0.99,
 };
@@ -125,7 +126,7 @@ const teamTotal: LeagueConfigInfo = {
     enabled: 'true',
     marketName: 'Team Total',
     typeId: 10017,
-    type: 'Total',
+    type: ChildMarketType.TOTAL,
     maxOdds: 0.25,
     minOdds: 0.75,
     primaryBookmaker: 'draftkings',
@@ -138,7 +139,7 @@ const PlayerAssist: LeagueConfigInfo[] = [
         enabled: 'true',
         marketName: 'Player Assists',
         typeId: 11039,
-        type: 'Total',
+        type: ChildMarketType.TOTAL,
         maxOdds: 0.25,
         minOdds: 0.75,
         primaryBookmaker: 'superbet',
@@ -152,7 +153,7 @@ const PlayerAssistWithSecondaryBookmaker: LeagueConfigInfo[] = [
         enabled: 'true',
         marketName: 'Player Assists',
         typeId: 11039,
-        type: 'Total',
+        type: ChildMarketType.TOTAL,
         maxOdds: 0.25,
         minOdds: 0.75,
         primaryBookmaker: 'superbet',
@@ -165,7 +166,7 @@ const teamTotal2: LeagueConfigInfo = {
     enabled: 'true',
     marketName: 'Team Total',
     typeId: 10018,
-    type: 'Total',
+    type: ChildMarketType.TOTAL,
     maxOdds: 0.25,
     minOdds: 0.75,
     primaryBookmaker: 'draftkings',
