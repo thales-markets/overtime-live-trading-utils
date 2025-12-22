@@ -11,6 +11,7 @@ export type LeagueConfigInfo = {
     addedSpread?: number;
     primaryBookmaker?: string;
     secondaryBookmaker?: string;
+    percentageDiffForLines?: number;
 };
 
 export type ChildMarket = {
