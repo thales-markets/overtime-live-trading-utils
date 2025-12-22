@@ -145,6 +145,21 @@ const PlayerAssist: LeagueConfigInfo[] = [
     },
 ];
 
+const PlayerAssistWithSecondaryBookmaker: LeagueConfigInfo[] = [
+    baseLeagueInfoNba,
+    {
+        sportId: 4,
+        enabled: 'true',
+        marketName: 'Player Assists',
+        typeId: 11039,
+        type: 'Total',
+        maxOdds: 0.25,
+        minOdds: 0.75,
+        primaryBookmaker: 'superbet',
+        secondaryBookmaker: 'draftkings',
+    },
+];
+
 const teamTotal2: LeagueConfigInfo = {
     sportId: 9806,
     enabled: 'true',
@@ -222,4 +237,5 @@ export const LeagueMocks = {
     leagueInfoDisabledCorrectScoreAndDoubleChance,
     leaguInfoDifferentPrimaryBookmaker,
     PlayerAssist,
+    PlayerAssistWithSecondaryBookmaker,
 };

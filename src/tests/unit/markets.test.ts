@@ -11,6 +11,7 @@ import {
     getLastPolledDataForBookmakers,
     getPlayersMap,
     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
 } from '../utils/helper';
 
 const lastPolledData = getLastPolledDataForBookmakers();
@@ -26,14 +27,13 @@ describe('Markets', () => {
                 freshMockSoccer,
                 mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                 ['draftkings'],
-
                 true,
-
                 ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoOnlyParent,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                playersMap
+                playersMap,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
 
             expect(market.childMarkets).toHaveLength(0);
@@ -46,14 +46,13 @@ describe('Markets', () => {
                 freshMockSoccer,
                 mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                 ['draftkings'],
-
                 true,
-
                 ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoMockDisabledChilds,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                playersMap
+                playersMap,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
 
             expect(market.childMarkets).toHaveLength(0);
@@ -66,14 +65,13 @@ describe('Markets', () => {
                 freshMockSoccer,
                 mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                 ['draftkings'],
-
                 true,
-
                 ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoEnabledSpreadDisabledTotals,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                playersMap
+                playersMap,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
 
             const containsSpread = market.childMarkets.some((child: any) => child.type === 'spread');
@@ -90,14 +88,13 @@ describe('Markets', () => {
                 freshMockSoccer,
                 mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                 ['draftkings'],
-
                 true,
-
                 ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoEnabledSpeadAndTotals,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                playersMap
+                playersMap,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
 
             const containsSpread = market.childMarkets.some((child: any) => child.type === 'spread');
@@ -114,14 +111,13 @@ describe('Markets', () => {
                 freshMockSoccer,
                 mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                 ['draftkings'],
-
                 true,
-
                 ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoEnabledAll,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                playersMap
+                playersMap,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
 
             const containsSpread = market.childMarkets.some((child: any) => child.type === 'spread');
@@ -170,14 +166,13 @@ describe('Markets', () => {
                 freshMockSoccer,
                 mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                 ['draftkings'],
-
                 true,
-
                 ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.leagueInfoOnlyParentDiffSportId,
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                playersMap
+                playersMap,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
 
             expect(warnSpy).toHaveBeenCalled();
@@ -194,14 +189,13 @@ describe('Markets', () => {
                 freshMockSoccer,
                 mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                 ['bovada', 'draftkings'], // this will be ignored as primaryBookmaker is defined in LeagueMap
-
                 true,
-
                 ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.PlayerAssist, // league map with player props configured
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                playersMap
+                playersMap,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
 
             market.childMarkets.forEach((child: any) => {
@@ -218,14 +212,13 @@ describe('Markets', () => {
                 freshMockSoccer,
                 mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                 ['bovada', 'draftkings'], // this will be ignored as primaryBookmaker is defined in LeagueMap
-
                 true,
-
                 ODDS_THRESHOLD_ANCHORS,
                 LeagueMocks.PlayerAssist, // league map with player props configured
                 lastPolledData,
                 MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                playersMap
+                playersMap,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
 
             market.childMarkets.forEach((child: any) => {

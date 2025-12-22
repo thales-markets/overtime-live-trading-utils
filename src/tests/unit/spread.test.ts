@@ -9,6 +9,7 @@ import {
     getLastPolledDataForBookmakers,
     getPlayersMap,
     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
 } from '../utils/helper';
 
 const lastPolledData = getLastPolledDataForBookmakers();
@@ -27,7 +28,8 @@ describe('Spread configuration', () => {
             LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
             MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap
+            playersMap,
+            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
         );
 
         const hasOdds = market.odds.some(
@@ -48,14 +50,13 @@ describe('Spread configuration', () => {
                     freshMockSoccer,
                     mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                     ['draftkings'],
-
                     true,
-
                     ODDS_THRESHOLD_ANCHORS,
                     LeagueMocks.leagueInfoOnlyParent,
                     lastPolledData,
                     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                    playersMap
+                    playersMap,
+                    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
                 )
             )
         );
@@ -66,14 +67,13 @@ describe('Spread configuration', () => {
                     freshMockSoccer,
                     mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                     ['draftkings'],
-
                     true,
-
                     ODDS_THRESHOLD_ANCHORS,
                     LeagueMocks.leagueInfoOnlyParentWithSpreadAdded,
                     lastPolledData,
                     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                    playersMap
+                    playersMap,
+                    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
                 )
             )
         );
@@ -104,14 +104,13 @@ describe('Spread configuration', () => {
                     freshMockSoccer,
                     mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                     ['draftkings'],
-
                     true,
-
                     ODDS_THRESHOLD_ANCHORS,
                     LeagueMocks.leagueInfoOnlyParent,
                     lastPolledData,
                     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                    playersMap
+                    playersMap,
+                    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
                 )
             )
         );
@@ -122,14 +121,13 @@ describe('Spread configuration', () => {
                     freshMockSoccer,
                     mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
                     ['draftkings'],
-
                     true,
-
                     ODDS_THRESHOLD_ANCHORS,
                     LeagueMocks.leagueInfoOnlyParentWithSpreadAdded,
                     lastPolledData,
                     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-                    playersMap
+                    playersMap,
+                    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
                 )
             )
         );
