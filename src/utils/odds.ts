@@ -1,14 +1,9 @@
 import * as oddslib from 'oddslib';
 import { isOneSideExtendedPlayerPropsMarket, MarketType, MarketTypeMap } from 'overtime-utils';
 import { DRAW, ZERO } from '../constants/common';
-<<<<<<< HEAD
 import { NO_MARKETS_FOR_LEAGUE_ID } from '../constants/errors';
+import { ChildMarketType } from '../enums/sports';
 import { Anchor, HomeAwayTeams, Odd, OddsObject, OddsWithLeagueInfo } from '../types/odds';
-=======
-import { LAST_POLLED_TOO_OLD, NO_MARKETS_FOR_LEAGUE_ID } from '../constants/errors';
-import { ChildMarketType, MoneylineTypes } from '../enums/sports';
-import { Anchor, HomeAwayTeams, Odds, OddsObject } from '../types/odds';
->>>>>>> line-toleration-spread-totals
 import { ChildMarket, LastPolledArray, LeagueConfigInfo } from '../types/sports';
 import { checkOdds } from './bookmakers';
 import { getLeagueInfo } from './sports';
@@ -98,21 +93,7 @@ export const generateMarkets: (
             anchors,
             maxPercentageDiffForPPLines
         );
-<<<<<<< HEAD
         checkedOdds.forEach((odd) => {
-            if (odd.type.toLowerCase() === 'total') {
-                if (Math.abs(Number(odd.points) % 1) === 0.5) totalOdds.push(odd);
-            } else if (odd.type.toLowerCase() === 'spread') {
-                if (Math.abs(Number(odd.points) % 1) === 0.5) spreadOdds.push(odd);
-            } else if (odd.type.toLowerCase() === 'moneyline') {
-                moneylineOdds.push(odd);
-            } else if (odd.type.toLowerCase() === 'correct score') {
-                correctScoreOdds.push(odd);
-            } else if (odd.type.toLowerCase() === 'double chance') {
-                doubleChanceOdds.push(odd);
-            } else if (odd.type.toLowerCase() === 'both teams to score') {
-=======
-        checkedChildOdds.forEach((odd) => {
             if (odd.type === ChildMarketType.TOTAL) {
                 if (Math.abs(Number(odd.points) % 1) === 0.5) totalOdds.push(odd);
             } else if (odd.type === ChildMarketType.SPREAD) {
@@ -124,7 +105,6 @@ export const generateMarkets: (
             } else if (odd.type === ChildMarketType.DOUBLE_CHANCE) {
                 doubleChanceOdds.push(odd);
             } else if (odd.type === ChildMarketType.BOTH_TEAMS_TO_SCORE) {
->>>>>>> line-toleration-spread-totals
                 ggOdds.push(odd);
             }
         });

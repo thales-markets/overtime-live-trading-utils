@@ -159,7 +159,7 @@ export const checkOdds = (
     maxAllowedProviderDataStaleDelay: number,
     anchors: Anchor[],
     maxPercentageDiffForLines: number
-): OddsWithLeagueInfo => {
+): OddsWithLeagueInfo[] => {
     const formattedOdds = Object.entries(odds as any).reduce((acc: any, [key, value]: [string, any]) => {
         const [sportsBookName, marketName, points, selection, selectionLine] = key.split('_');
         const info = leagueInfos.find((leagueInfo) => leagueInfo.marketName.toLowerCase() === marketName.toLowerCase());
