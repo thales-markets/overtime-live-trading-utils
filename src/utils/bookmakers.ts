@@ -1,10 +1,12 @@
 import {
     DIFF_BETWEEN_BOOKMAKERS_MESSAGE,
+    LAST_POLLED_TOO_OLD,
     NO_MATCHING_BOOKMAKERS_MESSAGE,
+    NO_MATCHING_BOOKMAKERS_MESSAGE_ALT_LINES,
     ZERO_ODDS_MESSAGE,
     ZERO_ODDS_MESSAGE_SINGLE_BOOKMAKER,
 } from '../constants/errors';
-import { ChildMarketType } from '../enums/sports';
+import { LiveMarketType } from '../enums/sports';
 import { BookmakersConfig } from '../types/bookmakers';
 import { Anchor, OddsWithLeagueInfo } from '../types/odds';
 import { LastPolledArray, LeagueConfigInfo } from '../types/sports';
@@ -159,8 +161,9 @@ export const checkOdds = (
     maxAllowedProviderDataStaleDelay: number,
     anchors: Anchor[],
     maxPercentageDiffForLines: number
-): OddsWithLeagueInfo[] => {
-    const formattedOdds = Object.entries(odds as any).reduce((acc: any, [key, value]: [string, any]) => {
+): { odds: OddsWithLeagueInfo[]; errorMessageMap: Map<number, string> } => {
+    const errorMessageMap = new Map<number, string>();
+    const formattedOdds = Object.entries(odds).reduce((acc: any, [key, value]: [string, OddsWithLeagueInfo]) => {
         const [sportsBookName, marketName, points, selection, selectionLine] = key.split('_');
         const info = leagueInfos.find((leagueInfo) => leagueInfo.marketName.toLowerCase() === marketName.toLowerCase());
         if (info) {
@@ -193,13 +196,17 @@ export const checkOdds = (
                         if (secondaryBookmakerObject) {
                             if (shouldBlockOdds(value.price, secondaryBookmakerObject.price, anchors)) {
                                 // Block this odd
+                                const existingErrorMessage = errorMessageMap.get(value.typeId);
+                                if (!existingErrorMessage) {
+                                    errorMessageMap.set(value.typeId, DIFF_BETWEEN_BOOKMAKERS_MESSAGE);
+                                }
                                 return acc;
                             }
 
                             acc.push(value);
                         } else {
                             // if the market is Total or Spread and we didnt find the correct line, try adjusting points by steps defined and search again
-                            if (info.type === ChildMarketType.SPREAD || info.type === ChildMarketType.TOTAL) {
+                            if (info.type === LiveMarketType.SPREAD || info.type === LiveMarketType.TOTAL) {
                                 const steps = getStepsForPointAdjustment(
                                     Number(points),
                                     info.percentageDiffForLines ?? maxPercentageDiffForLines // use the value defined in csv if available, else use default from env variable
@@ -214,19 +221,34 @@ export const checkOdds = (
 
                                     if (secondaryBookmakerObject) {
                                         acc.push(value);
-                                        break;
+                                        return acc;
                                     }
+                                }
+                                // If no matching alt lines found between bookmakers, return zero odds
+                                const existingErrorMessage = errorMessageMap.get(value.typeId);
+                                if (!existingErrorMessage) {
+                                    errorMessageMap.set(value.typeId, NO_MATCHING_BOOKMAKERS_MESSAGE_ALT_LINES);
+                                }
+                            } else {
+                                const existingErrorMessage = errorMessageMap.get(value.typeId);
+                                if (!existingErrorMessage) {
+                                    errorMessageMap.set(value.typeId, NO_MATCHING_BOOKMAKERS_MESSAGE);
                                 }
                             }
                         }
                     }
+                }
+            } else {
+                const existingErrorMessage = errorMessageMap.get(value.typeId);
+                if (!existingErrorMessage) {
+                    errorMessageMap.set(value.typeId, LAST_POLLED_TOO_OLD);
                 }
             }
         }
 
         return acc;
     }, []);
-    return formattedOdds;
+    return { odds: formattedOdds, errorMessageMap };
 };
 
 export const getPrimaryAndSecondaryBookmakerForTypeId = (

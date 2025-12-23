@@ -66,7 +66,7 @@ export enum MoneylineTypes {
     MONEYLINE = 'Moneyline',
 }
 
-export enum ChildMarketType {
+export enum LiveMarketType {
     TOTAL = 'Total',
     SPREAD = 'Spread',
     MONEYLINE = 'Moneyline',

@@ -1,10 +1,10 @@
-import { ChildMarketType } from '../enums/sports';
+import { LiveMarketType } from '../enums/sports';
 
 export type LeagueConfigInfo = {
     sportId: number;
     typeId: number;
     marketName: string;
-    type: ChildMarketType;
+    type: LiveMarketType;
     enabled: string;
     minOdds: number;
     maxOdds: number;

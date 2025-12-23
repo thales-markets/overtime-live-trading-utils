@@ -2,7 +2,7 @@ import * as oddslib from 'oddslib';
 import { isOneSideExtendedPlayerPropsMarket, MarketType, MarketTypeMap } from 'overtime-utils';
 import { DRAW, ZERO } from '../constants/common';
 import { NO_MARKETS_FOR_LEAGUE_ID } from '../constants/errors';
-import { ChildMarketType } from '../enums/sports';
+import { LiveMarketType } from '../enums/sports';
 import { Anchor, HomeAwayTeams, Odd, OddsObject, OddsWithLeagueInfo } from '../types/odds';
 import { ChildMarket, LastPolledArray, LeagueConfigInfo } from '../types/sports';
 import { checkOdds } from './bookmakers';
@@ -56,7 +56,7 @@ export const generateMarkets: (
     anchors: Anchor[],
     playersMap: Map<string, number>,
     maxPercentageDiffForPPLines: number
-) => ChildMarket[] = (
+) => { childMarkets: ChildMarket[]; errorMessageMap: Map<number, string> } = (
     apiResponseWithOdds,
     leagueId,
     liveOddsProviders,
@@ -84,7 +84,7 @@ export const generateMarkets: (
 
     if (leagueInfo.length > 0) {
         const odds = filterOdds(apiResponseWithOdds.odds, leagueInfo, playersMap);
-        const checkedOdds = checkOdds(
+        const { odds: checkedOdds, errorMessageMap } = checkOdds(
             odds,
             leagueInfo,
             liveOddsProviders,
@@ -94,17 +94,17 @@ export const generateMarkets: (
             maxPercentageDiffForPPLines
         );
         checkedOdds.forEach((odd) => {
-            if (odd.type === ChildMarketType.TOTAL) {
+            if (odd.type === LiveMarketType.TOTAL) {
                 if (Math.abs(Number(odd.points) % 1) === 0.5) totalOdds.push(odd);
-            } else if (odd.type === ChildMarketType.SPREAD) {
+            } else if (odd.type === LiveMarketType.SPREAD) {
                 if (Math.abs(Number(odd.points) % 1) === 0.5) spreadOdds.push(odd);
-            } else if (odd.type === ChildMarketType.MONEYLINE) {
+            } else if (odd.type === LiveMarketType.MONEYLINE) {
                 moneylineOdds.push(odd);
-            } else if (odd.type === ChildMarketType.CORRECT_SCORE) {
+            } else if (odd.type === LiveMarketType.CORRECT_SCORE) {
                 correctScoreOdds.push(odd);
-            } else if (odd.type === ChildMarketType.DOUBLE_CHANCE) {
+            } else if (odd.type === LiveMarketType.DOUBLE_CHANCE) {
                 doubleChanceOdds.push(odd);
-            } else if (odd.type === ChildMarketType.BOTH_TEAMS_TO_SCORE) {
+            } else if (odd.type === LiveMarketType.BOTH_TEAMS_TO_SCORE) {
                 ggOdds.push(odd);
             }
         });
@@ -150,7 +150,7 @@ export const generateMarkets: (
             const maxOdds = leagueInfoByTypeId?.maxOdds; // maximum odds configured for child market (e.g. 0.05 implied probability)
 
             if (minOdds && maxOdds) {
-                const allowZeroOdds = [ChildMarketType.TOTAL].includes(data.type);
+                const allowZeroOdds = [LiveMarketType.TOTAL].includes(data.type);
                 const conditionToAddChildMarket = data.odds.every(
                     (odd: number) => (odd < minOdds && odd > maxOdds) || (allowZeroOdds && odd === ZERO)
                 );
@@ -185,11 +185,11 @@ export const generateMarkets: (
             };
             childMarkets.push(childMarket);
         });
+        return { childMarkets, errorMessageMap };
     } else {
         console.warn(`${NO_MARKETS_FOR_LEAGUE_ID}: ${Number(leagueId)}`);
+        return { childMarkets, errorMessageMap: new Map<number, string>() };
     }
-
-    return childMarkets;
 };
 
 /**
@@ -727,7 +727,7 @@ export const groupAndFormatCorrectScoreOdds = (oddsArray: any[], commonData: Hom
                 line: 0,
                 positionNames: positionNames,
                 odds: Object.values(oddsMap),
-                type: odds?.[0]?.type ? odds[0].type : ChildMarketType.CORRECT_SCORE,
+                type: odds?.[0]?.type ? odds[0].type : LiveMarketType.CORRECT_SCORE,
                 typeId: Number(typeId),
                 sportId: odds?.[0]?.sportId ? odds[0].sportId : undefined,
             };
@@ -776,7 +776,7 @@ export const groupAndFormatDoubleChanceOdds = (oddsArray: any[], commonData: Hom
         awayTeam: commonData.awayTeam,
         line: 0,
         odds: [probability1X, probability12, probabilityX2],
-        type: ChildMarketType.DOUBLE_CHANCE,
+        type: LiveMarketType.DOUBLE_CHANCE,
         typeId: 10003,
         sportId: sportId,
     };
