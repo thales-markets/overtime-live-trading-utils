@@ -150,7 +150,12 @@ export const generateMarkets: (
             const maxOdds = leagueInfoByTypeId?.maxOdds; // maximum odds configured for child market (e.g. 0.05 implied probability)
 
             if (minOdds && maxOdds) {
-                const allowZeroOdds = [LiveMarketType.TOTAL].includes(data.type);
+                const allowZeroOdds = [
+                    LiveMarketType.TOTAL,
+                    LiveMarketType.SPREAD,
+                    LiveMarketType.MONEYLINE,
+                    LiveMarketType.DOUBLE_CHANCE,
+                ].includes(data.type);
                 const conditionToAddChildMarket = data.odds.every(
                     (odd: number) => (odd < minOdds && odd > maxOdds) || (allowZeroOdds && odd === ZERO)
                 );
