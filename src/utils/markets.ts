@@ -1,6 +1,6 @@
 import * as oddslib from 'oddslib';
 import { getLeagueIsDrawAvailable } from 'overtime-utils';
-import { Anchor, OddsObject } from '../types/odds';
+import { ProcessMarketParams } from '../types/odds';
 import { LastPolledArray } from '../types/sports';
 import { generateMarkets } from './odds';
 import { getLeagueInfo } from './sports';
@@ -19,17 +19,19 @@ import { adjustAddedSpread } from './spread';
  * @param {Map<string, number>} playersMap - Map of player OO IDs to our internal player ID
  * @returns {Promise<Object|null>} A promise that resolves to the processed event object or null if the event is invalid or mapping fails.
  */
-export const processMarket = (
-    market: any,
-    apiResponseWithOdds: OddsObject,
-    liveOddsProviders: any,
-    anchors: Anchor[],
-    leagueMap: any,
-    lastPolledData: LastPolledArray,
-    maxAllowedProviderDataStaleDelay: number,
-    playersMap: Map<string, number>,
-    maxPercentageDiffForLines: number
-) => {
+export const processMarket = (params: ProcessMarketParams) => {
+    const {
+        market,
+        apiResponseWithOdds,
+        liveOddsProviders,
+        anchors,
+        leagueMap,
+        lastPolledData,
+        maxAllowedProviderDataStaleDelay,
+        playersMap,
+        maxPercentageDiffForLines,
+    } = params;
+
     const leagueInfo = getLeagueInfo(market.leagueId, leagueMap);
 
     const { childMarkets: allMarkets, errorMessageMap } = generateMarkets(

@@ -18,17 +18,17 @@ describe('Spread configuration', () => {
     it('Should return odds even when total probability is below 1 as draw is missing for 3-way sport', () => {
         const freshMockSoccer = JSON.parse(JSON.stringify(mockSoccer));
         const freshMockOpticSoccer = JSON.parse(JSON.stringify(MockAfterSpreadZeroOdds1));
-        const market = processMarket(
-            freshMockSoccer,
-            mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
-            ['draftkings'],
-            ODDS_THRESHOLD_ANCHORS,
-            LeagueMocks.leagueInfoEnabledSpeadAndTotals,
+        const market = processMarket({
+            market: freshMockSoccer,
+            apiResponseWithOdds: mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
+            liveOddsProviders: ['draftkings'],
+            anchors: ODDS_THRESHOLD_ANCHORS,
+            leagueMap: LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            maxAllowedProviderDataStaleDelay: MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
-        );
+            maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
+        });
 
         const hasOdds = market.odds.some(
             (odd: any) => odd.american !== 0 || odd.decimal !== 0 || odd.normalizedImplied !== 0
@@ -42,33 +42,33 @@ describe('Spread configuration', () => {
         const freshMockOpticSoccer = JSON.parse(JSON.stringify(MockOnlyMoneyline));
         const market = JSON.parse(
             JSON.stringify(
-                processMarket(
-                    freshMockSoccer,
-                    mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
-                    ['draftkings'],
-                    ODDS_THRESHOLD_ANCHORS,
-                    LeagueMocks.leagueInfoOnlyParent,
+                processMarket({
+                    market: freshMockSoccer,
+                    apiResponseWithOdds: mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
+                    liveOddsProviders: ['draftkings'],
+                    anchors: ODDS_THRESHOLD_ANCHORS,
+                    leagueMap: LeagueMocks.leagueInfoOnlyParent,
                     lastPolledData,
-                    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                    maxAllowedProviderDataStaleDelay: MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
                     playersMap,
-                    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
-                )
+                    maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
+                })
             )
         );
 
         const marketWithAddedSpread = JSON.parse(
             JSON.stringify(
-                processMarket(
-                    freshMockSoccer,
-                    mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
-                    ['draftkings'],
-                    ODDS_THRESHOLD_ANCHORS,
-                    LeagueMocks.leagueInfoOnlyParentWithSpreadAdded,
+                processMarket({
+                    market: freshMockSoccer,
+                    apiResponseWithOdds: mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
+                    liveOddsProviders: ['draftkings'],
+                    anchors: ODDS_THRESHOLD_ANCHORS,
+                    leagueMap: LeagueMocks.leagueInfoOnlyParentWithSpreadAdded,
                     lastPolledData,
-                    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                    maxAllowedProviderDataStaleDelay: MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
                     playersMap,
-                    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
-                )
+                    maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
+                })
             )
         );
 
@@ -94,33 +94,33 @@ describe('Spread configuration', () => {
         const freshMockOpticSoccer = JSON.parse(JSON.stringify(MockOnlyMoneylineFavorite));
         const market = JSON.parse(
             JSON.stringify(
-                processMarket(
-                    freshMockSoccer,
-                    mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
-                    ['draftkings'],
-                    ODDS_THRESHOLD_ANCHORS,
-                    LeagueMocks.leagueInfoOnlyParent,
+                processMarket({
+                    market: freshMockSoccer,
+                    apiResponseWithOdds: mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
+                    liveOddsProviders: ['draftkings'],
+                    anchors: ODDS_THRESHOLD_ANCHORS,
+                    leagueMap: LeagueMocks.leagueInfoOnlyParent,
                     lastPolledData,
-                    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                    maxAllowedProviderDataStaleDelay: MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
                     playersMap,
-                    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
-                )
+                    maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
+                })
             )
         );
 
         const marketWithAddedSpread = JSON.parse(
             JSON.stringify(
-                processMarket(
-                    freshMockSoccer,
-                    mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
-                    ['draftkings'],
-                    ODDS_THRESHOLD_ANCHORS,
-                    LeagueMocks.leagueInfoOnlyParentWithSpreadAdded,
+                processMarket({
+                    market: freshMockSoccer,
+                    apiResponseWithOdds: mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
+                    liveOddsProviders: ['draftkings'],
+                    anchors: ODDS_THRESHOLD_ANCHORS,
+                    leagueMap: LeagueMocks.leagueInfoOnlyParentWithSpreadAdded,
                     lastPolledData,
-                    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                    maxAllowedProviderDataStaleDelay: MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
                     playersMap,
-                    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
-                )
+                    maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
+                })
             )
         );
 

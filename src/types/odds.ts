@@ -1,4 +1,4 @@
-import { LeagueConfigInfo } from './sports';
+import { LastPolledArray, LeagueConfigInfo } from './sports';
 
 export type Fixture = {
     gameId: string;
@@ -66,3 +66,15 @@ export type Anchor = {
     our: number;
     otherMin: number;
 };
+
+export interface ProcessMarketParams {
+    market: any;
+    apiResponseWithOdds: OddsObject;
+    liveOddsProviders: any;
+    anchors: Anchor[];
+    leagueMap: any;
+    lastPolledData: LastPolledArray;
+    maxAllowedProviderDataStaleDelay: number;
+    playersMap: Map<string, number>;
+    maxPercentageDiffForLines: number;
+}
