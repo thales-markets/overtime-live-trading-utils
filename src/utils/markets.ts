@@ -1,8 +1,7 @@
-import * as oddslib from 'oddslib';
-import { getLeagueIsDrawAvailable } from 'overtime-utils';
+import { getLeagueIsDrawAvailable, MarketType } from 'overtime-utils';
 import { ProcessMarketParams } from '../types/odds';
 import { LastPolledArray } from '../types/sports';
-import { generateMarkets } from './odds';
+import { formatOddsForUi, generateMarkets } from './odds';
 import { getLeagueInfo } from './sports';
 import { adjustAddedSpread } from './spread';
 /**
@@ -58,7 +57,7 @@ export const processMarket = (params: ProcessMarketParams) => {
 
     const packedChildMarkets = allMarkets.map((childMarket: any) => {
         // parent odds
-        if (childMarket.typeId === 0) {
+        if (childMarket.typeId === MarketType.WINNER) {
             let oddsAfterSpread = adjustAddedSpread(childMarket.odds, leagueInfo, childMarket.typeId);
 
             const isThreePositionalSport = getLeagueIsDrawAvailable(market.leagueId);
@@ -69,38 +68,14 @@ export const processMarket = (params: ProcessMarketParams) => {
             }
 
             market.odds = oddsAfterSpread.map((probability) => {
-                if (probability == 0) {
-                    return {
-                        american: 0,
-                        decimal: 0,
-                        normalizedImplied: 0,
-                    };
-                }
-
-                return {
-                    american: oddslib.from('impliedProbability', probability).to('moneyline'),
-                    decimal: Number(oddslib.from('impliedProbability', probability).to('decimal').toFixed(10)),
-                    normalizedImplied: probability,
-                };
+                return formatOddsForUi(probability);
             });
         } else {
             const preparedMarket = { ...market, ...childMarket };
             const oddsAfterSpread = adjustAddedSpread(preparedMarket.odds, leagueInfo, preparedMarket.typeId);
             if (preparedMarket.odds.length > 0) {
                 preparedMarket.odds = oddsAfterSpread.map((probability) => {
-                    if (probability == 0) {
-                        return {
-                            american: 0,
-                            decimal: 0,
-                            normalizedImplied: 0,
-                        };
-                    }
-
-                    return {
-                        american: oddslib.from('impliedProbability', probability).to('moneyline'),
-                        decimal: Number(oddslib.from('impliedProbability', probability).to('decimal').toFixed(10)),
-                        normalizedImplied: probability,
-                    };
+                    return formatOddsForUi(probability);
                 });
             }
             return preparedMarket;
