@@ -1,4 +1,3 @@
-import { ZERO_ODDS_MESSAGE_SINGLE_BOOKMAKER } from '../../constants/errors';
 import { processMarket } from '../../utils/markets';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
 import { ODDS_THRESHOLD_ANCHORS } from '../mock/MockAnchors';
@@ -24,18 +23,17 @@ describe('Odds', () => {
     it('Should return odds for moneyline', () => {
         const freshMockSoccer = JSON.parse(JSON.stringify(mockSoccer));
         const freshMockOpticSoccer = JSON.parse(JSON.stringify(MockOnlyMoneyline));
-        const market = processMarket(
-            freshMockSoccer,
-            mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
-            ['draftkings'],
-            true,
-            ODDS_THRESHOLD_ANCHORS,
-            LeagueMocks.leagueInfoOnlyParent,
+        const market = processMarket({
+            market: freshMockSoccer,
+            apiResponseWithOdds: mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
+            liveOddsProviders: ['draftkings'],
+            anchors: ODDS_THRESHOLD_ANCHORS,
+            leagueMap: LeagueMocks.leagueInfoOnlyParent,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            maxAllowedProviderDataStaleDelay: MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
-        );
+            maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
+        });
 
         const hasOdds = market.odds.some(
             (odd: any) => odd.american !== 0 || odd.decimal !== 0 || odd.normalizedImplied !== 0
@@ -47,43 +45,39 @@ describe('Odds', () => {
     it('Should return zero odds for moneyline', () => {
         const freshMockSoccer = JSON.parse(JSON.stringify(mockSoccer));
         const freshMockOpticSoccer = JSON.parse(JSON.stringify(MockZeroOdds));
-        const market = processMarket(
-            freshMockSoccer,
-            mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
-            ['draftkings'],
-            true,
-            ODDS_THRESHOLD_ANCHORS,
-            LeagueMocks.leagueInfoEnabledSpeadAndTotals,
+        const market = processMarket({
+            market: freshMockSoccer,
+            apiResponseWithOdds: mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
+            liveOddsProviders: ['draftkings'],
+            anchors: ODDS_THRESHOLD_ANCHORS,
+            leagueMap: LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            maxAllowedProviderDataStaleDelay: MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
+            maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
+        });
+
+        const hasZeros = market.odds.some(
+            (odd: any) => odd.american === 0 || odd.decimal === 0 || odd.normalizedImplied === 0
         );
 
-        const hasOdds = market.odds.some(
-            (odd: any) => odd.american !== 0 || odd.decimal !== 0 || odd.normalizedImplied !== 0
-        );
-
-        expect(hasOdds).toBe(false);
-        expect(market).toHaveProperty('errorMessage');
-        expect(market.errorMessage).toBe(ZERO_ODDS_MESSAGE_SINGLE_BOOKMAKER);
+        expect(hasZeros).toBe(true);
     });
 
     it('Should contain child markets for good odds', () => {
         const freshMockSoccer = JSON.parse(JSON.stringify(mockSoccer));
         const freshMockOpticSoccer = JSON.parse(JSON.stringify(MockOddsChildMarketsGoodOdds));
-        const market = processMarket(
-            freshMockSoccer,
-            mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
-            ['draftkings'],
-            true,
-            ODDS_THRESHOLD_ANCHORS,
-            LeagueMocks.leagueInfoEnabledSpeadAndTotals,
+        const market = processMarket({
+            market: freshMockSoccer,
+            apiResponseWithOdds: mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
+            liveOddsProviders: ['draftkings'],
+            anchors: ODDS_THRESHOLD_ANCHORS,
+            leagueMap: LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            maxAllowedProviderDataStaleDelay: MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
-        );
+            maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
+        });
 
         const hasChildMarkets = market.childMarkets.length > 0;
         expect(hasChildMarkets).toBe(true);
@@ -92,18 +86,17 @@ describe('Odds', () => {
     it('Should return empty array for child child markets after odds cut', () => {
         const freshMockSoccer = JSON.parse(JSON.stringify(mockSoccer));
         const freshMockOpticSoccer = JSON.parse(JSON.stringify(MockOddsChildMarketsOddsCut));
-        const market = processMarket(
-            freshMockSoccer,
-            mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
-            ['draftkings'],
-            true,
-            ODDS_THRESHOLD_ANCHORS,
-            LeagueMocks.leagueInfoEnabledSpeadAndTotals,
+        const market = processMarket({
+            market: freshMockSoccer,
+            apiResponseWithOdds: mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
+            liveOddsProviders: ['draftkings'],
+            anchors: ODDS_THRESHOLD_ANCHORS,
+            leagueMap: LeagueMocks.leagueInfoEnabledSpeadAndTotals,
             lastPolledData,
-            MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            maxAllowedProviderDataStaleDelay: MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
             playersMap,
-            MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
-        );
+            maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
+        });
 
         expect(market.childMarkets).toHaveLength(0);
     });

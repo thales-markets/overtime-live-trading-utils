@@ -1,14 +1,17 @@
+import { LiveMarketType } from '../enums/sports';
+
 export type LeagueConfigInfo = {
     sportId: number;
     typeId: number;
     marketName: string;
-    type: string;
+    type: LiveMarketType;
     enabled: string;
     minOdds: number;
     maxOdds: number;
     addedSpread?: number;
     primaryBookmaker?: string;
     secondaryBookmaker?: string;
+    percentageDiffForLines?: number;
 };
 
 export type ChildMarket = {

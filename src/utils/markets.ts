@@ -1,8 +1,7 @@
-import * as oddslib from 'oddslib';
-import { ZERO_ODDS_AFTER_SPREAD_ADJUSTMENT } from '../constants/errors';
-import { Anchor, OddsObject } from '../types/odds';
+import { getLeagueIsDrawAvailable, MarketType } from 'overtime-utils';
+import { ProcessMarketParams } from '../types/odds';
 import { LastPolledArray } from '../types/sports';
-import { createChildMarkets, getParentOdds } from './odds';
+import { formatOddsForUi, generateMarkets } from './odds';
 import { getLeagueInfo } from './sports';
 import { adjustAddedSpread } from './spread';
 /**
@@ -13,70 +12,28 @@ import { adjustAddedSpread } from './spread';
  * @param {Object} market - The market API object to process
  * @param {Object} apiResponseWithOdds - Provider's API object to process
  * @param {Array} liveOddsProviders - Odds providers for live odds
- * @param {Boolean} isDrawAvailable - Is it two or three-positional sport
  * @param {Object} leagueMap - League map for additional league information
  * @param {LastPolledArray} lastPolledData - Array containing last polled timestamps for bookmakers
  * @param {Number} maxAllowedProviderDataStaleDelay - Maximum allowed delay for provider data to be considered fresh
  * @param {Map<string, number>} playersMap - Map of player OO IDs to our internal player ID
  * @returns {Promise<Object|null>} A promise that resolves to the processed event object or null if the event is invalid or mapping fails.
  */
-export const processMarket = (
-    market: any,
-    apiResponseWithOdds: OddsObject,
-    liveOddsProviders: any,
-    isDrawAvailable: any,
-    anchors: Anchor[],
-    leagueMap: any,
-    lastPolledData: LastPolledArray,
-    maxAllowedProviderDataStaleDelay: number,
-    playersMap: Map<string, number>,
-    maxPercentageDiffForPPLines: number
-) => {
+export const processMarket = (params: ProcessMarketParams) => {
+    const {
+        market,
+        apiResponseWithOdds,
+        liveOddsProviders,
+        anchors,
+        leagueMap,
+        lastPolledData,
+        maxAllowedProviderDataStaleDelay,
+        playersMap,
+        maxPercentageDiffForLines,
+    } = params;
+
     const leagueInfo = getLeagueInfo(market.leagueId, leagueMap);
 
-    const moneylineOdds = getParentOdds(
-        !isDrawAvailable,
-        liveOddsProviders,
-        apiResponseWithOdds,
-        anchors,
-        leagueInfo,
-        lastPolledData,
-        maxAllowedProviderDataStaleDelay
-    );
-
-    const oddsAfterSpread = adjustAddedSpread(moneylineOdds.odds, leagueInfo, market.typeId);
-
-    if (moneylineOdds.errorMessage) {
-        market.odds = market.odds.map(() => {
-            return {
-                american: 0,
-                decimal: 0,
-                normalizedImplied: 0,
-            };
-        });
-
-        market.errorMessage = moneylineOdds.errorMessage;
-    } else {
-        // Pack market odds for UI
-        market.odds = oddsAfterSpread.map((probability) => {
-            if (probability != 0) {
-                return {
-                    american: oddslib.from('impliedProbability', probability).to('moneyline'),
-                    decimal: Number(oddslib.from('impliedProbability', probability).to('decimal').toFixed(10)),
-                    normalizedImplied: probability,
-                };
-            } else {
-                market.errorMessage = ZERO_ODDS_AFTER_SPREAD_ADJUSTMENT;
-                return {
-                    american: 0,
-                    decimal: 0,
-                    normalizedImplied: 0,
-                };
-            }
-        });
-    }
-
-    const childMarkets = createChildMarkets(
+    const { childMarkets: allMarkets, errorMessageMap } = generateMarkets(
         apiResponseWithOdds,
         market.leagueId,
         liveOddsProviders,
@@ -85,32 +42,46 @@ export const processMarket = (
         maxAllowedProviderDataStaleDelay,
         anchors,
         playersMap,
-        maxPercentageDiffForPPLines
+        maxPercentageDiffForLines
     );
 
-    const packedChildMarkets = childMarkets.map((childMarket: any) => {
-        const preparedMarket = { ...market, ...childMarket };
-        const oddsAfterSpread = adjustAddedSpread(preparedMarket.odds, leagueInfo, preparedMarket.typeId);
-        if (preparedMarket.odds.length > 0) {
-            preparedMarket.odds = oddsAfterSpread.map((probability) => {
-                if (probability == 0) {
-                    return {
-                        american: 0,
-                        decimal: 0,
-                        normalizedImplied: 0,
-                    };
-                }
+    market.errorMessagesMap = errorMessageMap;
 
-                return {
-                    american: oddslib.from('impliedProbability', probability).to('moneyline'),
-                    decimal: Number(oddslib.from('impliedProbability', probability).to('decimal').toFixed(10)),
-                    normalizedImplied: probability,
-                };
-            });
-        }
-        return preparedMarket;
+    market.odds = market.odds.map(() => {
+        return {
+            american: 0,
+            decimal: 0,
+            normalizedImplied: 0,
+        };
     });
-    market.childMarkets = packedChildMarkets;
+
+    const packedChildMarkets = allMarkets.map((childMarket: any) => {
+        // parent odds
+        if (childMarket.typeId === MarketType.WINNER) {
+            let oddsAfterSpread = adjustAddedSpread(childMarket.odds, leagueInfo, childMarket.typeId);
+
+            const isThreePositionalSport = getLeagueIsDrawAvailable(market.leagueId);
+
+            // If this is a 3-positional sport but only 2 odds are available (missing draw), pad with zero
+            if (isThreePositionalSport && oddsAfterSpread.length === 2) {
+                oddsAfterSpread = [...oddsAfterSpread, 0];
+            }
+
+            market.odds = oddsAfterSpread.map((probability) => {
+                return formatOddsForUi(probability);
+            });
+        } else {
+            const preparedMarket = { ...market, ...childMarket };
+            const oddsAfterSpread = adjustAddedSpread(preparedMarket.odds, leagueInfo, preparedMarket.typeId);
+            if (preparedMarket.odds.length > 0) {
+                preparedMarket.odds = oddsAfterSpread.map((probability) => {
+                    return formatOddsForUi(probability);
+                });
+            }
+            return preparedMarket;
+        }
+    });
+    market.childMarkets = packedChildMarkets.filter((m: any) => m !== undefined);
 
     return market;
 };
