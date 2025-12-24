@@ -161,7 +161,7 @@ export const checkOdds = (
     maxAllowedProviderDataStaleDelay: number,
     anchors: Anchor[],
     maxPercentageDiffForLines: number
-): { odds: OddsWithLeagueInfo[]; errorMessageMap: Map<number, string> } => {
+): { odds: OddsWithLeagueInfo[]; errorsMap: Map<number, string> } => {
     const errorMessageMap = new Map<number, string>();
     const formattedOdds = Object.entries(odds).reduce((acc: any, [key, value]: [string, OddsWithLeagueInfo]) => {
         const [sportsBookName, marketName, points, selection, selectionLine] = key.split('_');
@@ -248,7 +248,7 @@ export const checkOdds = (
 
         return acc;
     }, []);
-    return { odds: formattedOdds, errorMessageMap };
+    return { odds: formattedOdds, errorsMap: errorMessageMap };
 };
 
 export const getPrimaryAndSecondaryBookmakerForTypeId = (

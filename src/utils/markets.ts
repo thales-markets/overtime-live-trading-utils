@@ -33,7 +33,7 @@ export const processMarket = (params: ProcessMarketParams) => {
 
     const leagueInfo = getLeagueInfo(market.leagueId, leagueMap);
 
-    const { childMarkets: allMarkets, errorMessageMap } = generateMarkets(
+    const { childMarkets: allMarkets, errorsMap: errorMessageMap } = generateMarkets(
         apiResponseWithOdds,
         market.leagueId,
         liveOddsProviders,
@@ -45,7 +45,7 @@ export const processMarket = (params: ProcessMarketParams) => {
         maxPercentageDiffForLines
     );
 
-    market.errorMessagesMap = errorMessageMap;
+    market.errorsMap = errorMessageMap;
 
     market.odds = market.odds.map(() => {
         return {
