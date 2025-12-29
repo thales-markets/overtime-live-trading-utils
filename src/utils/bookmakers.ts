@@ -181,6 +181,7 @@ export const checkOddsFromBookmakersForChildMarkets = (
                 const secondaryBookmaker = bookmakers[1];
                 if (primaryBookmaker && !secondaryBookmaker) {
                     if (sportsBookName.toLowerCase() === primaryBookmaker.toLowerCase()) {
+                        if (value.playerId && !value.isMain) return acc;
                         acc.push(value);
                     }
                 } else {
