@@ -202,7 +202,9 @@ export const checkOddsFromBookmakersForChildMarkets = (
                             if (info.type === ChildMarketType.SPREAD || info.type === ChildMarketType.TOTAL) {
                                 const steps = getStepsForPointAdjustment(
                                     Number(points),
-                                    info.percentageDiffForLines ?? maxPercentageDiffForLines // use the value defined in csv if available, else use default from env variable
+                                    info.percentageDiffForLines
+                                        ? Number(info.percentageDiffForLines)
+                                        : maxPercentageDiffForLines // use the value defined in csv if available, else use default from env variable
                                 );
                                 for (const step of steps) {
                                     const adjustedPoints = (Number(points) + step).toString();
