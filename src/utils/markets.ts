@@ -33,17 +33,17 @@ export const processMarket = (params: ProcessMarketParams) => {
 
     const leagueInfo = getLeagueInfo(market.leagueId, leagueMap);
 
-    const { childMarkets: allMarkets, errorsMap: errorMessageMap } = generateMarkets(
+    const { markets: allMarkets, errorsMap: errorMessageMap } = generateMarkets({
         apiResponseWithOdds,
-        market.leagueId,
+        leagueId: market.leagueId,
         liveOddsProviders,
         leagueMap,
         lastPolledData,
         maxAllowedProviderDataStaleDelay,
         anchors,
         playersMap,
-        maxPercentageDiffForLines
-    );
+        maxPercentageDiffForLines,
+    });
 
     market.errorsMap = errorMessageMap;
 

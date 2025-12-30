@@ -38,25 +38,29 @@ export const getOddsFromTo = (from: string, to: string, input: number): number =
 /**
  * Creates  child markets based on the given parameters.
  *
- * @param {Object} leagueId - leagueId AKA sportId
- * @param {Array} spreadDataForSport - Spread data for sport.
- * @param {Object} apiResponseWithOdds - API response from the provider
- * @param {Array} liveOddsProviders - Odds providers for live odds
- * @param {Number} defaultSpreadForLiveMarkets - Default spread for live markets
- * @param {Boolean} leagueMap - League Map info
- * @returns {Array} The child markets.
+ * @param {Object} params - Parameters object
+ * @param {Object} params.apiResponseWithOdds - API response from the provider
+ * @param {Number} params.leagueId - leagueId AKA sportId
+ * @param {Array} params.liveOddsProviders - Odds providers for live odds
+ * @param {Object} params.leagueMap - League Map info
+ * @param {Array} params.lastPolledData - Last polled data array
+ * @param {Number} params.maxAllowedProviderDataStaleDelay - Max allowed provider data stale delay
+ * @param {Array} params.anchors - Anchors array
+ * @param {Map} params.playersMap - Players map
+ * @param {Number} params.maxPercentageDiffForLines - Max percentage diff for PP lines
+ * @returns {Object} Object containing markets array and errorsMap
  */
-export const generateMarkets: (
-    apiResponseWithOdds: OddsObject,
-    leagueId: number,
-    liveOddsProviders: any,
-    leagueMap: any,
-    lastPolledData: LastPolledArray,
-    maxAllowedProviderDataStaleDelay: number,
-    anchors: Anchor[],
-    playersMap: Map<string, number>,
-    maxPercentageDiffForPPLines: number
-) => { childMarkets: ChildMarket[]; errorsMap: Map<number, string> } = (
+export const generateMarkets: (params: {
+    apiResponseWithOdds: OddsObject;
+    leagueId: number;
+    liveOddsProviders: any;
+    leagueMap: any;
+    lastPolledData: LastPolledArray;
+    maxAllowedProviderDataStaleDelay: number;
+    anchors: Anchor[];
+    playersMap: Map<string, number>;
+    maxPercentageDiffForLines: number;
+}) => { markets: ChildMarket[]; errorsMap: Map<number, string> } = ({
     apiResponseWithOdds,
     leagueId,
     liveOddsProviders,
@@ -65,9 +69,9 @@ export const generateMarkets: (
     maxAllowedProviderDataStaleDelay,
     anchors,
     playersMap,
-    maxPercentageDiffForPPLines
-) => {
-    const [spreadOdds, totalOdds, moneylineOdds, correctScoreOdds, doubleChanceOdds, ggOdds, childMarkets]: any[] = [
+    maxPercentageDiffForLines,
+}) => {
+    const [spreadOdds, totalOdds, moneylineOdds, correctScoreOdds, doubleChanceOdds, ggOdds, markets]: any[] = [
         [],
         [],
         [],
@@ -91,7 +95,7 @@ export const generateMarkets: (
             lastPolledData,
             maxAllowedProviderDataStaleDelay,
             anchors,
-            maxPercentageDiffForPPLines
+            maxPercentageDiffForLines
         );
         checkedOdds.forEach((odd) => {
             if (odd.type === LiveMarketType.TOTAL) {
@@ -160,10 +164,10 @@ export const generateMarkets: (
                     (odd: number) => (odd < minOdds && odd > maxOdds) || (allowZeroOdds && odd === ZERO)
                 );
                 if (conditionToAddChildMarket) {
-                    childMarkets.push(childMarket);
+                    markets.push(childMarket);
                 }
             } else {
-                childMarkets.push(childMarket);
+                markets.push(childMarket);
             }
         });
 
@@ -188,12 +192,12 @@ export const generateMarkets: (
                 },
                 isPlayerPropsMarket: false,
             };
-            childMarkets.push(childMarket);
+            markets.push(childMarket);
         });
-        return { childMarkets, errorsMap };
+        return { markets, errorsMap };
     } else {
         console.warn(`${NO_MARKETS_FOR_LEAGUE_ID}: ${Number(leagueId)}`);
-        return { childMarkets, errorsMap: new Map<number, string>() };
+        return { markets, errorsMap: new Map<number, string>() };
     }
 };
 
