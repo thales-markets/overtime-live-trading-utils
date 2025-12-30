@@ -184,6 +184,7 @@ export const checkOdds = (
                 const secondaryBookmaker = bookmakers[1];
                 if (primaryBookmaker && !secondaryBookmaker) {
                     if (sportsBookName.toLowerCase() === primaryBookmaker.toLowerCase()) {
+                        if (value.playerId && !value.isMain) return acc;
                         acc.push(value);
                     }
                 } else {
@@ -209,7 +210,9 @@ export const checkOdds = (
                             if (info.type === LiveMarketType.SPREAD || info.type === LiveMarketType.TOTAL) {
                                 const steps = getStepsForPointAdjustment(
                                     Number(points),
-                                    info.percentageDiffForLines ?? maxPercentageDiffForLines // use the value defined in csv if available, else use default from env variable
+                                    info.percentageDiffForLines
+                                        ? Number(info.percentageDiffForLines)
+                                        : maxPercentageDiffForLines // use the value defined in csv if available, else use default from env variable
                                 );
                                 for (const step of steps) {
                                     const adjustedPoints = (Number(points) + step).toString();
