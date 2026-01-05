@@ -1,6 +1,5 @@
 import { getLeagueIsDrawAvailable, MarketType } from 'overtime-utils';
 import { ProcessMarketParams } from '../types/odds';
-import { LastPolledArray } from '../types/sports';
 import { formatOddsForUi, generateMarkets } from './odds';
 import { getLeagueInfo } from './sports';
 import { adjustAddedSpread } from './spread';
