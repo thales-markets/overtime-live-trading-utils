@@ -2,146 +2,146 @@ import { LiveMarketType } from '../../enums/sports';
 import { LeagueConfigInfo } from '../../types/sports';
 
 const baseLeagueInfo: LeagueConfigInfo = {
-    sportId: 9806,
+    sportId: '9806',
     enabled: 'true',
     marketName: 'Moneyline',
-    typeId: 0,
+    typeId: '0',
     type: LiveMarketType.MONEYLINE,
-    maxOdds: 0,
-    minOdds: 1,
+    maxOdds: '0',
+    minOdds: '1',
 };
 
 const baseLeagueInfoNba: LeagueConfigInfo = {
-    sportId: 4,
+    sportId: '4',
     enabled: 'true',
     marketName: 'Moneyline',
-    typeId: 0,
+    typeId: '0',
     type: LiveMarketType.MONEYLINE,
-    maxOdds: 0.25,
-    minOdds: 0.75,
+    maxOdds: '0.25',
+    minOdds: '0.75',
 };
 
 const spreadMock: LeagueConfigInfo = {
-    sportId: 9806,
+    sportId: '9806',
     enabled: 'true',
     marketName: 'Goal Spread',
-    typeId: 10001,
+    typeId: '10001',
     type: LiveMarketType.SPREAD,
-    maxOdds: 0.25,
-    minOdds: 0.75,
+    maxOdds: '0.25',
+    minOdds: '0.75',
 };
 
 const totalMock: LeagueConfigInfo = {
-    sportId: 9806,
+    sportId: '9806',
     enabled: 'true',
     marketName: 'Total Goals',
-    typeId: 10002,
+    typeId: '10002',
     type: LiveMarketType.TOTAL,
-    maxOdds: 0.25,
-    minOdds: 0.75,
+    maxOdds: '0.25',
+    minOdds: '0.75',
 };
 
 const doubleChanceMock: LeagueConfigInfo = {
-    sportId: 9806,
+    sportId: '9806',
     enabled: 'true',
     marketName: 'Double Chance',
-    typeId: 10003,
+    typeId: '10003',
     type: LiveMarketType.DOUBLE_CHANCE,
-    maxOdds: 0.01,
-    minOdds: 0.99,
+    maxOdds: '0.01',
+    minOdds: '0.99',
 };
 
 const correctScoreMock: LeagueConfigInfo = {
-    sportId: 9806,
+    sportId: '9806',
     enabled: 'true',
     marketName: 'Correct Score',
-    typeId: 10100,
+    typeId: '10100',
     type: LiveMarketType.CORRECT_SCORE,
-    maxOdds: 0.25,
-    minOdds: 0.75,
+    maxOdds: '0.25',
+    minOdds: '0.75',
 };
 
 const childMoneylineMock: LeagueConfigInfo = {
-    sportId: 9806,
+    sportId: '9806',
     enabled: 'true',
     marketName: '1st Half Moneyline',
-    typeId: 10022,
+    typeId: '10022',
     type: LiveMarketType.MONEYLINE,
-    maxOdds: 0.25,
-    minOdds: 0.75,
+    maxOdds: '0.25',
+    minOdds: '0.75',
 };
 
 const bothTeamsToScoreMock: LeagueConfigInfo = {
-    sportId: 9806,
+    sportId: '9806',
     enabled: 'true',
     marketName: 'Both Teams To Score',
-    typeId: 10009,
+    typeId: '10009',
     type: LiveMarketType.BOTH_TEAMS_TO_SCORE,
-    maxOdds: 0.01,
-    minOdds: 0.99,
+    maxOdds: '0.01',
+    minOdds: '0.99',
 };
 
 const bothTeamsToScoreMock1stHalf: LeagueConfigInfo = {
-    sportId: 9806,
+    sportId: '9806',
     enabled: 'true',
     marketName: '1st Half Both Teams To Score',
-    typeId: 10101,
+    typeId: '10101',
     type: LiveMarketType.BOTH_TEAMS_TO_SCORE,
-    maxOdds: 0.01,
-    minOdds: 0.99,
+    maxOdds: '0.01',
+    minOdds: '0.99',
 };
 
 const bothTeamsToScoreMock2ndHalf: LeagueConfigInfo = {
-    sportId: 9806,
+    sportId: '9806',
     enabled: 'true',
     marketName: '2nd Half Both Teams To Score',
-    typeId: 10102,
+    typeId: '10102',
     type: LiveMarketType.BOTH_TEAMS_TO_SCORE,
-    maxOdds: 0.01,
-    minOdds: 0.99,
+    maxOdds: '0.01',
+    minOdds: '0.99',
 };
 
 const drawNoBetMock: LeagueConfigInfo = {
-    sportId: 9806,
+    sportId: '9806',
     enabled: 'true',
     marketName: 'Draw No Bet',
-    typeId: 10010,
+    typeId: '10010',
     type: LiveMarketType.MONEYLINE,
-    maxOdds: 0.01,
-    minOdds: 0.99,
+    maxOdds: '0.01',
+    minOdds: '0.99',
 };
 
 const willThereBeOvertime: LeagueConfigInfo = {
-    sportId: 9806,
+    sportId: '9806',
     enabled: 'true',
     marketName: 'Will There Be Overtime',
-    typeId: 10131,
+    typeId: '10131',
     type: LiveMarketType.BOTH_TEAMS_TO_SCORE,
-    maxOdds: 0.01,
-    minOdds: 0.99,
+    maxOdds: '0.01',
+    minOdds: '0.99',
 };
 
 const teamTotal: LeagueConfigInfo = {
-    sportId: 9806,
+    sportId: '9806',
     enabled: 'true',
     marketName: 'Team Total',
-    typeId: 10017,
+    typeId: '10017',
     type: LiveMarketType.TOTAL,
-    maxOdds: 0.25,
-    minOdds: 0.75,
+    maxOdds: '0.25',
+    minOdds: '0.75',
     primaryBookmaker: 'draftkings',
 };
 
 const PlayerAssist: LeagueConfigInfo[] = [
     baseLeagueInfoNba,
     {
-        sportId: 4,
+        sportId: '4',
         enabled: 'true',
         marketName: 'Player Assists',
-        typeId: 11039,
+        typeId: '11039',
         type: LiveMarketType.TOTAL,
-        maxOdds: 0.25,
-        minOdds: 0.75,
+        maxOdds: '0.25',
+        minOdds: '0.75',
         primaryBookmaker: 'superbet',
     },
 ];
@@ -149,37 +149,37 @@ const PlayerAssist: LeagueConfigInfo[] = [
 const PlayerAssistWithSecondaryBookmaker: LeagueConfigInfo[] = [
     baseLeagueInfoNba,
     {
-        sportId: 4,
+        sportId: '4',
         enabled: 'true',
         marketName: 'Player Assists',
-        typeId: 11039,
+        typeId: '11039',
         type: LiveMarketType.TOTAL,
-        maxOdds: 0.25,
-        minOdds: 0.75,
+        maxOdds: '0.25',
+        minOdds: '0.75',
         primaryBookmaker: 'superbet',
         secondaryBookmaker: 'draftkings',
     },
 ];
 
 const teamTotal2: LeagueConfigInfo = {
-    sportId: 9806,
+    sportId: '9806',
     enabled: 'true',
     marketName: 'Team Total',
-    typeId: 10018,
+    typeId: '10018',
     type: LiveMarketType.TOTAL,
-    maxOdds: 0.25,
-    minOdds: 0.75,
+    maxOdds: '0.25',
+    minOdds: '0.75',
     primaryBookmaker: 'draftkings',
 };
 
 const baseDiffSportId: LeagueConfigInfo = {
     ...baseLeagueInfo,
-    sportId: 4,
+    sportId: '4',
 };
 
 // Mock Variants
 const leagueInfoOnlyParent: LeagueConfigInfo[] = [baseLeagueInfo];
-const leagueInfoOnlyParentWithSpreadAdded: LeagueConfigInfo[] = [{ ...baseLeagueInfo, addedSpread: 3 }];
+const leagueInfoOnlyParentWithSpreadAdded: LeagueConfigInfo[] = [{ ...baseLeagueInfo, addedSpread: '3' }];
 const leagueInfoOnlyParentDiffSportId: LeagueConfigInfo[] = [baseDiffSportId];
 
 const leagueInfoMockDisabledChilds: LeagueConfigInfo[] = [

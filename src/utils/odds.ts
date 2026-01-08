@@ -150,8 +150,8 @@ export const generateMarkets: (params: {
             }
 
             const leagueInfoByTypeId = leagueInfo.find((league) => Number(league.typeId) === Number(data.typeId));
-            const minOdds = leagueInfoByTypeId?.minOdds; // minimum odds configured for child market (e.g. 0.95 implied probability)
-            const maxOdds = leagueInfoByTypeId?.maxOdds; // maximum odds configured for child market (e.g. 0.05 implied probability)
+            const minOdds = Number(leagueInfoByTypeId?.minOdds); // minimum odds configured for child market (e.g. 0.95 implied probability)
+            const maxOdds = Number(leagueInfoByTypeId?.maxOdds); // maximum odds configured for child market (e.g. 0.05 implied probability)
 
             if (minOdds && maxOdds) {
                 const allowZeroOdds = [
@@ -173,8 +173,8 @@ export const generateMarkets: (params: {
 
         otherFormattedOdds.forEach((data) => {
             const leagueInfoByTypeId = leagueInfo.find((league) => Number(league.typeId) === Number(data.typeId));
-            const minOdds = leagueInfoByTypeId?.minOdds;
-            const maxOdds = leagueInfoByTypeId?.maxOdds;
+            const minOdds = Number(leagueInfoByTypeId?.minOdds);
+            const maxOdds = Number(leagueInfoByTypeId?.maxOdds);
 
             const childMarket: ChildMarket = {
                 leagueId: Number(data.sportId),
