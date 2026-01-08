@@ -7,3 +7,4 @@ export const NO_MATCHING_BOOKMAKERS_MESSAGE_ALT_LINES =
 export const ZERO_ODDS_AFTER_SPREAD_ADJUSTMENT = 'Bad odds after spread adjustment';
 export const NO_MARKETS_FOR_LEAGUE_ID = 'No child markets for leagueID';
 export const LAST_POLLED_TOO_OLD = 'Last polled data is too old';
+export const REMOVE_MIN_MAX_ODDS = 'Removing market due to min/max odds constraints';

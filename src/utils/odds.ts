@@ -1,7 +1,7 @@
 import * as oddslib from 'oddslib';
 import { isOneSideExtendedPlayerPropsMarket, MarketType, MarketTypeMap } from 'overtime-utils';
 import { DRAW, ZERO } from '../constants/common';
-import { NO_MARKETS_FOR_LEAGUE_ID } from '../constants/errors';
+import { NO_MARKETS_FOR_LEAGUE_ID, REMOVE_MIN_MAX_ODDS } from '../constants/errors';
 import { LiveMarketType } from '../enums/sports';
 import { Anchor, HomeAwayTeams, Odd, OddsObject, OddsWithLeagueInfo } from '../types/odds';
 import { ChildMarket, LastPolledArray, LeagueConfigInfo } from '../types/sports';
@@ -165,6 +165,8 @@ export const generateMarkets: (params: {
                 );
                 if (conditionToAddChildMarket) {
                     markets.push(childMarket);
+                } else {
+                    errorsMap.set(childMarket.typeId, REMOVE_MIN_MAX_ODDS);
                 }
             } else {
                 markets.push(childMarket);
