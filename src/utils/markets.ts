@@ -44,8 +44,6 @@ export const processMarket = (params: ProcessMarketParams) => {
         maxPercentageDiffForLines,
     });
 
-    market.errorsMap = errorMessageMap;
-
     market.odds = market.odds.map(() => {
         return {
             american: 0,
@@ -81,6 +79,7 @@ export const processMarket = (params: ProcessMarketParams) => {
         }
     });
     market.childMarkets = packedChildMarkets.filter((m: any) => m !== undefined);
+    market.errorsMap = errorMessageMap;
 
     return market;
 };
