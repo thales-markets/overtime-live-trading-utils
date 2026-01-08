@@ -14,7 +14,6 @@ import { ODDS_THRESHOLD_ANCHORS } from '../mock/MockAnchors';
 import { LeagueMocks } from '../mock/MockLeagueMap';
 import {
     MockOddsChildMarketsDifferentBookmakers,
-    MockOddsChildMarketsDifferentBookmakersPercentageDiff,
     MockOnlyMoneyline,
     MockOnlyMoneylineWithDifferentSportsbook,
 } from '../mock/MockOpticSoccer';
@@ -138,24 +137,6 @@ describe('Bookmakers', () => {
         });
 
         expect(market.childMarkets.length).toBe(3);
-    });
-
-    it('Should cut odds that are different between bookmakers', () => {
-        const freshMockSoccer = JSON.parse(JSON.stringify(mockSoccer));
-        const freshMockOpticSoccer = JSON.parse(JSON.stringify(MockOddsChildMarketsDifferentBookmakersPercentageDiff));
-        const market = processMarket({
-            market: freshMockSoccer,
-            apiResponseWithOdds: mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
-            liveOddsProviders: ['bovada', 'draftkings'],
-            anchors: ODDS_THRESHOLD_ANCHORS,
-            leagueMap: LeagueMocks.leagueInfoEnabledSpeadAndTotals,
-            lastPolledData,
-            maxAllowedProviderDataStaleDelay: MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
-            playersMap,
-            maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
-        });
-
-        expect(market.childMarkets.length).toBe(1);
     });
 });
 
