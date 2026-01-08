@@ -17,7 +17,7 @@ export const checkGameContraints = (
     if (currentGameStatus.toLowerCase() == 'completed') {
         return {
             allow: false,
-            message: `Blocking game ${homeTeam} - ${awayTeam} because it is no longer live.`,
+            message: `Blocking game because it is no longer live.`,
         };
     }
 
@@ -40,7 +40,7 @@ export const allowGameSportWithPeriodConstraint = (
     if (!Number.isNaN(currentPeriod) && currentPeriod >= periodLimitForLiveTrade) {
         return {
             allow: false,
-            message: `Blocking game ${homeTeam} - ${awayTeam} due to period: ${currentPeriod}. period`,
+            message: `Blocking game due to period: ${currentPeriod}. period`,
         };
     }
     return { allow: true, message: '' };
@@ -60,7 +60,7 @@ export const allowSoccerGame = (
             currentClockNumber >= soccerMinuteLimitForLiveTrading) ||
         (Number.isNaN(currentClockNumber) && currentPeriod.toLowerCase() != 'half')
     ) {
-        return { allow: false, message: `Blocking game ${homeTeam} - ${awayTeam} due to clock: ${currentClock}min` };
+        return { allow: false, message: `Blocking game due to clock: ${currentClock}min` };
     }
 
     return { allow: true, message: '' };
@@ -177,14 +177,14 @@ const checkResultConstraint = (
         if (Number(currentSetsWon.home) == setThreshold && currentResultInSet.home >= resultLimit) {
             return {
                 allow: false,
-                message: `Blocking game ${homeTeam} - ${awayTeam} due to current result: ${currentSetsWon.home} - ${currentSetsWon.away} (${currentResultInSet.home} - ${currentResultInSet.away})`,
+                message: `Blocking game due to current result: ${currentSetsWon.home} - ${currentSetsWon.away} (${currentResultInSet.home} - ${currentResultInSet.away})`,
             };
         }
 
         if (Number(currentSetsWon.away) == setThreshold && currentResultInSet.away >= resultLimit) {
             return {
                 allow: false,
-                message: `Blocking game ${homeTeam} - ${awayTeam} due to current result: ${currentSetsWon.home} - ${currentSetsWon.away} (${currentResultInSet.home} - ${currentResultInSet.away})`,
+                message: `Blocking game due to current result: ${currentSetsWon.home} - ${currentSetsWon.away} (${currentResultInSet.home} - ${currentResultInSet.away})`,
             };
         }
         return {
