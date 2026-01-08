@@ -197,9 +197,9 @@ export const checkOdds = (
                         if (secondaryBookmakerObject) {
                             if (shouldBlockOdds(value.price, secondaryBookmakerObject.price, anchors)) {
                                 // Block this odd
-                                const existingErrorMessage = errorMessageMap.get(value.typeId);
+                                const existingErrorMessage = errorMessageMap.get(Number(value.typeId));
                                 if (!existingErrorMessage) {
-                                    errorMessageMap.set(value.typeId, DIFF_BETWEEN_BOOKMAKERS_MESSAGE);
+                                    errorMessageMap.set(Number(value.typeId), DIFF_BETWEEN_BOOKMAKERS_MESSAGE);
                                 }
                                 return acc;
                             }
@@ -228,23 +228,23 @@ export const checkOdds = (
                                     }
                                 }
                                 // If no matching alt lines found between bookmakers, return zero odds
-                                const existingErrorMessage = errorMessageMap.get(value.typeId);
+                                const existingErrorMessage = errorMessageMap.get(Number(value.typeId));
                                 if (!existingErrorMessage) {
-                                    errorMessageMap.set(value.typeId, NO_MATCHING_BOOKMAKERS_MESSAGE_ALT_LINES);
+                                    errorMessageMap.set(Number(value.typeId), NO_MATCHING_BOOKMAKERS_MESSAGE_ALT_LINES);
                                 }
                             } else {
-                                const existingErrorMessage = errorMessageMap.get(value.typeId);
+                                const existingErrorMessage = errorMessageMap.get(Number(value.typeId));
                                 if (!existingErrorMessage) {
-                                    errorMessageMap.set(value.typeId, NO_MATCHING_BOOKMAKERS_MESSAGE);
+                                    errorMessageMap.set(Number(value.typeId), NO_MATCHING_BOOKMAKERS_MESSAGE);
                                 }
                             }
                         }
                     }
                 }
             } else {
-                const existingErrorMessage = errorMessageMap.get(value.typeId);
+                const existingErrorMessage = errorMessageMap.get(Number(value.typeId));
                 if (!existingErrorMessage) {
-                    errorMessageMap.set(value.typeId, LAST_POLLED_TOO_OLD);
+                    errorMessageMap.set(Number(value.typeId), LAST_POLLED_TOO_OLD);
                 }
             }
         }
