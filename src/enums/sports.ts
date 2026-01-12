@@ -66,6 +66,15 @@ export enum MoneylineTypes {
     MONEYLINE = 'Moneyline',
 }
 
+export enum LiveMarketType {
+    TOTAL = 'Total',
+    SPREAD = 'Spread',
+    MONEYLINE = 'Moneyline',
+    CORRECT_SCORE = 'Correct Score',
+    DOUBLE_CHANCE = 'Double Chance',
+    BOTH_TEAMS_TO_SCORE = 'Both Teams To Score',
+}
+
 export enum SpreadTypes {
     ASIAN_HANDICAP = 'Asian Handicap',
     GAME_SPREAD = 'Game Spread',

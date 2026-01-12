@@ -3,7 +3,7 @@ import { LeagueConfigInfo } from '../types/sports';
 
 // Methods are using data from live-markets-map.csv
 export const getLiveSupportedLeagues = (leagueInfoArray: LeagueConfigInfo[]) => {
-    const uniqueId = new Set();
+    const uniqueId = new Set<number>();
     leagueInfoArray
         .filter((leagueInfo) => leagueInfo.enabled === 'true')
         .map((league) => uniqueId.add(Number(league.sportId)));

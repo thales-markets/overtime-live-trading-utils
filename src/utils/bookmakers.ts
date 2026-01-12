@@ -1,9 +1,12 @@
 import {
     DIFF_BETWEEN_BOOKMAKERS_MESSAGE,
+    LAST_POLLED_TOO_OLD,
     NO_MATCHING_BOOKMAKERS_MESSAGE,
+    NO_MATCHING_BOOKMAKERS_MESSAGE_ALT_LINES,
     ZERO_ODDS_MESSAGE,
     ZERO_ODDS_MESSAGE_SINGLE_BOOKMAKER,
 } from '../constants/errors';
+import { LiveMarketType } from '../enums/sports';
 import { BookmakersConfig } from '../types/bookmakers';
 import { Anchor, OddsWithLeagueInfo } from '../types/odds';
 import { LastPolledArray, LeagueConfigInfo } from '../types/sports';
@@ -150,16 +153,17 @@ export const checkOddsFromBookmakers = (
     };
 };
 
-export const checkOddsFromBookmakersForChildMarkets = (
-    odds: any,
+export const checkOdds = (
+    odds: { [key: string]: OddsWithLeagueInfo },
     leagueInfos: LeagueConfigInfo[],
     oddsProviders: string[],
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
     anchors: Anchor[],
-    percentageDiffForPPLines: number
-): OddsWithLeagueInfo => {
-    const formattedOdds = Object.entries(odds as any).reduce((acc: any, [key, value]: [string, any]) => {
+    maxPercentageDiffForLines: number
+): { odds: OddsWithLeagueInfo[]; errorsMap: Map<number, string> } => {
+    const errorMessageMap = new Map<number, string>();
+    const formattedOdds = Object.entries(odds).reduce((acc: any, [key, value]: [string, OddsWithLeagueInfo]) => {
         const [sportsBookName, marketName, points, selection, selectionLine] = key.split('_');
         const info = leagueInfos.find((leagueInfo) => leagueInfo.marketName.toLowerCase() === marketName.toLowerCase());
         if (info) {
@@ -180,6 +184,7 @@ export const checkOddsFromBookmakersForChildMarkets = (
                 const secondaryBookmaker = bookmakers[1];
                 if (primaryBookmaker && !secondaryBookmaker) {
                     if (sportsBookName.toLowerCase() === primaryBookmaker.toLowerCase()) {
+                        if (value.playerId && !value.isMain) return acc;
                         acc.push(value);
                     }
                 } else {
@@ -192,14 +197,23 @@ export const checkOddsFromBookmakersForChildMarkets = (
                         if (secondaryBookmakerObject) {
                             if (shouldBlockOdds(value.price, secondaryBookmakerObject.price, anchors)) {
                                 // Block this odd
+                                const existingErrorMessage = errorMessageMap.get(Number(value.typeId));
+                                if (!existingErrorMessage) {
+                                    errorMessageMap.set(Number(value.typeId), DIFF_BETWEEN_BOOKMAKERS_MESSAGE);
+                                }
                                 return acc;
                             }
 
                             acc.push(value);
                         } else {
-                            // if its player props and we didnt find the correct line, try adjusting points by steps defined and search again
-                            if (value.playerId) {
-                                const steps = getStepsForPointAdjustment(Number(points), percentageDiffForPPLines);
+                            // if the market is Total or Spread and we didnt find the correct line, try adjusting points by steps defined and search again
+                            if (info.type === LiveMarketType.SPREAD || info.type === LiveMarketType.TOTAL) {
+                                const steps = getStepsForPointAdjustment(
+                                    Number(points),
+                                    info.percentageDiffForLines
+                                        ? Number(info.percentageDiffForLines)
+                                        : maxPercentageDiffForLines // use the value defined in csv if available, else use default from env variable
+                                );
                                 for (const step of steps) {
                                     const adjustedPoints = (Number(points) + step).toString();
 
@@ -210,19 +224,34 @@ export const checkOddsFromBookmakersForChildMarkets = (
 
                                     if (secondaryBookmakerObject) {
                                         acc.push(value);
-                                        break;
+                                        return acc;
                                     }
+                                }
+                                // If no matching alt lines found between bookmakers, return zero odds
+                                const existingErrorMessage = errorMessageMap.get(Number(value.typeId));
+                                if (!existingErrorMessage) {
+                                    errorMessageMap.set(Number(value.typeId), NO_MATCHING_BOOKMAKERS_MESSAGE_ALT_LINES);
+                                }
+                            } else {
+                                const existingErrorMessage = errorMessageMap.get(Number(value.typeId));
+                                if (!existingErrorMessage) {
+                                    errorMessageMap.set(Number(value.typeId), NO_MATCHING_BOOKMAKERS_MESSAGE);
                                 }
                             }
                         }
                     }
+                }
+            } else {
+                const existingErrorMessage = errorMessageMap.get(Number(value.typeId));
+                if (!existingErrorMessage) {
+                    errorMessageMap.set(Number(value.typeId), LAST_POLLED_TOO_OLD);
                 }
             }
         }
 
         return acc;
     }, []);
-    return formattedOdds;
+    return { odds: formattedOdds, errorsMap: errorMessageMap };
 };
 
 export const getPrimaryAndSecondaryBookmakerForTypeId = (
@@ -317,14 +346,12 @@ const shouldBlockOdds = (ourOdds: number, otherOdds: number, anchors: Anchor[]) 
 };
 
 const getStepsForPointAdjustment = (points: number, percentageDiffForPPLines: number): number[] => {
-    const stepsDelta = Math.round((points * percentageDiffForPPLines) / 100); // Example logic: 10% of the points value
+    const stepsDelta = Math.round((points * percentageDiffForPPLines) / 100);
     const steps: number[] = [];
-    for (let index = 1; index <= stepsDelta; index++) {
+    for (let index = 0.5; index <= stepsDelta; index += 0.5) {
         steps.push(-index, index);
     }
-
     return steps;
 };
-
 // Export only when running tests
 export const __test__ = { getRequiredOtherOdds, shouldBlockOdds };

@@ -1,4 +1,4 @@
-import { LeagueConfigInfo } from './sports';
+import { LastPolledArray, LeagueConfigInfo } from './sports';
 
 export type Fixture = {
     gameId: string;
@@ -7,7 +7,7 @@ export type Fixture = {
     awayTeam: string;
 };
 
-export type Odds = {
+export type Odd = {
     id: string;
     sportsBookName: string;
     name: string;
@@ -20,7 +20,7 @@ export type Odds = {
     playerId: string;
     selection: string;
     selectionLine: string;
-}[];
+};
 
 export type OddsObject = {
     gameId: string;
@@ -31,25 +31,10 @@ export type OddsObject = {
     status: string;
     sport: string;
     league: string;
-    odds: Odds;
+    odds: Odd[];
 };
 
-export type OddsWithLeagueInfo = [
-    {
-        id: string;
-        sportsBookName: string;
-        name: string;
-        price: number;
-        timestamp: number;
-        points: number;
-        isMain: boolean;
-        isLive: boolean;
-        marketName: string;
-        playerId: string;
-        selection: string;
-        selectionLine: string;
-    } & LeagueConfigInfo
-];
+export type OddsWithLeagueInfo = Odd & LeagueConfigInfo;
 
 export type ScoresObject = {
     gameId: string;
@@ -81,3 +66,15 @@ export type Anchor = {
     our: number;
     otherMin: number;
 };
+
+export interface ProcessMarketParams {
+    market: any;
+    apiResponseWithOdds: OddsObject;
+    liveOddsProviders: any;
+    anchors: Anchor[];
+    leagueMap: any;
+    lastPolledData: LastPolledArray;
+    maxAllowedProviderDataStaleDelay: number;
+    playersMap: Map<string, number>;
+    maxPercentageDiffForLines: number;
+}
