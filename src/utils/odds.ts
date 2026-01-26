@@ -60,7 +60,7 @@ export const generateMarkets: (params: {
     anchors: Anchor[];
     playersMap: Map<string, number>;
     maxPercentageDiffForLines: number;
-}) => { markets: ChildMarket[]; errorsMap: Map<number, string> } = ({
+}) => { markets: ChildMarket[]; errorsMap: Map<number, string>; errorsDetailsMap?: Map<number, string> } = ({
     apiResponseWithOdds,
     leagueId,
     liveOddsProviders,

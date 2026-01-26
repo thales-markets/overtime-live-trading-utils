@@ -32,7 +32,11 @@ export const processMarket = (params: ProcessMarketParams) => {
 
     const leagueInfo = getLeagueInfo(market.leagueId, leagueMap);
 
-    const { markets: allMarkets, errorsMap: errorMessageMap } = generateMarkets({
+    const {
+        markets: allMarkets,
+        errorsMap: errorMessageMap,
+        errorsDetailsMap,
+    } = generateMarkets({
         apiResponseWithOdds,
         leagueId: market.leagueId,
         liveOddsProviders,
@@ -80,6 +84,7 @@ export const processMarket = (params: ProcessMarketParams) => {
     });
     market.childMarkets = packedChildMarkets.filter((m: any) => m !== undefined);
     market.errorsMap = errorMessageMap;
+    market.errorsDetailsMap = errorsDetailsMap;
 
     return market;
 };
