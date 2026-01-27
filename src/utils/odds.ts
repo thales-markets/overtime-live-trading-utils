@@ -60,7 +60,7 @@ export const generateMarkets: (params: {
     anchors: Anchor[];
     playersMap: Map<string, number>;
     maxPercentageDiffForLines: number;
-}) => { markets: ChildMarket[]; errorsMap: Map<number, string> } = ({
+}) => { markets: ChildMarket[]; errorsMap: Map<number, string>; errorsDetailsMap?: Map<number, string> } = ({
     apiResponseWithOdds,
     leagueId,
     liveOddsProviders,
@@ -88,7 +88,11 @@ export const generateMarkets: (params: {
 
     if (leagueInfo.length > 0) {
         const odds = filterOdds(apiResponseWithOdds.odds, leagueInfo, playersMap);
-        const { odds: checkedOdds, errorsMap } = checkOdds(
+        const {
+            odds: checkedOdds,
+            errorsMap,
+            errorsDetailsMap,
+        } = checkOdds(
             odds,
             leagueInfo,
             liveOddsProviders,
@@ -196,7 +200,7 @@ export const generateMarkets: (params: {
             };
             markets.push(childMarket);
         });
-        return { markets, errorsMap };
+        return { markets, errorsMap, errorsDetailsMap };
     } else {
         console.warn(`${NO_MARKETS_FOR_LEAGUE_ID}: ${Number(leagueId)}`);
         return { markets, errorsMap: new Map<number, string>() };

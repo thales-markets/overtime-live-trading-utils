@@ -161,8 +161,10 @@ export const checkOdds = (
     maxAllowedProviderDataStaleDelay: number,
     anchors: Anchor[],
     maxPercentageDiffForLines: number
-): { odds: OddsWithLeagueInfo[]; errorsMap: Map<number, string> } => {
+): { odds: OddsWithLeagueInfo[]; errorsMap: Map<number, string>; errorsDetailsMap: Map<number, string> } => {
     const errorMessageMap = new Map<number, string>();
+    const errorDetailsMap = new Map<number, string>();
+
     const formattedOdds = Object.entries(odds).reduce((acc: any, [key, value]: [string, OddsWithLeagueInfo]) => {
         const [sportsBookName, marketName, points, selection, selectionLine] = key.split('_');
         const info = leagueInfos.find((leagueInfo) => leagueInfo.marketName.toLowerCase() === marketName.toLowerCase());
@@ -173,13 +175,13 @@ export const checkOdds = (
                 Number(info.typeId)
             );
 
-            const isValidLastPolled = isLastPolledForBookmakersValid(
+            const invalidBookmakers = getLastPolledInvalidBookmakers(
                 lastPolledData,
                 maxAllowedProviderDataStaleDelay,
                 bookmakers
             );
 
-            if (isValidLastPolled) {
+            if (!invalidBookmakers.length) {
                 const primaryBookmaker = bookmakers[0];
                 const secondaryBookmaker = bookmakers[1];
                 if (primaryBookmaker && !secondaryBookmaker) {
@@ -245,13 +247,18 @@ export const checkOdds = (
                 const existingErrorMessage = errorMessageMap.get(Number(value.typeId));
                 if (!existingErrorMessage) {
                     errorMessageMap.set(Number(value.typeId), LAST_POLLED_TOO_OLD);
+                    errorDetailsMap.set(
+                        Number(value.typeId),
+                        `${LAST_POLLED_TOO_OLD} (${invalidBookmakers.join(',')})`
+                    );
                 }
             }
         }
 
         return acc;
     }, []);
-    return { odds: formattedOdds, errorsMap: errorMessageMap };
+
+    return { odds: formattedOdds, errorsMap: errorMessageMap, errorsDetailsMap: errorDetailsMap };
 };
 
 export const getPrimaryAndSecondaryBookmakerForTypeId = (
@@ -271,13 +278,13 @@ export const getPrimaryAndSecondaryBookmakerForTypeId = (
     return secondaryBookmaker ? [primaryBookmaker, secondaryBookmaker] : [primaryBookmaker];
 };
 
-export const isLastPolledForBookmakersValid = (
+export const getLastPolledInvalidBookmakers = (
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
     bookmakers: string[]
-): boolean => {
+): string[] => {
     const now = new Date();
-    const isNotValid = bookmakers.some((bookmakerId) => {
+    const invalidBookmakers = bookmakers.filter((bookmakerId) => {
         const lastPolledTime = lastPolledData.find(
             (entry) => entry.sportsbook.toLowerCase() === bookmakerId.toLowerCase()
         )?.timestamp;
@@ -291,7 +298,8 @@ export const isLastPolledForBookmakersValid = (
         }
         return false;
     });
-    return !isNotValid;
+
+    return invalidBookmakers;
 };
 
 export const calculateImpliedOddsDifference = (impliedOddsA: number, impliedOddsB: number): number => {
