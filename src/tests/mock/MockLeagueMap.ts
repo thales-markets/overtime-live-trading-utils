@@ -205,6 +205,28 @@ const leagueInfoDisabledCorrectScoreAndDoubleChance: LeagueConfigInfo[] = [
 ];
 
 const leagueInfoEnabledSpeadAndTotals: LeagueConfigInfo[] = [baseLeagueInfo, spreadMock, totalMock];
+
+const leagueInfoEnabledDoubleChance: LeagueConfigInfo[] = [
+    {
+        sportId: '9806',
+        enabled: 'true',
+        marketName: 'Double Chance',
+        typeId: '10003',
+        type: LiveMarketType.DOUBLE_CHANCE,
+        maxOdds: '0',
+        minOdds: '1',
+    },
+    {
+        sportId: '9806',
+        enabled: 'true',
+        marketName: '1st Half Double Chance',
+        typeId: '10015',
+        type: LiveMarketType.DOUBLE_CHANCE,
+        maxOdds: '0',
+        minOdds: '1',
+    },
+];
+
 const leagueInfoEnabledAll: LeagueConfigInfo[] = [
     baseLeagueInfo,
     spreadMock,
@@ -234,6 +256,7 @@ export const LeagueMocks = {
     leagueInfoMockDisabledChilds,
     leagueInfoEnabledSpreadDisabledTotals,
     leagueInfoEnabledSpeadAndTotals,
+    leagueInfoEnabledDoubleChance,
     leagueInfoEnabledAll,
     leagueInfoDisabledCorrectScoreAndDoubleChance,
     leaguInfoDifferentPrimaryBookmaker,
