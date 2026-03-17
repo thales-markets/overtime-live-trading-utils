@@ -761,41 +761,54 @@ export const groupAndFormatCorrectScoreOdds = (oddsArray: any[], commonData: Hom
  * @returns {Array} The grouped and formatted correct score odds.
  */
 export const groupAndFormatDoubleChanceOdds = (oddsArray: any[], commonData: HomeAwayTeams) => {
-    let probability1X = 0;
-    let probability12 = 0;
-    let probabilityX2 = 0;
-
-    let sportId;
-
-    oddsArray.forEach((odd) => {
-        if (odd.sportId) {
-            sportId = odd.sportId;
+    const oddsByTypeId = oddsArray.reduce((acc: any, odd: any) => {
+        const typeId = odd.typeId;
+        if (!acc[typeId]) {
+            acc[typeId] = [];
         }
-        if (odd.selection.includes(commonData.homeTeam)) {
-            if (odd.selection.includes(commonData.awayTeam)) {
-                probability12 = odd.price;
-            } else {
-                probability1X = odd.price;
+        acc[typeId].push(odd);
+        return acc;
+    }, {});
+
+    const marketObjects: any[] = [];
+
+    Object.entries(oddsByTypeId).forEach(([typeId, odds]: [string, any]) => {
+        let probability1X = 0;
+        let probability12 = 0;
+        let probabilityX2 = 0;
+        let sportId;
+
+        odds.forEach((odd: any) => {
+            if (odd.sportId) {
+                sportId = odd.sportId;
             }
-        } else if (odd.selection.includes(commonData.awayTeam)) {
-            probabilityX2 = odd.price;
+            if (odd.selection.includes(commonData.homeTeam)) {
+                if (odd.selection.includes(commonData.awayTeam)) {
+                    probability12 = odd.price;
+                } else {
+                    probability1X = odd.price;
+                }
+            } else if (odd.selection.includes(commonData.awayTeam)) {
+                probabilityX2 = odd.price;
+            }
+        });
+
+        if ([probability1X, probability12, probabilityX2].every((odd) => odd === ZERO)) {
+            return;
         }
+
+        marketObjects.push({
+            homeTeam: commonData.homeTeam,
+            awayTeam: commonData.awayTeam,
+            line: 0,
+            odds: [probability1X, probability12, probabilityX2],
+            type: LiveMarketType.DOUBLE_CHANCE,
+            typeId: Number(typeId),
+            sportId: sportId,
+        });
     });
 
-    if ([probability1X, probability12, probabilityX2].every((odd) => odd === ZERO)) {
-        return [];
-    }
-    // Create the market object
-    const marketObject = {
-        homeTeam: commonData.homeTeam,
-        awayTeam: commonData.awayTeam,
-        line: 0,
-        odds: [probability1X, probability12, probabilityX2],
-        type: LiveMarketType.DOUBLE_CHANCE,
-        typeId: 10003,
-        sportId: sportId,
-    };
-    return [marketObject];
+    return marketObjects;
 };
 
 // used for home/away markets

@@ -6,6 +6,7 @@ import {
     MockOddsChildMarketsGoodOdds,
     MockOddsChildMarketsOddsCut,
     MockOnlyMoneyline,
+    MockOpticSoccer,
     MockZeroOdds,
 } from '../mock/MockOpticSoccer';
 import { mockSoccer } from '../mock/MockSoccerRedis';
@@ -99,5 +100,43 @@ describe('Odds', () => {
         });
 
         expect(market.childMarkets).toHaveLength(0);
+    });
+
+    it('Should return appropriate double chance odds', () => {
+        const freshMockSoccer = JSON.parse(JSON.stringify(mockSoccer));
+        const freshMockOpticSoccer = JSON.parse(JSON.stringify(MockOpticSoccer));
+        const market = processMarket({
+            market: freshMockSoccer,
+            apiResponseWithOdds: mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
+            liveOddsProviders: ['draftkings'],
+            anchors: ODDS_THRESHOLD_ANCHORS,
+            leagueMap: LeagueMocks.leagueInfoEnabledDoubleChance,
+            lastPolledData,
+            maxAllowedProviderDataStaleDelay: MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap,
+            maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
+        });
+
+        const doubleChanceTypeIds = LeagueMocks.leagueInfoEnabledDoubleChance.map((info) => Number(info.typeId));
+        const doubleChanceMarkets = market.childMarkets.filter((childMarket: any) =>
+            doubleChanceTypeIds.includes(childMarket.typeId)
+        );
+
+        expect(doubleChanceMarkets).toHaveLength(2);
+
+        LeagueMocks.leagueInfoEnabledDoubleChance.forEach((info) => {
+            const actualMarketOdds = doubleChanceMarkets
+                .find((childMarket: any) => childMarket.typeId === Number(info.typeId))
+                ?.odds.map((odd: any) => odd.decimal);
+
+            const expectedMarketOdds = freshMockOpticSoccer.odds
+                .filter((odd: any) => odd.market === info.marketName)
+                .map((odd: any) => odd.price);
+
+            expect(actualMarketOdds).toHaveLength(3);
+            expect(actualMarketOdds[0]).toBe(expectedMarketOdds[0]);
+            expect(actualMarketOdds[1]).toBe(expectedMarketOdds[1]);
+            expect(actualMarketOdds[2]).toBe(expectedMarketOdds[2]);
+        });
     });
 });
