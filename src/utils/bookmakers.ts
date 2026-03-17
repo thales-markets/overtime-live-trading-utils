@@ -19,13 +19,19 @@ export const getBookmakersArray = (
     const sportBookmakersData = bookmakersData.find((data) => Number(data.sportId) === Number(sportId));
     if (sportBookmakersData) {
         if (sportBookmakersData.primaryBookmaker == '') {
-            return backupLiveOddsProviders;
+            return backupLiveOddsProviders.map((bookmaker) => bookmaker.toLowerCase());
         }
         const bookmakersArray: string[] = [];
 
-        sportBookmakersData.primaryBookmaker ? bookmakersArray.push(sportBookmakersData.primaryBookmaker) : '';
-        sportBookmakersData.secondaryBookmaker ? bookmakersArray.push(sportBookmakersData.secondaryBookmaker) : '';
-        sportBookmakersData.tertiaryBookmaker ? bookmakersArray.push(sportBookmakersData.tertiaryBookmaker) : '';
+        sportBookmakersData.primaryBookmaker
+            ? bookmakersArray.push(sportBookmakersData.primaryBookmaker.toLowerCase())
+            : '';
+        sportBookmakersData.secondaryBookmaker
+            ? bookmakersArray.push(sportBookmakersData.secondaryBookmaker.toLowerCase())
+            : '';
+        sportBookmakersData.tertiaryBookmaker
+            ? bookmakersArray.push(sportBookmakersData.tertiaryBookmaker.toLowerCase())
+            : '';
 
         return bookmakersArray;
     }
