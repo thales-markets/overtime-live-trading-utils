@@ -103,9 +103,9 @@ export const generateMarkets: (params: {
         );
         checkedOdds.forEach((odd) => {
             if (odd.type === LiveMarketType.TOTAL) {
-                if (Math.abs(Number(odd.points) % 1) === 0.5) totalOdds.push(odd);
+                if (Math.abs(Number(odd.points) % 0.5) === 0) totalOdds.push(odd);
             } else if (odd.type === LiveMarketType.SPREAD) {
-                if (Math.abs(Number(odd.points) % 1) === 0.5) spreadOdds.push(odd);
+                if (Math.abs(Number(odd.points) % 0.5) === 0) spreadOdds.push(odd);
             } else if (odd.type === LiveMarketType.MONEYLINE) {
                 moneylineOdds.push(odd);
             } else if (odd.type === LiveMarketType.CORRECT_SCORE) {
