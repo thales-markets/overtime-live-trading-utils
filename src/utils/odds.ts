@@ -226,7 +226,6 @@ export const filterOdds = (
     return oddsArray.reduce((acc: any, odd: any) => {
         if (allMarketsTypes.includes(odd.marketName.toLowerCase())) {
             const { points, marketName, selection, selectionLine, sportsBookName, playerId } = odd;
-            console.log(`Filtering odd - Market: ${marketName}, Points: ${points}, Selection: ${selection}, SelectionLine: ${selectionLine}, SportsBook: ${sportsBookName}, PlayerId: ${playerId}`); // Debug log to trace which odds are being filtered
             if (playerId && !playersMap.has(playerId)) {
                 return acc;
             }
