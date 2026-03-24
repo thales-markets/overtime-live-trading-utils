@@ -167,7 +167,6 @@ export const checkOdds = (
     const errorDetailsMap = new Map<number, string>();
 
     const formattedOdds = Object.entries(odds).reduce((acc: any, [key, value]: [string, OddsWithLeagueInfo]) => {
-        console.log('Checking odds for key:', key);
         const [sportsBookName, marketName, points, selection, selectionLine] = key.split(SPLIT_DELIMITER);
 
         const info = leagueInfos.find((leagueInfo) => leagueInfo.marketName.toLowerCase() === marketName.toLowerCase());
