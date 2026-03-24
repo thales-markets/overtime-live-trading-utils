@@ -276,6 +276,9 @@ export const groupAndFormatSpreadOdds = (oddsArray: any[], commonData: HomeAwayT
     // Format the grouped odds into the desired output
     const formattedOdds = Object.entries(groupedOdds as any).reduce((acc: any, [key, value]) => {
         const [_marketName, lineFloat] = key.split(SPLIT_DELIMITER);
+        if (typeof lineFloat !== 'number' && Number.isNaN(Number(lineFloat))) {
+            return acc;
+        }
         const line = parseFloat(lineFloat);
 
         acc.push({
@@ -330,6 +333,9 @@ export const groupAndFormatTotalOdds = (oddsArray: any[], commonData: HomeAwayTe
     // Format the grouped odds into the desired output
     const formattedOdds = Object.entries(groupedOdds as any).reduce((acc: any, [key, value]) => {
         const [_marketName, selection, points] = key.split(SPLIT_DELIMITER);
+        if (typeof points !== 'number' && Number.isNaN(Number(points))) {
+            return acc;
+        }
         const line = parseFloat(points);
 
         // if we have away team in total odds we know the market is team total and we need to increase typeId by one.
