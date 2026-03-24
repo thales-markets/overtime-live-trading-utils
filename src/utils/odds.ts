@@ -1,6 +1,6 @@
 import * as oddslib from 'oddslib';
 import { isOneSideExtendedPlayerPropsMarket, MarketType, MarketTypeMap } from 'overtime-utils';
-import { DRAW, ZERO } from '../constants/common';
+import { DRAW, SPLIT_DELIMITER, ZERO } from '../constants/common';
 import { NO_MARKETS_FOR_LEAGUE_ID, REMOVE_MIN_MAX_ODDS } from '../constants/errors';
 import { LiveMarketType } from '../enums/sports';
 import { Anchor, HomeAwayTeams, Odd, OddsObject, OddsWithLeagueInfo } from '../types/odds';
@@ -226,10 +226,11 @@ export const filterOdds = (
     return oddsArray.reduce((acc: any, odd: any) => {
         if (allMarketsTypes.includes(odd.marketName.toLowerCase())) {
             const { points, marketName, selection, selectionLine, sportsBookName, playerId } = odd;
+            console.log(`Filtering odd - Market: ${marketName}, Points: ${points}, Selection: ${selection}, SelectionLine: ${selectionLine}, SportsBook: ${sportsBookName}, PlayerId: ${playerId}`); // Debug log to trace which odds are being filtered
             if (playerId && !playersMap.has(playerId)) {
                 return acc;
             }
-            const key = `${sportsBookName.toLowerCase()}_${marketName.toLowerCase()}_${points}_${selection}_${selectionLine}`;
+            const key = `${sportsBookName.toLowerCase()}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`;
             acc[key] = {
                 ...odd,
                 ...leagueInfos.find(
@@ -255,7 +256,7 @@ export const groupAndFormatSpreadOdds = (oddsArray: any[], commonData: HomeAwayT
         const { points, marketName, price, selection, typeId, sportId, type } = odd;
         const isHomeTeam = selection === commonData.homeTeam;
 
-        const key = `${marketName}_${isHomeTeam ? points : -points}`;
+        const key = `${marketName}${SPLIT_DELIMITER}${isHomeTeam ? points : -points}`;
 
         if (!acc[key]) {
             acc[key] = { home: null, away: null, typeId: null, sportId: null };
@@ -275,7 +276,7 @@ export const groupAndFormatSpreadOdds = (oddsArray: any[], commonData: HomeAwayT
     }, {}) as any;
     // Format the grouped odds into the desired output
     const formattedOdds = Object.entries(groupedOdds as any).reduce((acc: any, [key, value]) => {
-        const [_marketName, lineFloat] = key.split('_');
+        const [_marketName, lineFloat] = key.split(SPLIT_DELIMITER);
         const line = parseFloat(lineFloat);
 
         acc.push({
@@ -302,7 +303,7 @@ export const groupAndFormatTotalOdds = (oddsArray: any[], commonData: HomeAwayTe
     // Group odds by their selection points and selection
     const groupedOdds = oddsArray.reduce((acc, odd) => {
         if (odd) {
-            const key = `${odd.marketName}_${odd.selection}_${odd.points}`;
+            const key = `${odd.marketName}${SPLIT_DELIMITER}${odd.selection}${SPLIT_DELIMITER}${odd.points}`;
             if (!acc[key]) {
                 acc[key] = { over: null, under: null };
             }
@@ -329,7 +330,7 @@ export const groupAndFormatTotalOdds = (oddsArray: any[], commonData: HomeAwayTe
 
     // Format the grouped odds into the desired output
     const formattedOdds = Object.entries(groupedOdds as any).reduce((acc: any, [key, value]) => {
-        const [_marketName, selection, points] = key.split('_');
+        const [_marketName, selection, points] = key.split(SPLIT_DELIMITER);
         const line = parseFloat(points);
 
         // if we have away team in total odds we know the market is team total and we need to increase typeId by one.
