@@ -6,3 +6,4 @@ export const MAX_IMPLIED_PERCENTAGE_DIFF = 20; // 20%
 export const TAG_CHILD_SPREAD = 10001;
 export const TAG_CHILD_TOTALS = 10002;
 export const MULTIPLIER_100 = 100;
+export const SPLIT_DELIMITER = '~~';

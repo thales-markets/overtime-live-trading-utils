@@ -1,3 +1,4 @@
+import { SPLIT_DELIMITER } from '../../constants/common';
 import {
     DIFF_BETWEEN_BOOKMAKERS_MESSAGE,
     LAST_POLLED_TOO_OLD,
@@ -381,7 +382,7 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             };
 
             const odds: { [key: string]: OddsWithLeagueInfo } = {
-                [`draftkings_${marketName.toLowerCase()}_${points}_${selection}_${selectionLine}`]:
+                [`draftkings${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`]:
                     baseMockOdd as OddsWithLeagueInfo,
             };
 
@@ -392,7 +393,7 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
                     price: secondaryPrice,
                 } as OddsWithLeagueInfo;
 
-                odds[`bovada_${marketName.toLowerCase()}_${points}_${selection}_${selectionLine}`] = secondaryMockOdd;
+                odds[`bovada${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`] = secondaryMockOdd;
             }
 
             return odds;
@@ -542,8 +543,8 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             };
 
             const odds: { [key: string]: OddsWithLeagueInfo } = {
-                draftkings_moneyline_0_over_0: baseMockOdd,
-                draftkings_moneyline_1_away_0: {
+                'draftkings~~moneyline~~0~~over~~0': baseMockOdd,
+                'draftkings~~moneyline~~1~~away~~0': {
                     ...baseMockOdd,
                     price: 2.0,
                     selection: 'away',
@@ -591,9 +592,9 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             };
 
             const odds: { [key: string]: OddsWithLeagueInfo } = {
-                'draftkings_spread_2.5_over_0': baseMockOdd,
+                'draftkings~~spread~~2.5~~over~~0': baseMockOdd,
                 // Create secondary bookmaker with exact matching line (not adjusted)
-                'bovada_spread_2.5_over_0': {
+                'bovada~~spread~~2.5~~over~~0': {
                     ...baseMockOdd,
                     sportsBookName: 'bovada',
                     points: 2.5,
@@ -640,9 +641,9 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             };
 
             const odds: { [key: string]: OddsWithLeagueInfo } = {
-                'draftkings_spread_10.5_over_0': baseMockOdd,
+                'draftkings~~spread~~10.5~~over~~0': baseMockOdd,
                 // Secondary bookmaker with 11.0 points (within 10% tolerance of 10.5)
-                bovada_spread_11_over_0: {
+                'bovada~~spread~~11~~over~~0': {
                     ...baseMockOdd,
                     sportsBookName: 'bovada',
                     points: 11.0,

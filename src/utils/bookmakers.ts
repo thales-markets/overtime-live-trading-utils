@@ -1,3 +1,4 @@
+import { SPLIT_DELIMITER } from '../constants/common';
 import {
     DIFF_BETWEEN_BOOKMAKERS_MESSAGE,
     LAST_POLLED_TOO_OLD,
@@ -172,7 +173,8 @@ export const checkOdds = (
     const errorDetailsMap = new Map<number, string>();
 
     const formattedOdds = Object.entries(odds).reduce((acc: any, [key, value]: [string, OddsWithLeagueInfo]) => {
-        const [sportsBookName, marketName, points, selection, selectionLine] = key.split('_');
+        const [sportsBookName, marketName, points, selection, selectionLine] = key.split(SPLIT_DELIMITER);
+
         const info = leagueInfos.find((leagueInfo) => leagueInfo.marketName.toLowerCase() === marketName.toLowerCase());
         if (info) {
             const bookmakers = getPrimaryAndSecondaryBookmakerForTypeId(
@@ -200,7 +202,7 @@ export const checkOdds = (
                         if (value.playerId && !value.isMain) return acc; // Skip if not main for player props
                         const secondaryBookmakerObject =
                             odds[
-                                `${secondaryBookmaker}_${marketName.toLowerCase()}_${points}_${selection}_${selectionLine}`
+                                `${secondaryBookmaker}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
                             ];
                         if (secondaryBookmakerObject) {
                             if (shouldBlockOdds(value.price, secondaryBookmakerObject.price, anchors)) {
@@ -227,7 +229,7 @@ export const checkOdds = (
 
                                     const secondaryBookmakerObject =
                                         odds[
-                                            `${secondaryBookmaker}_${marketName.toLowerCase()}_${adjustedPoints}_${selection}_${selectionLine}`
+                                            `${secondaryBookmaker}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${adjustedPoints}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
                                         ];
 
                                     if (secondaryBookmakerObject) {
