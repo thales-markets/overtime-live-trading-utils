@@ -19,6 +19,7 @@ export type ChildMarket = {
     typeId: number;
     type: string;
     line: number;
+    originalMarketName: string;
     odds: Array<number>;
     playerProps: {
         playerId: number;
