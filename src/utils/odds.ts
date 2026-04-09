@@ -135,6 +135,7 @@ export const generateMarkets: (params: {
                 typeId: Number(data.typeId),
                 type: MarketTypeMap[data.typeId as MarketType]?.key || '',
                 line: Number(data.line || 0),
+                originalMarketName: data.marketName,
                 odds: data.odds,
                 playerProps: {
                     playerId: 0,
@@ -187,6 +188,7 @@ export const generateMarkets: (params: {
                 typeId: Number(data.typeId),
                 type: MarketTypeMap[data.typeId as MarketType]?.key || '',
                 line: Number(data.line || 0),
+                originalMarketName: data.marketName,
                 odds: data.odds.map((odd: any) => {
                     const impliedOdds = convertOddsToImpl(odd) || ZERO;
                     return !minOdds || !maxOdds || impliedOdds >= minOdds || impliedOdds <= maxOdds ? 0 : impliedOdds;
@@ -270,6 +272,7 @@ export const groupAndFormatSpreadOdds = (oddsArray: any[], commonData: HomeAwayT
         acc[key].typeId = typeId;
         acc[key].type = type;
         acc[key].sportId = sportId;
+        acc[key].marketName = marketName;
 
         return acc;
     }, {}) as any;
@@ -287,6 +290,7 @@ export const groupAndFormatSpreadOdds = (oddsArray: any[], commonData: HomeAwayT
             typeId: (value as any).typeId,
             sportId: (value as any).sportId,
             type: (value as any).type,
+            marketName: _marketName,
         });
 
         return acc;
@@ -318,6 +322,7 @@ export const groupAndFormatTotalOdds = (oddsArray: any[], commonData: HomeAwayTe
             acc[key].typeId = odd.typeId;
             acc[key].type = odd.type;
             acc[key].sportId = odd.sportId;
+            acc[key].marketName = odd.marketName;
 
             if (odd.playerId) {
                 acc[key].playerProps = {
@@ -356,6 +361,7 @@ export const groupAndFormatTotalOdds = (oddsArray: any[], commonData: HomeAwayTe
             sportId: (value as any).sportId,
             type: (value as any).type,
             playerProps: (value as any).playerProps,
+            marketName: _marketName,
         });
 
         return acc;
@@ -374,7 +380,7 @@ export const groupAndFormatTotalOdds = (oddsArray: any[], commonData: HomeAwayTe
 export const groupAndFormatMoneylineOdds = (oddsArray: any[], commonData: HomeAwayTeams) => {
     // Group odds by their selection points and selection
     const groupedOdds = oddsArray.reduce((acc: any, odd: any) => {
-        const { price, selection, typeId, sportId, type } = odd;
+        const { price, marketName, selection, typeId, sportId, type } = odd;
         const key = typeId;
 
         if (!acc[key]) {
@@ -388,6 +394,7 @@ export const groupAndFormatMoneylineOdds = (oddsArray: any[], commonData: HomeAw
         acc[key].typeId = typeId;
         acc[key].type = type;
         acc[key].sportId = sportId;
+        acc[key].marketName = marketName;
 
         return acc;
     }, {}) as any;
@@ -401,6 +408,7 @@ export const groupAndFormatMoneylineOdds = (oddsArray: any[], commonData: HomeAw
             typeId: (value as any).typeId,
             sportId: (value as any).sportId,
             type: (value as any).type,
+            marketName: (value as any).marketName,
         });
 
         return acc;
@@ -417,7 +425,7 @@ export const groupAndFormatMoneylineOdds = (oddsArray: any[], commonData: HomeAw
  */
 export const groupAndFormatGGOdds = (oddsArray: any[]) => {
     const groupedOdds = oddsArray.reduce((acc: any, odd: any) => {
-        const { price, selection, typeId, sportId, type } = odd;
+        const { marketName, price, selection, typeId, sportId, type } = odd;
         const key = typeId;
 
         if (!acc[key]) {
@@ -430,6 +438,7 @@ export const groupAndFormatGGOdds = (oddsArray: any[]) => {
         acc[key].typeId = typeId;
         acc[key].type = type;
         acc[key].sportId = sportId;
+        acc[key].marketName = marketName;
 
         return acc;
     }, {}) as any;
@@ -441,6 +450,7 @@ export const groupAndFormatGGOdds = (oddsArray: any[]) => {
             typeId: (value as any).typeId,
             sportId: (value as any).sportId,
             type: (value as any).type,
+            marketName: (value as any).marketName,
         });
 
         return acc;
@@ -751,6 +761,7 @@ export const groupAndFormatCorrectScoreOdds = (oddsArray: any[], commonData: Hom
                 type: odds?.[0]?.type ? odds[0].type : LiveMarketType.CORRECT_SCORE,
                 typeId: Number(typeId),
                 sportId: odds?.[0]?.sportId ? odds[0].sportId : undefined,
+                marketName: odds?.[0]?.marketName ? odds[0].marketName : '',
             };
             marketObjects.push(marketObject);
         }
@@ -783,10 +794,14 @@ export const groupAndFormatDoubleChanceOdds = (oddsArray: any[], commonData: Hom
         let probability12 = 0;
         let probabilityX2 = 0;
         let sportId;
+        let marketName = '';
 
         odds.forEach((odd: any) => {
             if (odd.sportId) {
                 sportId = odd.sportId;
+            }
+            if (odd.marketName) {
+                marketName = odd.marketName;
             }
             if (odd.selection.includes(commonData.homeTeam)) {
                 if (odd.selection.includes(commonData.awayTeam)) {
@@ -811,6 +826,7 @@ export const groupAndFormatDoubleChanceOdds = (oddsArray: any[], commonData: Hom
             type: LiveMarketType.DOUBLE_CHANCE,
             typeId: Number(typeId),
             sportId: sportId,
+            marketName: marketName,
         });
     });
 
