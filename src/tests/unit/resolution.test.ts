@@ -1467,6 +1467,115 @@ describe('Resolution Utils', () => {
             });
         });
 
+        describe('Esports stats.winner period detection', () => {
+            it('Should detect period 1 as complete via stats.winner when in_play.period is still 1', () => {
+                const event = {
+                    sport: { id: 'esports', name: 'eSports' },
+                    fixture: { id: 'cs2-001', status: 'live', is_live: true },
+                    scores: {
+                        home: { total: 0, periods: { period_1: 17 } },
+                        away: { total: 1, periods: { period_1: 19 } },
+                    },
+                    in_play: { period: '1', period_number: 1 },
+                    stats: {
+                        home: [{ period: 'period_1', stats: { winner: 0 } }],
+                        away: [{ period: 'period_1', stats: { winner: 1 } }],
+                    },
+                };
+
+                const result = detectCompletedPeriods(event);
+
+                expect(result).not.toBeNull();
+                expect(result?.completedPeriods).toContain(1);
+                expect(result?.periodScores['period1']).toEqual({ home: 17, away: 19 });
+            });
+
+            it('Should detect periods 1 and 2 via stats.winner when in_play.period is 2', () => {
+                const event = {
+                    sport: { id: 'esports', name: 'eSports' },
+                    fixture: { id: 'cs2-002', status: 'live', is_live: true },
+                    scores: {
+                        home: { total: 1, periods: { period_1: 13, period_2: 16 } },
+                        away: { total: 1, periods: { period_1: 16, period_2: 14 } },
+                    },
+                    in_play: { period: '2', period_number: 2 },
+                    stats: {
+                        home: [
+                            { period: 'period_1', stats: { winner: 0 } },
+                            { period: 'period_2', stats: { winner: 1 } },
+                        ],
+                        away: [
+                            { period: 'period_1', stats: { winner: 1 } },
+                            { period: 'period_2', stats: { winner: 0 } },
+                        ],
+                    },
+                };
+
+                const result = detectCompletedPeriods(event);
+
+                expect(result).not.toBeNull();
+                expect(result?.completedPeriods).toEqual([1, 2]);
+            });
+
+            it('Should NOT detect period as complete when no winner set (map in progress)', () => {
+                const event = {
+                    sport: { id: 'esports', name: 'eSports' },
+                    fixture: { id: 'cs2-003', status: 'live', is_live: true },
+                    scores: {
+                        home: { total: 0, periods: { period_1: 8 } },
+                        away: { total: 0, periods: { period_1: 5 } },
+                    },
+                    in_play: { period: '1', period_number: 1 },
+                    stats: {
+                        home: [{ period: 'period_1', stats: { winner: 0 } }],
+                        away: [{ period: 'period_1', stats: { winner: 0 } }],
+                    },
+                };
+
+                const result = detectCompletedPeriods(event);
+
+                expect(result).toBeNull();
+            });
+
+            it('Should work without stats field (fallback to standard detection)', () => {
+                const event = {
+                    sport: { id: 'esports', name: 'eSports' },
+                    fixture: { id: 'cs2-004', status: 'live', is_live: true },
+                    scores: {
+                        home: { total: 1, periods: { period_1: 13 } },
+                        away: { total: 0, periods: { period_1: 7 } },
+                    },
+                    in_play: { period: '2', period_number: 2 },
+                };
+
+                const result = detectCompletedPeriods(event);
+
+                expect(result).not.toBeNull();
+                expect(result?.completedPeriods).toEqual([1]);
+            });
+
+            it('Should allow canResolveMarketsForEvent for period 1 typeId via stats.winner', () => {
+                const event = {
+                    sport: { id: 'esports', name: 'eSports' },
+                    fixture: { id: 'cs2-005', status: 'live', is_live: true },
+                    scores: {
+                        home: { total: 0, periods: { period_1: 17 } },
+                        away: { total: 1, periods: { period_1: 19 } },
+                    },
+                    in_play: { period: '1', period_number: 1 },
+                    stats: {
+                        home: [{ period: 'period_1', stats: { winner: 0 } }],
+                        away: [{ period: 'period_1', stats: { winner: 1 } }],
+                    },
+                };
+
+                expect(canResolveMarketsForEvent(event, 10021, SportPeriodType.PERIOD_BASED)).toBe(true);
+                expect(canResolveMarketsForEvent(event, 10031, SportPeriodType.PERIOD_BASED)).toBe(true);
+                expect(canResolveMarketsForEvent(event, 10022, SportPeriodType.PERIOD_BASED)).toBe(false);
+                expect(canResolveMarketsForEvent(event, 10001, SportPeriodType.PERIOD_BASED)).toBe(false);
+            });
+        });
+
         describe('Error handling for invalid sport type numbers', () => {
             it('Should throw error for invalid sport type number when using numeric parameter', () => {
                 const typeIds = [10021, 10022];

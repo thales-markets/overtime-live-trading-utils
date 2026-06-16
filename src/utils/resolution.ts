@@ -102,7 +102,18 @@ export const detectCompletedPeriods = (event: OpticOddsEvent): PeriodResolutionD
                 }
             }
 
-            if (isCompleted || isCompletedInLiveGame || isInOvertime || isCompletedAtHalftime) {
+            // Check if stats.winner confirms this period is finished
+            // (esports: OpticOdds lags updating in_play.period between maps)
+            let isCompletedByWinner = false;
+            if (isLive && event.stats?.home && Array.isArray(event.stats.home)) {
+                const homeEntry = event.stats.home.find((s: any) => s.period === key);
+                const awayEntry = event.stats?.away?.find((s: any) => s.period === key);
+                if (homeEntry?.stats?.winner === 1 || awayEntry?.stats?.winner === 1) {
+                    isCompletedByWinner = true;
+                }
+            }
+
+            if (isCompleted || isCompletedInLiveGame || isInOvertime || isCompletedAtHalftime || isCompletedByWinner) {
                 completedPeriods.push(periodNum);
             }
         }
