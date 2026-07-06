@@ -8,7 +8,7 @@ import {
 import { LiveMarketType } from '../../enums/sports';
 import { OddsWithLeagueInfo } from '../../types/odds';
 import { LeagueConfigInfo } from '../../types/sports';
-import { __test__, checkOdds, getBookmakersForLeague } from '../../utils/bookmakers';
+import { __test__, checkOdds, getBookmakersForLeague, getBookmakersForTypeId } from '../../utils/bookmakers';
 import { processMarket } from '../../utils/markets';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
 import { ODDS_THRESHOLD_ANCHORS } from '../mock/MockAnchors';
@@ -895,6 +895,61 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             const bookmakers = getBookmakersForLeague('4', mockLeagueInfosWithTertiary, [], ['draftkings']);
 
             expect(bookmakers).toEqual(['draftkings', 'bovada', 'superbet']);
+        });
+    });
+
+    describe('getBookmakersForTypeId', () => {
+        const leagueInfoWithAllBookmakers: LeagueConfigInfo = {
+            sportId: '4',
+            enabled: 'true',
+            marketName: 'Moneyline',
+            typeId: '3001',
+            type: LiveMarketType.MONEYLINE,
+            maxOdds: '0.25',
+            minOdds: '0.75',
+            primaryBookmaker: 'DraftKings',
+            secondaryBookmaker: 'Bovada',
+            tertiaryBookmaker: 'Superbet',
+        };
+
+        it('Should return all bookmakers from league config lowercased', () => {
+            const bookmakers = getBookmakersForTypeId(['pinnacle'], [leagueInfoWithAllBookmakers], 3001);
+
+            expect(bookmakers).toEqual(['draftkings', 'bovada', 'superbet']);
+        });
+
+        it('Should ignore tertiary bookmaker when secondary is not defined', () => {
+            const leagueInfo = {
+                ...leagueInfoWithAllBookmakers,
+                secondaryBookmaker: undefined,
+            };
+
+            const bookmakers = getBookmakersForTypeId(['pinnacle'], [leagueInfo], 3001);
+
+            expect(bookmakers).toEqual(['draftkings']);
+        });
+
+        it('Should fall back to all default providers when league config has no primary bookmaker', () => {
+            const leagueInfo = {
+                ...leagueInfoWithAllBookmakers,
+                primaryBookmaker: undefined,
+                secondaryBookmaker: undefined,
+                tertiaryBookmaker: undefined,
+            };
+
+            const bookmakers = getBookmakersForTypeId(
+                ['DraftKings', 'Bovada', 'Superbet', 'Pinnacle'],
+                [leagueInfo],
+                3001
+            );
+
+            expect(bookmakers).toEqual(['draftkings', 'bovada', 'superbet', 'pinnacle']);
+        });
+
+        it('Should fall back to default providers when no league config matches typeId', () => {
+            const bookmakers = getBookmakersForTypeId(['pinnacle', 'bet365'], [leagueInfoWithAllBookmakers], 9999);
+
+            expect(bookmakers).toEqual(['pinnacle', 'bet365']);
         });
     });
 });

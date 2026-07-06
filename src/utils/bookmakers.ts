@@ -181,11 +181,7 @@ export const checkOdds = (
 
         const info = leagueInfos.find((leagueInfo) => leagueInfo.marketName.toLowerCase() === marketName.toLowerCase());
         if (info) {
-            const bookmakers = getPrimarySecondaryAndTertiaryBookmakerForTypeId(
-                oddsProviders,
-                leagueInfos,
-                Number(info.typeId)
-            );
+            const bookmakers = getBookmakersForTypeId(oddsProviders, leagueInfos, Number(info.typeId));
 
             const invalidBookmakers = getLastPolledInvalidBookmakers(
                 lastPolledData,
@@ -284,23 +280,26 @@ export const checkOdds = (
     return { odds: formattedOdds, errorsMap: errorMessageMap, errorsDetailsMap: errorDetailsMap };
 };
 
-export const getPrimarySecondaryAndTertiaryBookmakerForTypeId = (
+export const getBookmakersForTypeId = (
     defaultProviders: string[],
     leagueInfos: LeagueConfigInfo[], // LeagueConfigInfo for specific sport, not the entire list from csv
     typeId: number
 ): string[] => {
     const info = leagueInfos.find((leagueInfo) => Number(leagueInfo.typeId) === typeId);
-    let primaryBookmaker = defaultProviders[0].toLowerCase();
-    let secondaryBookmaker = defaultProviders[1] ? defaultProviders[1].toLowerCase() : undefined;
-    let tertiaryBookmaker = defaultProviders[2] ? defaultProviders[2].toLowerCase() : undefined;
-    if (info) {
-        if (info.primaryBookmaker) {
-            primaryBookmaker = info.primaryBookmaker.toLowerCase();
-            secondaryBookmaker = info.secondaryBookmaker ? info.secondaryBookmaker.toLowerCase() : undefined;
-            tertiaryBookmaker = info.tertiaryBookmaker ? info.tertiaryBookmaker.toLowerCase() : undefined;
-        }
+
+    // bookmakers in priority order: from league config when defined there, otherwise default providers
+    const configuredBookmakers =
+        info && info.primaryBookmaker
+            ? [info.primaryBookmaker, info.secondaryBookmaker, info.tertiaryBookmaker]
+            : defaultProviders;
+
+    // take bookmakers in order until the first missing one (e.g. tertiary is ignored when no secondary is defined)
+    const bookmakers: string[] = [];
+    for (const bookmaker of configuredBookmakers) {
+        if (!bookmaker) break;
+        bookmakers.push(bookmaker.toLowerCase());
     }
-    return secondaryBookmaker ? tertiaryBookmaker ? [primaryBookmaker, secondaryBookmaker, tertiaryBookmaker] : [primaryBookmaker, secondaryBookmaker] : [primaryBookmaker];
+    return bookmakers;
 };
 
 export const getLastPolledInvalidBookmakers = (
