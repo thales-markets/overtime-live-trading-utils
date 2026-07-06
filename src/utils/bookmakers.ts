@@ -42,7 +42,11 @@ export const getBookmakersArray = (
 export const getBookmakersFromLeagueConfig = (sportId: string | number, leagueInfoArray: LeagueConfigInfo[]) => {
     const leagueInfoArrayFiltered: string[] = leagueInfoArray
         .filter((leagueInfo) => Number(leagueInfo.sportId) === Number(sportId) && leagueInfo.enabled === 'true')
-        .flatMap((item) => [item.primaryBookmaker?.toLowerCase(), item.secondaryBookmaker?.toLowerCase()])
+        .flatMap((item) => [
+            item.primaryBookmaker?.toLowerCase(),
+            item.secondaryBookmaker?.toLowerCase(),
+            item.tertiaryBookmaker?.toLowerCase(),
+        ])
         .filter((item): item is string => !!item && item.length > 0);
 
     return [...new Set(leagueInfoArrayFiltered)];
@@ -177,7 +181,7 @@ export const checkOdds = (
 
         const info = leagueInfos.find((leagueInfo) => leagueInfo.marketName.toLowerCase() === marketName.toLowerCase());
         if (info) {
-            const bookmakers = getPrimaryAndSecondaryBookmakerForTypeId(
+            const bookmakers = getPrimarySecondaryAndTertiaryBookmakerForTypeId(
                 oddsProviders,
                 leagueInfos,
                 Number(info.typeId)
@@ -200,55 +204,66 @@ export const checkOdds = (
                 } else {
                     if (sportsBookName.toLowerCase() === primaryBookmaker) {
                         if (value.playerId && !value.isMain) return acc; // Skip if not main for player props
-                        const secondaryBookmakerObject =
-                            odds[
-                                `${secondaryBookmaker}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
-                            ];
-                        if (secondaryBookmakerObject) {
-                            if (shouldBlockOdds(value.price, secondaryBookmakerObject.price, anchors)) {
-                                // Block this odd
-                                const existingErrorMessage = errorMessageMap.get(Number(value.typeId));
-                                if (!existingErrorMessage) {
-                                    errorMessageMap.set(Number(value.typeId), DIFF_BETWEEN_BOOKMAKERS_MESSAGE);
-                                }
-                                return acc;
-                            }
-
-                            acc.push(value);
-                        } else {
-                            // if the market is Total or Spread and we didnt find the correct line, try adjusting points by steps defined and search again
-                            if (info.type === LiveMarketType.SPREAD || info.type === LiveMarketType.TOTAL) {
-                                const steps = getStepsForPointAdjustment(
-                                    Number(points),
-                                    info.percentageDiffForLines
-                                        ? Number(info.percentageDiffForLines)
-                                        : maxPercentageDiffForLines // use the value defined in csv if available, else use default from env variable
-                                );
-                                for (const step of steps) {
-                                    const adjustedPoints = (Number(points) + step).toString();
-
-                                    const secondaryBookmakerObject =
-                                        odds[
-                                            `${secondaryBookmaker}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${adjustedPoints}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
-                                        ];
-
-                                    if (secondaryBookmakerObject) {
-                                        acc.push(value);
-                                        return acc;
+                        // check primary odds against every other configured bookmaker (secondary and tertiary)
+                        for (const otherBookmaker of bookmakers.slice(1)) {
+                            const otherBookmakerObject =
+                                odds[
+                                    `${otherBookmaker}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
+                                ];
+                            if (otherBookmakerObject) {
+                                if (shouldBlockOdds(value.price, otherBookmakerObject.price, anchors)) {
+                                    // Block this odd
+                                    const existingErrorMessage = errorMessageMap.get(Number(value.typeId));
+                                    if (!existingErrorMessage) {
+                                        errorMessageMap.set(Number(value.typeId), DIFF_BETWEEN_BOOKMAKERS_MESSAGE);
                                     }
-                                }
-                                // If no matching alt lines found between bookmakers, return zero odds
-                                const existingErrorMessage = errorMessageMap.get(Number(value.typeId));
-                                if (!existingErrorMessage) {
-                                    errorMessageMap.set(Number(value.typeId), NO_MATCHING_BOOKMAKERS_MESSAGE_ALT_LINES);
+                                    return acc;
                                 }
                             } else {
-                                const existingErrorMessage = errorMessageMap.get(Number(value.typeId));
-                                if (!existingErrorMessage) {
-                                    errorMessageMap.set(Number(value.typeId), NO_MATCHING_BOOKMAKERS_MESSAGE);
+                                // if the market is Total or Spread and we didnt find the correct line, try adjusting points by steps defined and search again
+                                if (info.type === LiveMarketType.SPREAD || info.type === LiveMarketType.TOTAL) {
+                                    const steps = getStepsForPointAdjustment(
+                                        Number(points),
+                                        info.percentageDiffForLines
+                                            ? Number(info.percentageDiffForLines)
+                                            : maxPercentageDiffForLines // use the value defined in csv if available, else use default from env variable
+                                    );
+                                    let adjustedLineFound = false;
+                                    for (const step of steps) {
+                                        const adjustedPoints = (Number(points) + step).toString();
+
+                                        const adjustedBookmakerObject =
+                                            odds[
+                                                `${otherBookmaker}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${adjustedPoints}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
+                                            ];
+
+                                        if (adjustedBookmakerObject) {
+                                            adjustedLineFound = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!adjustedLineFound) {
+                                        // If no matching alt lines found between bookmakers, return zero odds
+                                        const existingErrorMessage = errorMessageMap.get(Number(value.typeId));
+                                        if (!existingErrorMessage) {
+                                            errorMessageMap.set(
+                                                Number(value.typeId),
+                                                NO_MATCHING_BOOKMAKERS_MESSAGE_ALT_LINES
+                                            );
+                                        }
+                                        return acc;
+                                    }
+                                } else {
+                                    const existingErrorMessage = errorMessageMap.get(Number(value.typeId));
+                                    if (!existingErrorMessage) {
+                                        errorMessageMap.set(Number(value.typeId), NO_MATCHING_BOOKMAKERS_MESSAGE);
+                                    }
+                                    return acc;
                                 }
                             }
                         }
+
+                        acc.push(value);
                     }
                 }
             } else {
@@ -269,7 +284,7 @@ export const checkOdds = (
     return { odds: formattedOdds, errorsMap: errorMessageMap, errorsDetailsMap: errorDetailsMap };
 };
 
-export const getPrimaryAndSecondaryBookmakerForTypeId = (
+export const getPrimarySecondaryAndTertiaryBookmakerForTypeId = (
     defaultProviders: string[],
     leagueInfos: LeagueConfigInfo[], // LeagueConfigInfo for specific sport, not the entire list from csv
     typeId: number
@@ -277,13 +292,15 @@ export const getPrimaryAndSecondaryBookmakerForTypeId = (
     const info = leagueInfos.find((leagueInfo) => Number(leagueInfo.typeId) === typeId);
     let primaryBookmaker = defaultProviders[0].toLowerCase();
     let secondaryBookmaker = defaultProviders[1] ? defaultProviders[1].toLowerCase() : undefined;
+    let tertiaryBookmaker = defaultProviders[2] ? defaultProviders[2].toLowerCase() : undefined;
     if (info) {
         if (info.primaryBookmaker) {
             primaryBookmaker = info.primaryBookmaker.toLowerCase();
             secondaryBookmaker = info.secondaryBookmaker ? info.secondaryBookmaker.toLowerCase() : undefined;
+            tertiaryBookmaker = info.tertiaryBookmaker ? info.tertiaryBookmaker.toLowerCase() : undefined;
         }
     }
-    return secondaryBookmaker ? [primaryBookmaker, secondaryBookmaker] : [primaryBookmaker];
+    return secondaryBookmaker ? tertiaryBookmaker ? [primaryBookmaker, secondaryBookmaker, tertiaryBookmaker] : [primaryBookmaker, secondaryBookmaker] : [primaryBookmaker];
 };
 
 export const getLastPolledInvalidBookmakers = (
