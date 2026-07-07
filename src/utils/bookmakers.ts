@@ -57,7 +57,7 @@ export const getBookmakersForLeague = (
     configPerMarket: LeagueConfigInfo[],
     configPerLeague: BookmakersConfig[],
     defaultBookmakers: string[],
-    maxNumOfBookmakers = 5
+    maxNumOfBookmakers = 20
 ) => {
     // bookmakers defined per market for league
     const bookmakersPerMarket = getBookmakersFromLeagueConfig(sportId, configPerMarket);
