@@ -71,15 +71,18 @@ export const generateMarkets: (params: {
     playersMap,
     maxPercentageDiffForLines,
 }) => {
-    const [spreadOdds, totalOdds, moneylineOdds, correctScoreOdds, doubleChanceOdds, ggOdds, markets]: any[] = [
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-    ];
+    const [
+        spreadOdds,
+        totalOdds,
+        moneylineOdds,
+        correctScoreOdds,
+        doubleChanceOdds,
+        ggOdds,
+        oddEvenOdds,
+        halftimeFulltimeOdds,
+        oneSidePlayerPropsOdds,
+        markets,
+    ]: any[] = [[], [], [], [], [], [], [], [], [], []];
     const leagueInfo = getLeagueInfo(leagueId, leagueMap);
     const commonData = {
         homeTeam: apiResponseWithOdds.homeTeam,
@@ -114,6 +117,12 @@ export const generateMarkets: (params: {
                 doubleChanceOdds.push(odd);
             } else if (odd.type === LiveMarketType.BOTH_TEAMS_TO_SCORE) {
                 ggOdds.push(odd);
+            } else if (odd.type === LiveMarketType.ODD_EVEN) {
+                oddEvenOdds.push(odd);
+            } else if (odd.type === LiveMarketType.HALFTIME_FULLTIME) {
+                halftimeFulltimeOdds.push(odd);
+            } else if (odd.type === LiveMarketType.ONE_SIDE_PLAYER_PROPS) {
+                oneSidePlayerPropsOdds.push(odd);
             }
         });
 
@@ -123,8 +132,13 @@ export const generateMarkets: (params: {
             ...groupAndFormatMoneylineOdds(moneylineOdds, commonData),
             ...groupAndFormatGGOdds(ggOdds),
             ...groupAndFormatDoubleChanceOdds(doubleChanceOdds, commonData),
+            ...groupAndFormatOddEvenOdds(oddEvenOdds),
+            ...groupAndFormatOneSidePlayerPropsOdds(oneSidePlayerPropsOdds),
         ];
-        const otherFormattedOdds = [...groupAndFormatCorrectScoreOdds(correctScoreOdds, commonData)];
+        const otherFormattedOdds = [
+            ...groupAndFormatCorrectScoreOdds(correctScoreOdds, commonData),
+            ...groupAndFormatHalftimeFulltimeOdds(halftimeFulltimeOdds, commonData),
+        ];
 
         // odds are converted to implied probability inside adjustSpreadOnChildOdds
         const homeAwayOddsSanityChecked = sanityCheck(homeAwayFormattedOdds);
@@ -457,6 +471,155 @@ export const groupAndFormatGGOdds = (oddsArray: any[]) => {
     }, []);
 
     return formattedOdds;
+};
+
+/**
+ * Groups Odd/Even odds (e.g. Total Goals Odd/Even) by their typeId and formats the result.
+ * Output odds order is [odd, even] as expected by consumers for TOTAL_ODD_EVEN market types.
+ *
+ * @param {Array} oddsArray - The input array of odds objects.
+ * @returns {Array} The grouped and formatted odd/even odds.
+ */
+export const groupAndFormatOddEvenOdds = (oddsArray: any[]) => {
+    const groupedOdds = oddsArray.reduce((acc: any, odd: any) => {
+        const { marketName, price, selection, typeId, sportId, type } = odd;
+        const key = typeId;
+
+        if (!acc[key]) {
+            acc[key] = { odd: null, even: null, typeId: null, sportId: null };
+        }
+
+        if (selection.toLowerCase() === 'odd') acc[key].odd = price;
+        else if (selection.toLowerCase() === 'even') acc[key].even = price;
+
+        acc[key].typeId = typeId;
+        acc[key].type = type;
+        acc[key].sportId = sportId;
+        acc[key].marketName = marketName;
+
+        return acc;
+    }, {}) as any;
+
+    // Format the grouped odds into the desired output
+    const formattedOdds = Object.entries(groupedOdds as any).reduce((acc: any, [_key, value]) => {
+        acc.push({
+            odds: [(value as any).odd, (value as any).even],
+            typeId: (value as any).typeId,
+            sportId: (value as any).sportId,
+            type: (value as any).type,
+            marketName: (value as any).marketName,
+        });
+
+        return acc;
+    }, []);
+
+    return formattedOdds;
+};
+
+/**
+ * Groups one side player props odds (e.g. Anytime Card Receiver, Player To Score Or Assist)
+ * by their typeId and playerId and formats the result. Each player becomes a separate market with a single odd.
+ *
+ * @param {Array} oddsArray - The input array of odds objects.
+ * @returns {Array} The grouped and formatted one side player props odds.
+ */
+export const groupAndFormatOneSidePlayerPropsOdds = (oddsArray: any[]) => {
+    const groupedOdds = oddsArray.reduce((acc: any, odd: any) => {
+        const { marketName, price, selection, selectionLine, typeId, sportId, type, playerId } = odd;
+
+        // one side player props have only a "yes" side (selection line is empty or "yes")
+        if (!playerId || (selectionLine && selectionLine.toLowerCase() !== 'yes')) {
+            return acc;
+        }
+
+        const key = `${typeId}${SPLIT_DELIMITER}${playerId}`;
+
+        acc[key] = {
+            price,
+            typeId,
+            type,
+            sportId,
+            marketName,
+            playerProps: {
+                playerId, // Player ID from OpticOdds, this will be converted to our internal playerId later
+                playerName: selection,
+            },
+        };
+
+        return acc;
+    }, {}) as any;
+
+    // Format the grouped odds into the desired output
+    const formattedOdds = Object.entries(groupedOdds as any).reduce((acc: any, [_key, value]) => {
+        acc.push({
+            odds: [(value as any).price],
+            typeId: (value as any).typeId,
+            sportId: (value as any).sportId,
+            type: (value as any).type,
+            playerProps: (value as any).playerProps,
+            marketName: (value as any).marketName,
+        });
+
+        return acc;
+    }, []);
+
+    return formattedOdds;
+};
+
+/**
+ * Groups halftime/fulltime odds by their typeId and formats the result.
+ * Output odds are in the fixed position order expected by consumers for HALFTIME_FULLTIME2:
+ * [home/home, home/away, home/draw, away/home, away/away, away/draw, draw/home, draw/away, draw/draw],
+ * where the position index is calculated as halftimeOutcomeIndex * 3 + fulltimeOutcomeIndex.
+ *
+ * @param {Array} oddsArray - The input array of odds objects. Selections are in "halftime :: fulltime" format.
+ * @param {Object} commonData - The common data object containing homeTeam and awayTeam information.
+ * @returns {Array} The grouped and formatted halftime/fulltime odds.
+ */
+export const groupAndFormatHalftimeFulltimeOdds = (oddsArray: any[], commonData: HomeAwayTeams): any[] => {
+    const oddsByTypeId = oddsArray.reduce((acc: any, odd: any) => {
+        const typeId = odd.typeId;
+        if (!acc[typeId]) {
+            acc[typeId] = [];
+        }
+        acc[typeId].push(odd);
+        return acc;
+    }, {});
+
+    const marketObjects: any[] = [];
+
+    Object.entries(oddsByTypeId).forEach(([typeId, odds]: [string, any]) => {
+        const outcomes = [commonData.homeTeam.toLowerCase(), commonData.awayTeam.toLowerCase(), DRAW.toLowerCase()];
+        const formattedOdds: number[] = Array(outcomes.length * outcomes.length).fill(0);
+
+        odds.forEach((odd: any) => {
+            const [halftimeSelection, fulltimeSelection] = odd.selection
+                .split('::')
+                .map((selection: string) => selection.trim().toLowerCase());
+            const halftimeIndex = outcomes.indexOf(halftimeSelection);
+            const fulltimeIndex = outcomes.indexOf(fulltimeSelection);
+            if (halftimeIndex !== -1 && fulltimeIndex !== -1) {
+                formattedOdds[halftimeIndex * outcomes.length + fulltimeIndex] = odd.price;
+            }
+        });
+
+        const allOddsAreZero = formattedOdds.every((odd) => odd === ZERO);
+
+        if (!allOddsAreZero) {
+            marketObjects.push({
+                homeTeam: commonData.homeTeam,
+                awayTeam: commonData.awayTeam,
+                line: 0,
+                odds: formattedOdds,
+                type: odds?.[0]?.type ? odds[0].type : LiveMarketType.HALFTIME_FULLTIME,
+                typeId: Number(typeId),
+                sportId: odds?.[0]?.sportId ? odds[0].sportId : undefined,
+                marketName: odds?.[0]?.marketName ? odds[0].marketName : '',
+            });
+        }
+    });
+
+    return marketObjects;
 };
 
 /**
@@ -832,6 +995,8 @@ export const groupAndFormatDoubleChanceOdds = (oddsArray: any[], commonData: Hom
 
     return marketObjects;
 };
+
+
 
 // used for home/away markets
 export const sanityCheck = (iterableGroupedOdds: any[]) => {

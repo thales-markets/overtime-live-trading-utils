@@ -73,6 +73,9 @@ export enum LiveMarketType {
     CORRECT_SCORE = 'Correct Score',
     DOUBLE_CHANCE = 'Double Chance',
     BOTH_TEAMS_TO_SCORE = 'Both Teams To Score',
+    ODD_EVEN = 'Odd/Even',
+    HALFTIME_FULLTIME = 'Halftime/Fulltime',
+    ONE_SIDE_PLAYER_PROPS = 'One Side Player Props',
 }
 
 export enum SpreadTypes {
