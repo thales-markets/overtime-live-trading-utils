@@ -172,6 +172,49 @@ describe('Odds', () => {
         expect(oddEvenMarket.odds[1].decimal).toBe(expectedEvenPrice);
     });
 
+    it('Should return appropriate team total odd/even odds per team', () => {
+        const freshMockSoccer = JSON.parse(JSON.stringify(mockSoccer));
+        const freshMockOpticSoccer = JSON.parse(JSON.stringify(MockOpticSoccer));
+        const market = processMarket({
+            market: freshMockSoccer,
+            apiResponseWithOdds: mapOpticOddsApiFixtureOdds([freshMockOpticSoccer])[0],
+            liveOddsProviders: ['draftkings'],
+            anchors: ODDS_THRESHOLD_ANCHORS,
+            leagueMap: LeagueMocks.leagueInfoNewSoccerMarkets,
+            lastPolledData,
+            maxAllowedProviderDataStaleDelay: MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+            playersMap,
+            maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
+        });
+
+        const homeTeam = freshMockOpticSoccer.home_team_display;
+        const awayTeam = freshMockOpticSoccer.away_team_display;
+
+        // home team market keeps the configured typeId, away team market typeId is increased by 1
+        [
+            { typeId: 10139, team: homeTeam },
+            { typeId: 10140, team: awayTeam },
+        ].forEach(({ typeId, team }) => {
+            const teamOddEvenMarket = market.childMarkets.find((childMarket: any) => childMarket.typeId === typeId);
+
+            expect(teamOddEvenMarket).toBeDefined();
+
+            // odds order is [odd, even]
+            const expectedOddPrice = freshMockOpticSoccer.odds.find(
+                (odd: any) =>
+                    odd.market === 'Team Total Odd/Even' && odd.selection === team && odd.selection_line === 'odd'
+            ).price;
+            const expectedEvenPrice = freshMockOpticSoccer.odds.find(
+                (odd: any) =>
+                    odd.market === 'Team Total Odd/Even' && odd.selection === team && odd.selection_line === 'even'
+            ).price;
+
+            expect(teamOddEvenMarket.odds).toHaveLength(2);
+            expect(teamOddEvenMarket.odds[0].decimal).toBeCloseTo(expectedOddPrice, 8);
+            expect(teamOddEvenMarket.odds[1].decimal).toBeCloseTo(expectedEvenPrice, 8);
+        });
+    });
+
     it('Should return appropriate halftime/fulltime odds', () => {
         const freshMockSoccer = JSON.parse(JSON.stringify(mockSoccer));
         const freshMockOpticSoccer = JSON.parse(JSON.stringify(MockOpticSoccer));

@@ -192,6 +192,26 @@ const halftimeFulltimeMock: LeagueConfigInfo = {
     minOdds: '0.99',
 };
 
+const teamTotalOddEvenHomeMock: LeagueConfigInfo = {
+    sportId: '9806',
+    enabled: 'true',
+    marketName: 'Team Total Odd/Even',
+    typeId: '10139',
+    type: LiveMarketType.ODD_EVEN,
+    maxOdds: '0.01',
+    minOdds: '0.99',
+};
+
+const teamTotalOddEvenAwayMock: LeagueConfigInfo = {
+    sportId: '9806',
+    enabled: 'true',
+    marketName: 'Team Total Odd/Even',
+    typeId: '10140',
+    type: LiveMarketType.ODD_EVEN,
+    maxOdds: '0.01',
+    minOdds: '0.99',
+};
+
 const anytimeCardReceiverMock: LeagueConfigInfo = {
     sportId: '9806',
     enabled: 'true',
@@ -291,6 +311,8 @@ const leaguInfoDifferentPrimaryBookmaker: LeagueConfigInfo[] = [
 const leagueInfoNewSoccerMarkets: LeagueConfigInfo[] = [
     baseLeagueInfo,
     oddEvenMock,
+    teamTotalOddEvenHomeMock,
+    teamTotalOddEvenAwayMock,
     halftimeFulltimeMock,
     anytimeCardReceiverMock,
     playerToScoreOrAssistMock,

@@ -132,7 +132,7 @@ export const generateMarkets: (params: {
             ...groupAndFormatMoneylineOdds(moneylineOdds, commonData),
             ...groupAndFormatGGOdds(ggOdds),
             ...groupAndFormatDoubleChanceOdds(doubleChanceOdds, commonData),
-            ...groupAndFormatOddEvenOdds(oddEvenOdds),
+            ...groupAndFormatOddEvenOdds(oddEvenOdds, commonData),
             ...groupAndFormatOneSidePlayerPropsOdds(oneSidePlayerPropsOdds),
         ];
         const otherFormattedOdds = [
@@ -475,24 +475,37 @@ export const groupAndFormatGGOdds = (oddsArray: any[]) => {
 
 /**
  * Groups Odd/Even odds (e.g. Total Goals Odd/Even) by their typeId and formats the result.
+ * Also supports team odd/even markets (e.g. Team Total Odd/Even) where the selection is the team name
+ * and the selection line is odd/even; the away team market typeId is increased by 1 (same as team totals).
  * Output odds order is [odd, even] as expected by consumers for TOTAL_ODD_EVEN market types.
  *
  * @param {Array} oddsArray - The input array of odds objects.
+ * @param {Object} commonData - The common data object containing homeTeam and awayTeam information.
  * @returns {Array} The grouped and formatted odd/even odds.
  */
-export const groupAndFormatOddEvenOdds = (oddsArray: any[]) => {
+export const groupAndFormatOddEvenOdds = (oddsArray: any[], commonData: HomeAwayTeams) => {
     const groupedOdds = oddsArray.reduce((acc: any, odd: any) => {
-        const { marketName, price, selection, typeId, sportId, type } = odd;
-        const key = typeId;
+        const { marketName, price, selection, selectionLine, typeId, sportId, type } = odd;
+
+        // team odd/even markets have the team name as selection and odd/even as selection line
+        const isTeamMarket = !!selectionLine;
+        const isAwayTeamMarket = isTeamMarket && selection.toLowerCase() === commonData.awayTeam.toLowerCase();
+        if (isTeamMarket && !isAwayTeamMarket && selection.toLowerCase() !== commonData.homeTeam.toLowerCase()) {
+            return acc;
+        }
+
+        const oddEvenSelection = (isTeamMarket ? selectionLine : selection).toLowerCase();
+        const key = isTeamMarket ? `${typeId}${SPLIT_DELIMITER}${selection.toLowerCase()}` : typeId;
 
         if (!acc[key]) {
             acc[key] = { odd: null, even: null, typeId: null, sportId: null };
         }
 
-        if (selection.toLowerCase() === 'odd') acc[key].odd = price;
-        else if (selection.toLowerCase() === 'even') acc[key].even = price;
+        if (oddEvenSelection === 'odd') acc[key].odd = price;
+        else if (oddEvenSelection === 'even') acc[key].even = price;
 
-        acc[key].typeId = typeId;
+        // away team market typeId is increased by 1, same as for team totals
+        acc[key].typeId = isAwayTeamMarket ? Number(typeId) + 1 : typeId;
         acc[key].type = type;
         acc[key].sportId = sportId;
         acc[key].marketName = marketName;
