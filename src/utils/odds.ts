@@ -83,7 +83,7 @@ export const generateMarkets: (params: {
         oneSidePlayerPropsOdds,
         markets,
     ]: any[] = [[], [], [], [], [], [], [], [], [], []];
-    const leagueInfo = getLeagueInfo(leagueId, leagueMap);
+    const leagueInfo = getLeagueInfo(leagueId, leagueMap).filter((value) => value.enabled === 'true');
     const commonData = {
         homeTeam: apiResponseWithOdds.homeTeam,
         awayTeam: apiResponseWithOdds.awayTeam,
@@ -237,7 +237,6 @@ export const filterOdds = (
     playersMap: Map<string, number>
 ): { [key: string]: OddsWithLeagueInfo } => {
     const allMarketsTypes = leagueInfos
-        .filter((leagueInfo) => leagueInfo.enabled === 'true')
         .map((leagueInfo) => leagueInfo.marketName.toLowerCase());
     return oddsArray.reduce((acc: any, odd: any) => {
         if (allMarketsTypes.includes(odd.marketName.toLowerCase())) {
@@ -1008,8 +1007,6 @@ export const groupAndFormatDoubleChanceOdds = (oddsArray: any[], commonData: Hom
 
     return marketObjects;
 };
-
-
 
 // used for home/away markets
 export const sanityCheck = (iterableGroupedOdds: any[]) => {
