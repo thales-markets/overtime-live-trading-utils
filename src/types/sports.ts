@@ -11,6 +11,7 @@ export type LeagueConfigInfo = {
     addedSpread?: string;
     primaryBookmaker?: string;
     secondaryBookmaker?: string;
+    tertiaryBookmaker?: string;
     percentageDiffForLines?: string;
 };
 

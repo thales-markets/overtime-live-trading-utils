@@ -8,7 +8,7 @@ import {
 import { LiveMarketType } from '../../enums/sports';
 import { OddsWithLeagueInfo } from '../../types/odds';
 import { LeagueConfigInfo } from '../../types/sports';
-import { __test__, checkOdds } from '../../utils/bookmakers';
+import { __test__, checkOdds, getBookmakersForLeague, getBookmakersForTypeId } from '../../utils/bookmakers';
 import { processMarket } from '../../utils/markets';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
 import { ODDS_THRESHOLD_ANCHORS } from '../mock/MockAnchors';
@@ -689,6 +689,267 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             expect(result.errorsMap.has(1001)).toBe(false);
             expect(result.odds.length).toBe(1);
             expect(result.odds[0].price).toBe(1.85);
+        });
+    });
+
+    describe('Tertiary Bookmaker Tests', () => {
+        const mockLeagueInfosWithTertiary: LeagueConfigInfo[] = [
+            {
+                sportId: '4',
+                enabled: 'true',
+                marketName: 'Moneyline',
+                typeId: '2001',
+                type: LiveMarketType.MONEYLINE,
+                maxOdds: '0.25',
+                minOdds: '0.75',
+                primaryBookmaker: 'draftkings',
+                secondaryBookmaker: 'bovada',
+                tertiaryBookmaker: 'superbet',
+            },
+            {
+                sportId: '4',
+                enabled: 'true',
+                marketName: 'Spread',
+                typeId: '2002',
+                type: LiveMarketType.SPREAD,
+                maxOdds: '0.25',
+                minOdds: '0.75',
+                primaryBookmaker: 'draftkings',
+                secondaryBookmaker: 'bovada',
+                tertiaryBookmaker: 'superbet',
+                percentageDiffForLines: '10',
+            },
+        ];
+
+        const createMockOddsDataWithTertiary = (
+            typeId: number,
+            marketName: string,
+            marketType: LiveMarketType,
+            primaryPrice: number,
+            secondaryPrice?: number,
+            tertiaryPrice?: number,
+            points = '0',
+            selection = 'over',
+            selectionLine = '0'
+        ): { [key: string]: OddsWithLeagueInfo } => {
+            const baseMockOdd: Partial<OddsWithLeagueInfo> = {
+                id: '123',
+                sportsBookName: 'draftkings',
+                name: 'Test Market',
+                timestamp: Date.now(),
+                points: parseFloat(points),
+                isLive: true,
+                marketName: marketName,
+                playerId: '',
+                selection: selection,
+                selectionLine: selectionLine,
+                typeId: typeId.toString(),
+                price: primaryPrice,
+                isMain: true,
+                sportId: '4',
+                enabled: 'true',
+                type: marketType,
+                maxOdds: '0.25',
+                minOdds: '0.75',
+            };
+
+            const odds: { [key: string]: OddsWithLeagueInfo } = {
+                [`draftkings${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`]:
+                    baseMockOdd as OddsWithLeagueInfo,
+            };
+
+            if (secondaryPrice !== undefined) {
+                odds[
+                    `bovada${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
+                ] = { ...baseMockOdd, sportsBookName: 'bovada', price: secondaryPrice } as OddsWithLeagueInfo;
+            }
+
+            if (tertiaryPrice !== undefined) {
+                odds[
+                    `superbet${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
+                ] = { ...baseMockOdd, sportsBookName: 'superbet', price: tertiaryPrice } as OddsWithLeagueInfo;
+            }
+
+            return odds;
+        };
+
+        const oddsProvidersWithTertiary = ['draftkings', 'bovada', 'superbet'];
+
+        it('Should include odds when primary passes checks against both secondary and tertiary bookmakers', () => {
+            const odds = createMockOddsDataWithTertiary(2001, 'Moneyline', LiveMarketType.MONEYLINE, 1.85, 1.9, 1.88);
+
+            const result = checkOdds(
+                odds,
+                mockLeagueInfosWithTertiary,
+                oddsProvidersWithTertiary,
+                lastPolledData,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                ODDS_THRESHOLD_ANCHORS,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
+            );
+
+            expect(result.errorsMap.has(2001)).toBe(false);
+            expect(result.odds.length).toBe(1);
+            expect(result.odds[0].price).toBe(1.85);
+        });
+
+        it('Should add DIFF_BETWEEN_BOOKMAKERS_MESSAGE error when tertiary odds difference exceeds anchor threshold', () => {
+            // Secondary is within threshold, tertiary is not
+            const odds = createMockOddsDataWithTertiary(2001, 'Moneyline', LiveMarketType.MONEYLINE, 5.0, 4.9, 1.5);
+
+            const result = checkOdds(
+                odds,
+                mockLeagueInfosWithTertiary,
+                oddsProvidersWithTertiary,
+                lastPolledData,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                ODDS_THRESHOLD_ANCHORS,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
+            );
+
+            expect(result.errorsMap.has(2001)).toBe(true);
+            expect(result.errorsMap.get(2001)).toBe(DIFF_BETWEEN_BOOKMAKERS_MESSAGE);
+            expect(result.odds.length).toBe(0);
+        });
+
+        it('Should add NO_MATCHING_BOOKMAKERS_MESSAGE error when tertiary bookmaker line is missing for non-spread/total markets', () => {
+            // Only primary and secondary have odds, tertiary is configured but has no line
+            const odds = createMockOddsDataWithTertiary(2001, 'Moneyline', LiveMarketType.MONEYLINE, 1.85, 1.9);
+
+            const result = checkOdds(
+                odds,
+                mockLeagueInfosWithTertiary,
+                oddsProvidersWithTertiary,
+                lastPolledData,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                ODDS_THRESHOLD_ANCHORS,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
+            );
+
+            expect(result.errorsMap.has(2001)).toBe(true);
+            expect(result.errorsMap.get(2001)).toBe(NO_MATCHING_BOOKMAKERS_MESSAGE);
+            expect(result.odds.length).toBe(0);
+        });
+
+        it('Should match spread lines when tertiary bookmaker has adjusted points within tolerance', () => {
+            const odds = createMockOddsDataWithTertiary(
+                2002,
+                'Spread',
+                LiveMarketType.SPREAD,
+                1.85,
+                1.9,
+                undefined,
+                '10.5'
+            );
+            // Tertiary bookmaker with 11.0 points (within 10% tolerance of 10.5)
+            odds[`superbet${SPLIT_DELIMITER}spread${SPLIT_DELIMITER}11${SPLIT_DELIMITER}over${SPLIT_DELIMITER}0`] = {
+                ...odds[`draftkings${SPLIT_DELIMITER}spread${SPLIT_DELIMITER}10.5${SPLIT_DELIMITER}over${SPLIT_DELIMITER}0`],
+                sportsBookName: 'superbet',
+                points: 11.0,
+                price: 1.88,
+            };
+
+            const result = checkOdds(
+                odds,
+                mockLeagueInfosWithTertiary,
+                oddsProvidersWithTertiary,
+                lastPolledData,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                ODDS_THRESHOLD_ANCHORS,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
+            );
+
+            expect(result.errorsMap.has(2002)).toBe(false);
+            expect(result.odds.length).toBe(1);
+            expect(result.odds[0].price).toBe(1.85);
+        });
+
+        it('Should add NO_MATCHING_BOOKMAKERS_MESSAGE_ALT_LINES error when tertiary has no line within tolerance for spread markets', () => {
+            // Primary and secondary have matching lines, tertiary has no line at all
+            const odds = createMockOddsDataWithTertiary(
+                2002,
+                'Spread',
+                LiveMarketType.SPREAD,
+                1.85,
+                1.9,
+                undefined,
+                '10.5'
+            );
+
+            const result = checkOdds(
+                odds,
+                mockLeagueInfosWithTertiary,
+                oddsProvidersWithTertiary,
+                lastPolledData,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                ODDS_THRESHOLD_ANCHORS,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
+            );
+
+            expect(result.errorsMap.has(2002)).toBe(true);
+            expect(result.errorsMap.get(2002)).toBe(NO_MATCHING_BOOKMAKERS_MESSAGE_ALT_LINES);
+            expect(result.odds.length).toBe(0);
+        });
+
+        it('Should include tertiary bookmaker defined per market in bookmakers list for league', () => {
+            const bookmakers = getBookmakersForLeague('4', mockLeagueInfosWithTertiary, [], ['draftkings']);
+
+            expect(bookmakers).toEqual(['draftkings', 'bovada', 'superbet']);
+        });
+    });
+
+    describe('getBookmakersForTypeId', () => {
+        const leagueInfoWithAllBookmakers: LeagueConfigInfo = {
+            sportId: '4',
+            enabled: 'true',
+            marketName: 'Moneyline',
+            typeId: '3001',
+            type: LiveMarketType.MONEYLINE,
+            maxOdds: '0.25',
+            minOdds: '0.75',
+            primaryBookmaker: 'DraftKings',
+            secondaryBookmaker: 'Bovada',
+            tertiaryBookmaker: 'Superbet',
+        };
+
+        it('Should return all bookmakers from league config lowercased', () => {
+            const bookmakers = getBookmakersForTypeId(['pinnacle'], [leagueInfoWithAllBookmakers], 3001);
+
+            expect(bookmakers).toEqual(['draftkings', 'bovada', 'superbet']);
+        });
+
+        it('Should ignore tertiary bookmaker when secondary is not defined', () => {
+            const leagueInfo = {
+                ...leagueInfoWithAllBookmakers,
+                secondaryBookmaker: undefined,
+            };
+
+            const bookmakers = getBookmakersForTypeId(['pinnacle'], [leagueInfo], 3001);
+
+            expect(bookmakers).toEqual(['draftkings']);
+        });
+
+        it('Should fall back to all default providers when league config has no primary bookmaker', () => {
+            const leagueInfo = {
+                ...leagueInfoWithAllBookmakers,
+                primaryBookmaker: undefined,
+                secondaryBookmaker: undefined,
+                tertiaryBookmaker: undefined,
+            };
+
+            const bookmakers = getBookmakersForTypeId(
+                ['DraftKings', 'Bovada', 'Superbet', 'Pinnacle'],
+                [leagueInfo],
+                3001
+            );
+
+            expect(bookmakers).toEqual(['draftkings', 'bovada', 'superbet', 'pinnacle']);
+        });
+
+        it('Should fall back to default providers when no league config matches typeId', () => {
+            const bookmakers = getBookmakersForTypeId(['pinnacle', 'bet365'], [leagueInfoWithAllBookmakers], 9999);
+
+            expect(bookmakers).toEqual(['pinnacle', 'bet365']);
         });
     });
 });

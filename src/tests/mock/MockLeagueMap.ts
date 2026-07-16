@@ -172,6 +172,66 @@ const teamTotal2: LeagueConfigInfo = {
     primaryBookmaker: 'draftkings',
 };
 
+const oddEvenMock: LeagueConfigInfo = {
+    sportId: '9806',
+    enabled: 'true',
+    marketName: '1st Half Total Goals Odd/Even',
+    typeId: '10081',
+    type: LiveMarketType.ODD_EVEN,
+    maxOdds: '0.01',
+    minOdds: '0.99',
+};
+
+const halftimeFulltimeMock: LeagueConfigInfo = {
+    sportId: '9806',
+    enabled: 'true',
+    marketName: 'Halftime / Fulltime',
+    typeId: '10040',
+    type: LiveMarketType.HALFTIME_FULLTIME,
+    maxOdds: '0.01',
+    minOdds: '0.99',
+};
+
+const teamTotalOddEvenHomeMock: LeagueConfigInfo = {
+    sportId: '9806',
+    enabled: 'true',
+    marketName: 'Team Total Odd/Even',
+    typeId: '10139',
+    type: LiveMarketType.ODD_EVEN,
+    maxOdds: '0.01',
+    minOdds: '0.99',
+};
+
+const teamTotalOddEvenAwayMock: LeagueConfigInfo = {
+    sportId: '9806',
+    enabled: 'true',
+    marketName: 'Team Total Odd/Even',
+    typeId: '10140',
+    type: LiveMarketType.ODD_EVEN,
+    maxOdds: '0.01',
+    minOdds: '0.99',
+};
+
+const anytimeCardReceiverMock: LeagueConfigInfo = {
+    sportId: '9806',
+    enabled: 'true',
+    marketName: 'Anytime Card Receiver',
+    typeId: '11234',
+    type: LiveMarketType.ONE_SIDE_PLAYER_PROPS,
+    maxOdds: '0.01',
+    minOdds: '0.99',
+};
+
+const playerToScoreOrAssistMock: LeagueConfigInfo = {
+    sportId: '9806',
+    enabled: 'true',
+    marketName: 'Player To Score Or Assist',
+    typeId: '11303',
+    type: LiveMarketType.ONE_SIDE_PLAYER_PROPS,
+    maxOdds: '0.01',
+    minOdds: '0.99',
+};
+
 const baseDiffSportId: LeagueConfigInfo = {
     ...baseLeagueInfo,
     sportId: '4',
@@ -248,6 +308,16 @@ const leaguInfoDifferentPrimaryBookmaker: LeagueConfigInfo[] = [
     { ...spreadMock, primaryBookmaker: 'draftkings' },
 ];
 
+const leagueInfoNewSoccerMarkets: LeagueConfigInfo[] = [
+    baseLeagueInfo,
+    oddEvenMock,
+    teamTotalOddEvenHomeMock,
+    teamTotalOddEvenAwayMock,
+    halftimeFulltimeMock,
+    anytimeCardReceiverMock,
+    playerToScoreOrAssistMock,
+];
+
 // Grouped Exports
 export const LeagueMocks = {
     leagueInfoOnlyParent,
@@ -260,6 +330,7 @@ export const LeagueMocks = {
     leagueInfoEnabledAll,
     leagueInfoDisabledCorrectScoreAndDoubleChance,
     leaguInfoDifferentPrimaryBookmaker,
+    leagueInfoNewSoccerMarkets,
     PlayerAssist,
     PlayerAssistWithSecondaryBookmaker,
 };
