@@ -241,21 +241,35 @@ export const filterOdds = (
     return oddsArray.reduce((acc: any, odd: any) => {
         if (allMarketsTypes.includes(odd.marketName.toLowerCase())) {
             const { points, marketName, selection, selectionLine, sportsBookName, playerId } = odd;
-            if (playerId && !playersMap.has(playerId)) {
+            const info = leagueInfos.find(
+                (leagueInfo) => leagueInfo.marketName.toLowerCase() === odd.marketName.toLowerCase()
+            );
+            // tennis team totals (e.g. Player Games Won) come with playerId from the provider,
+            // but are processed as team totals so they don't require a players mapping
+            if (
+                playerId &&
+                !playersMap.has(playerId) &&
+                !isTennisTeamTotal(Number(info?.sportId), Number(info?.typeId))
+            ) {
                 return acc;
             }
             const key = `${sportsBookName.toLowerCase()}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`;
             acc[key] = {
                 ...odd,
-                ...leagueInfos.find(
-                    (leagueInfo) => leagueInfo.marketName.toLowerCase() === odd.marketName.toLowerCase()
-                ), // using .find() for team totals means that we will always assign 10017 as typeID at this point
+                ...info, // using .find() for team totals means that we will always assign 10017 as typeID at this point
             };
         }
 
         return acc;
     }, {}) as any;
 };
+
+/**
+ * Checks whether the market is a tennis team total (e.g. Player Games Won mapped to totalHomeTeam).
+ * In tennis the player is the team, so such markets are processed as team totals, not player props.
+ */
+const isTennisTeamTotal = (sportId: number, typeId: number) =>
+    getLeagueSport(sportId) === Sport.TENNIS && typeId === MarketType.TOTAL_HOME_TEAM;
 
 /**
  * Groups spread odds by their lines and formats the result.
@@ -359,14 +373,12 @@ export const groupAndFormatTotalOdds = (oddsArray: any[], commonData: HomeAwayTe
         // in tennis the player is the team, so a player props market mapped as team total (e.g. Player Games Won)
         // is in fact a team total and must go through the away typeId increase below.
         // playerProps markets with own typeId (e.g. aces, double faults) must not be increased.
-        const isTennisTeamTotal =
-            getLeagueSport(Number((value as any).sportId)) === Sport.TENNIS &&
-            Number((value as any).typeId) === MarketType.TOTAL_HOME_TEAM;
+        const isTeamTotal = isTennisTeamTotal(Number((value as any).sportId), Number((value as any).typeId));
 
         // if we have away team in total odds we know the market is team total and we need to increase typeId by one.
         // if this is false, typeId is already mapped correctly
         const shouldIncreaseTypeId =
-            selection === commonData.awayTeam && (isTennisTeamTotal || !(value as any).playerProps);
+            selection === commonData.awayTeam && (isTeamTotal || !(value as any).playerProps);
 
         const odds = [(value as any).over, (value as any).under];
         const hasOdds = odds.some((odd) => odd !== null);
@@ -382,7 +394,7 @@ export const groupAndFormatTotalOdds = (oddsArray: any[], commonData: HomeAwayTe
             sportId: (value as any).sportId,
             type: (value as any).type,
             // team totals are already mapped correctly per team, no need for playerProps there
-            playerProps: isTennisTeamTotal ? undefined : (value as any).playerProps,
+            playerProps: isTeamTotal ? undefined : (value as any).playerProps,
             marketName: _marketName,
         });
 
