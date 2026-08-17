@@ -1,5 +1,5 @@
 import * as oddslib from 'oddslib';
-import { isOneSideExtendedPlayerPropsMarket, MarketType, MarketTypeMap } from 'overtime-utils';
+import { getLeagueSport, isOneSideExtendedPlayerPropsMarket, MarketType, MarketTypeMap, Sport } from 'overtime-utils';
 import { DRAW, SPLIT_DELIMITER, ZERO } from '../constants/common';
 import { NO_MARKETS_FOR_LEAGUE_ID, REMOVE_MIN_MAX_ODDS } from '../constants/errors';
 import { LiveMarketType } from '../enums/sports';
@@ -356,9 +356,17 @@ export const groupAndFormatTotalOdds = (oddsArray: any[], commonData: HomeAwayTe
         }
         const line = parseFloat(points);
 
+        // in tennis the player is the team, so a player props market mapped as team total (e.g. Player Games Won)
+        // is in fact a team total and must go through the away typeId increase below.
+        // playerProps markets with own typeId (e.g. aces, double faults) must not be increased.
+        const isTennisTeamTotal =
+            getLeagueSport(Number((value as any).sportId)) === Sport.TENNIS &&
+            Number((value as any).typeId) === MarketType.TOTAL_HOME_TEAM;
+
         // if we have away team in total odds we know the market is team total and we need to increase typeId by one.
-        // if this is false typeId is already mapped correctly
-        const shouldIncreaseTypeId = selection === commonData.awayTeam && !(value as any).playerProps;
+        // if this is false, typeId is already mapped correctly
+        const shouldIncreaseTypeId =
+            selection === commonData.awayTeam && (isTennisTeamTotal || !(value as any).playerProps);
 
         const odds = [(value as any).over, (value as any).under];
         const hasOdds = odds.some((odd) => odd !== null);
@@ -373,7 +381,8 @@ export const groupAndFormatTotalOdds = (oddsArray: any[], commonData: HomeAwayTe
             typeId: !shouldIncreaseTypeId ? (value as any).typeId : Number((value as any).typeId) + 1,
             sportId: (value as any).sportId,
             type: (value as any).type,
-            playerProps: (value as any).playerProps,
+            // team totals are already mapped correctly per team, no need for playerProps there
+            playerProps: isTennisTeamTotal ? undefined : (value as any).playerProps,
             marketName: _marketName,
         });
 
