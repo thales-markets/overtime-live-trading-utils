@@ -5,3 +5,5 @@ export type BookmakersConfig = {
     secondaryBookmaker: string;
     tertiaryBookmaker: string;
 };
+
+export type BookmakerWithVendor = { name: string; vendor: string };
