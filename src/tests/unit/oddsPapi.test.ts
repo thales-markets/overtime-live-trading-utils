@@ -2,6 +2,7 @@ import { OddsPapiLeaguesMap, OddsPapiResolvedMarket, ResolveOddsPapiMarketDefini
 import {
     getOddsPapiLeagueInfo,
     getOddsPapiSportId,
+    isOddsPapiParticipantsRotated,
     mapOddsPapiApiFixtureOdds,
     mapOddsPapiOutcomeFields,
     mapOddsPapiStreamOutcomeToEvent,
@@ -151,6 +152,72 @@ describe('OddsPapi', () => {
                 participant1Name: 'Away FC',
                 participant2Name: 'Home FC',
             });
+        });
+    });
+
+    describe('isOddsPapiParticipantsRotated', () => {
+        it('returns false for straight-order participants', () => {
+            expect(
+                isOddsPapiParticipantsRotated(
+                    { participant1Name: 'Home FC', participant2Name: 'Away FC' },
+                    'Home FC',
+                    'Away FC'
+                )
+            ).toBe(false);
+        });
+
+        it('returns true when participant1/participant2 are reversed relative to home/away', () => {
+            expect(
+                isOddsPapiParticipantsRotated(
+                    { participant1Name: 'Away FC', participant2Name: 'Home FC' },
+                    'Home FC',
+                    'Away FC'
+                )
+            ).toBe(true);
+        });
+
+        it('matches names by token overlap regardless of word order or accents', () => {
+            expect(
+                isOddsPapiParticipantsRotated(
+                    { participant1Name: 'Tiafoe, Frances', participant2Name: 'Alcaraz, Carlos' },
+                    'Carlos Alcaraz',
+                    'Frances Tiafoe'
+                )
+            ).toBe(true);
+
+            expect(
+                isOddsPapiParticipantsRotated(
+                    { participant1Name: 'Fenerbahce Istanbul', participant2Name: 'Galatasaray Istanbul' },
+                    'Fenerbahçe Spor Kulübü',
+                    'Galatasaray Spor Kulübü'
+                )
+            ).toBe(false);
+        });
+
+        it('keeps the positional default when names are unmatchable', () => {
+            expect(
+                isOddsPapiParticipantsRotated(
+                    { participant1Name: 'Team Alpha', participant2Name: 'Team Beta' },
+                    'Unrelated FC',
+                    'Another FC'
+                )
+            ).toBe(false);
+        });
+
+        it('keeps the positional default when participants or team names are missing', () => {
+            expect(isOddsPapiParticipantsRotated(undefined, 'Home FC', 'Away FC')).toBe(false);
+            expect(
+                isOddsPapiParticipantsRotated({ participant1Name: 'Home FC' }, 'Home FC', 'Away FC')
+            ).toBe(false);
+        });
+
+        it('only flips via the fuzzy tier when the caller opts in, and does not flip on typos otherwise', () => {
+            // Both participant names are typo'd (no exact token overlap with either team name), so the
+            // token/substring tiers stay fully ambiguous and only the opt-in fuzzy tier can resolve this.
+            const participants = { participant1Name: 'Lakesidee FC', participant2Name: 'Riversde FC' };
+
+            expect(isOddsPapiParticipantsRotated(participants, 'Riverside FC', 'Lakeside FC')).toBe(false);
+            expect(isOddsPapiParticipantsRotated(participants, 'Riverside FC', 'Lakeside FC', true, 0.85)).toBe(true);
         });
     });
 

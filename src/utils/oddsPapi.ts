@@ -24,6 +24,166 @@ export const getOddsPapiSportId = (
     return info ? info.oddsPapiSportId : null;
 };
 
+// Unicode combining-diacritical-marks block (U+0300-U+036F), built from character codes rather than
+// embedded as source text so the file stays plain ASCII.
+const COMBINING_DIACRITICS_PATTERN = new RegExp(`[${String.fromCharCode(0x300)}-${String.fromCharCode(0x36f)}]`, 'g');
+
+// Accent-stripped slug for cross-feed name matching only.
+const looseSlug = (value: unknown): string =>
+    String(value ?? '')
+        .normalize('NFD')
+        .replace(COMBINING_DIACRITICS_PATTERN, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '');
+
+// Accent-stripped word tokens for cross-feed name matching only.
+const looseTokens = (value: unknown): string[] =>
+    String(value ?? '')
+        .normalize('NFD')
+        .replace(COMBINING_DIACRITICS_PATTERN, '')
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter(Boolean);
+
+const levenshteinDistance = (a: string, b: string): number => {
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+
+    let previousRow = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 0; i < a.length; i++) {
+        const currentRow = [i + 1];
+        for (let j = 0; j < b.length; j++) {
+            const insertCost = currentRow[j] + 1;
+            const deleteCost = previousRow[j + 1] + 1;
+            const substituteCost = previousRow[j] + (a[i] === b[j] ? 0 : 1);
+            currentRow.push(Math.min(insertCost, deleteCost, substituteCost));
+        }
+        previousRow = currentRow;
+    }
+    return previousRow[b.length];
+};
+
+/**
+ * OddsPapi sides are positional (participant1/participant2) and there is no guarantee participant1 is the
+ * caller's home team - esports fixtures have no real home/away and the feeds can list the teams in opposite
+ * order, which would invert every price. When the papi fixture's participant names match the caller's
+ * home/away team names in reversed order (and NOT in straight order), the side mapping is rotated. Ambiguous
+ * or unmatchable names keep the positional default (not rotated).
+ *
+ * Matching is token-overlap based so word order and decorations never hide a side: tennis "Tiafoe, Frances"
+ * pairs with "Frances Tiafoe", "Fenerbahce Istanbul" with "Fenerbahçe Spor Kulübü". Tokens shared within one
+ * feed's OWN pair carry no side information (both Manchester clubs, both Istanbul clubs) and are dropped
+ * before scoring, so a derby can only flip on the distinctive tokens. A single recognizable participant
+ * decides by elimination - the fixture is already matched by gameId, so an unmatchable second name must be
+ * the remaining team - but only on a distinctive token (4+ chars), so a stray "FC"/"CF" crossing sides can
+ * never decide alone. Whole-name substring matching is a fallback for concatenated forms token overlap
+ * cannot see, and an optional fuzzy (Levenshtein) tier - off unless the caller opts in - catches
+ * typos/spelling drift exact tokens can't.
+ */
+export const isOddsPapiParticipantsRotated = (
+    participants: OddsPapiParticipants | undefined,
+    homeTeamName: string,
+    awayTeamName: string,
+    fuzzyOrientationEnabled = false,
+    fuzzyOrientationThreshold = 0.8
+): boolean => {
+    const p1 = looseSlug(participants?.participant1Name);
+    const p2 = looseSlug(participants?.participant2Name);
+    const h = looseSlug(homeTeamName);
+    const a = looseSlug(awayTeamName);
+    if (!p1 || !p2 || !h || !a) return false;
+
+    const dropSharedWithin = (x: string[], y: string[]): [string[], string[]] => {
+        const both = new Set(x.filter((t) => y.includes(t)));
+        return [x.filter((t) => !both.has(t)), y.filter((t) => !both.has(t))];
+    };
+    const [tp1, tp2] = dropSharedWithin(
+        looseTokens(participants?.participant1Name),
+        looseTokens(participants?.participant2Name)
+    );
+    const [th, ta] = dropSharedWithin(looseTokens(homeTeamName), looseTokens(awayTeamName));
+    const intersect = (x: string[], y: string[]): string[] => {
+        const set = new Set(y);
+        return x.filter((t) => set.has(t));
+    };
+
+    const e1h = intersect(tp1, th);
+    const e1a = intersect(tp1, ta);
+    const e2h = intersect(tp2, th);
+    const e2a = intersect(tp2, ta);
+
+    // which team does each papi participant match, exclusively?
+    type Claim = 'home' | 'away' | 'both' | 'none';
+    const claim = (hs: string[], as: string[]): Claim =>
+        hs.length && !as.length ? 'home' : as.length && !hs.length ? 'away' : hs.length || as.length ? 'both' : 'none';
+    const c1 = claim(e1h, e1a);
+    const c2 = claim(e2h, e2a);
+
+    if (c1 === 'home' && c2 === 'away') return false;
+    if (c1 === 'away' && c2 === 'home') return true;
+
+    const distinctive = (ts: string[]) => ts.some((t) => t.length >= 4);
+    if (c1 === 'home' && c2 === 'none' && distinctive(e1h)) return false;
+    if (c1 === 'away' && c2 === 'none' && distinctive(e1a)) return true;
+    if (c2 === 'away' && c1 === 'none' && distinctive(e2a)) return false;
+    if (c2 === 'home' && c1 === 'none' && distinctive(e2h)) return true;
+
+    // colliding or ambiguous claims - decide by magnitude, ties stay positional
+    const straightScore = e1h.length + e2a.length;
+    const swappedScore = e1a.length + e2h.length;
+    if (swappedScore > straightScore && e1a.length > 0 && e2h.length > 0) {
+        return true;
+    }
+    if (straightScore > swappedScore) return false;
+
+    // Optional fuzzy tier: whole-slug Levenshtein similarity catches typos/spelling drift exact tokens
+    // can't ("Imapct" vs "Impact"). Same exclusive-claim semantics as the token tier - a side must clear
+    // the threshold alone; both sides clearing it is ambiguous and decides nothing.
+    if (fuzzyOrientationEnabled) {
+        const sim = (x: string, y: string): number => {
+            const longest = Math.max(x.length, y.length);
+            return longest ? 1 - levenshteinDistance(x, y) / longest : 0;
+        };
+        const fuzzyClaim = (name: string): Claim => {
+            const sh = sim(name, h);
+            const sa = sim(name, a);
+            if (sh >= fuzzyOrientationThreshold && sa < fuzzyOrientationThreshold) return 'home';
+            if (sa >= fuzzyOrientationThreshold && sh < fuzzyOrientationThreshold) return 'away';
+            return sh >= fuzzyOrientationThreshold || sa >= fuzzyOrientationThreshold ? 'both' : 'none';
+        };
+        const f1 = fuzzyClaim(p1);
+        const f2 = fuzzyClaim(p2);
+        if (f1 === 'home' && f2 === 'away') return false;
+        if (f1 === 'away' && f2 === 'home') return true;
+        if (f1 === 'home' && f2 === 'none') return false;
+        if (f1 === 'away' && f2 === 'none') return true;
+        if (f2 === 'away' && f1 === 'none') return false;
+        if (f2 === 'home' && f1 === 'none') return true;
+    }
+
+    // No decisive token evidence - whole-name substring, the original rule (tolerates feed suffixes like
+    // "(OLD)" and concatenated short forms)
+    const matches = (x: string, y: string) => x === y || x.includes(y) || y.includes(x);
+    const straight = matches(p1, h) && matches(p2, a);
+    const swapped = matches(p1, a) && matches(p2, h);
+    return swapped && !straight;
+};
+
+// Builds the {participant1Name, participant2Name} shape mapOddsPapiSelection expects, using the CALLER's own
+// home/away team name strings (so displayed selections stay consistent regardless of vendor) rather than
+// OddsPapi's own participants object. participantsRotated is resolved once per fixture by the caller (e.g.
+// via isOddsPapiParticipantsRotated, by matching OddsPapi's /fixtures/live participant1Name/participant2Name
+// against its own home/away team names) - true means OddsPapi's participant1 is actually the away team.
+export const orientOddsPapiParticipants = (
+    homeTeam: string,
+    awayTeam: string,
+    participantsRotated: boolean
+): OddsPapiParticipants => ({
+    participant1Name: participantsRotated ? awayTeam : homeTeam,
+    participant2Name: participantsRotated ? homeTeam : awayTeam,
+});
+
 // Best-effort selection mapping from an OddsPapi outcome name to this repo's {selection, selectionLine}
 // convention: "1"/"2" -> home/away participant name (moneyline/spread-style markets), "Over"/"Under" ->
 // selectionLine, everything else (e.g. "Yes"/"No", correct-score outcomes) passes through as selection
@@ -43,20 +203,6 @@ const mapOddsPapiSelection = (
     return { selection: outcomeName, selectionLine: null };
 };
 
-// Builds the {participant1Name, participant2Name} shape mapOddsPapiSelection expects, using the CALLER's own
-// home/away team name strings (so displayed selections stay consistent regardless of vendor) rather than
-// OddsPapi's own participants object. participantsRotated is resolved once per fixture by the caller (by
-// matching OddsPapi's /fixtures/live participant1Name/participant2Name against its own home/away team names)
-// - true means OddsPapi's participant1 is actually the away team.
-export const orientOddsPapiParticipants = (
-    homeTeam: string,
-    awayTeam: string,
-    participantsRotated: boolean
-): OddsPapiParticipants => ({
-    participant1Name: participantsRotated ? awayTeam : homeTeam,
-    participant2Name: participantsRotated ? homeTeam : awayTeam,
-});
-
 // Shared marketId/outcomeId -> {marketName, points, name, selection, selectionLine} resolution, used by both
 // the REST snapshot mapper and a WS stream normalizer, so there is exactly one place that interprets
 // OddsPapi's market taxonomy. Returns null when the market isn't resolved to a marketName - callers must
@@ -67,7 +213,13 @@ export const mapOddsPapiOutcomeFields = (
     oddsPapiSportId: number,
     participants: OddsPapiParticipants | undefined,
     resolveMarketDefinition: ResolveOddsPapiMarketDefinition
-): { marketName: string; points: number; name: string | undefined; selection: string | undefined; selectionLine: string | null } | null => {
+): {
+    marketName: string;
+    points: number;
+    name: string | undefined;
+    selection: string | undefined;
+    selectionLine: string | null;
+} | null => {
     const definition = resolveMarketDefinition(oddsPapiSportId, outcome.marketId);
     if (!definition) return null;
 
@@ -138,7 +290,14 @@ export const mapOddsPapiApiFixtureOdds = (
         const odds = Object.values(fixtureOdds.odds || {})
             .flatMap((outcomesByKey: any) =>
                 Object.entries(outcomesByKey).map(([outcomeKey, outcome]) =>
-                    mapOddsPapiOddsLine(outcomeKey, outcome, isLive, oddsPapiSportId, participants, resolveMarketDefinition)
+                    mapOddsPapiOddsLine(
+                        outcomeKey,
+                        outcome,
+                        isLive,
+                        oddsPapiSportId,
+                        participants,
+                        resolveMarketDefinition
+                    )
                 )
             )
             .filter(Boolean);
