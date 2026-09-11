@@ -68,8 +68,13 @@ const levenshteinDistance = (a: string, b: string): number => {
  * OddsPapi sides are positional (participant1/participant2) and there is no guarantee participant1 is the
  * caller's home team - esports fixtures have no real home/away and the feeds can list the teams in opposite
  * order, which would invert every price. When the papi fixture's participant names match the caller's
- * home/away team names in reversed order (and NOT in straight order), the side mapping is rotated. Ambiguous
- * or unmatchable names keep the positional default (not rotated).
+ * home/away team names in reversed order (and NOT in straight order), the side mapping is rotated.
+ *
+ * Returns null - not a guessed boolean - when there isn't enough signal to tell "confidently not rotated"
+ * apart from "no idea": missing/empty names, or names with no decisive token/fuzzy match on either side.
+ * Callers that use this result to gate whether a cross-vendor fixture match can be trusted at all (before
+ * attaching prices to it) should treat null as "skip this fixture" rather than coercing it to false -
+ * collapsing the two risks silently swapping home/away prices on an unrelated match.
  *
  * Matching is token-overlap based so word order and decorations never hide a side: tennis "Tiafoe, Frances"
  * pairs with "Frances Tiafoe", "Fenerbahce Istanbul" with "Fenerbahçe Spor Kulübü". Tokens shared within one
@@ -77,32 +82,53 @@ const levenshteinDistance = (a: string, b: string): number => {
  * before scoring, so a derby can only flip on the distinctive tokens. A single recognizable participant
  * decides by elimination - the fixture is already matched by gameId, so an unmatchable second name must be
  * the remaining team - but only on a distinctive token (4+ chars), so a stray "FC"/"CF" crossing sides can
- * never decide alone. Whole-name substring matching is a fallback for concatenated forms token overlap
- * cannot see, and an optional fuzzy (Levenshtein) tier - off unless the caller opts in - catches
+ * never decide alone. An optional fuzzy (Levenshtein) tier - off unless the caller opts in - catches
  * typos/spelling drift exact tokens can't.
+ *
+ * teamsMap is an optional CSV-driven alias table (abbreviations, nicknames, spelling variants that
+ * word-overlap/fuzzy matching can't infer, e.g. "Bob" -> "Robert") applied as a translation step before any
+ * of the above runs: each of the four names is looked up by its trimmed, lowercased form and swapped for its
+ * mapped value when present. Both a hit and a miss are normalized (trimmed + lowercased) identically, so a
+ * mapped name and an unmapped name still compare equal downstream regardless of the alias table's authored
+ * casing.
+ *
+ * returnNullWhenUnconfident (default true) controls the two cases above where there's no decisive signal.
+ * Set it to false to opt back into the legacy behavior of always guessing a true/false from the weakest
+ * available signal (whole-name containment, or the positional default when even that finds nothing) instead
+ * of reporting null - only for callers not yet updated to handle a null result.
  */
 export const isOddsPapiParticipantsRotated = (
     participants: OddsPapiParticipants | undefined,
     homeTeamName: string,
     awayTeamName: string,
+    teamsMap?: Map<string, string>,
     fuzzyOrientationEnabled = false,
-    fuzzyOrientationThreshold = 0.8
-): boolean => {
-    const p1 = looseSlug(participants?.participant1Name);
-    const p2 = looseSlug(participants?.participant2Name);
-    const h = looseSlug(homeTeamName);
-    const a = looseSlug(awayTeamName);
-    if (!p1 || !p2 || !h || !a) return false;
+    fuzzyOrientationThreshold = 0.8,
+    returnNullWhenUnconfident = true
+): boolean | null => {
+    const resolveName = (name: string | undefined): string => {
+        const trimmed = (name ?? '').trim();
+        const mapped = teamsMap?.get(trimmed.toLowerCase());
+        return (mapped ?? trimmed).toLowerCase();
+    };
+
+    const participant1Name = resolveName(participants?.participant1Name);
+    const participant2Name = resolveName(participants?.participant2Name);
+    const resolvedHomeTeamName = resolveName(homeTeamName);
+    const resolvedAwayTeamName = resolveName(awayTeamName);
+
+    const p1 = looseSlug(participant1Name);
+    const p2 = looseSlug(participant2Name);
+    const h = looseSlug(resolvedHomeTeamName);
+    const a = looseSlug(resolvedAwayTeamName);
+    if (!p1 || !p2 || !h || !a) return returnNullWhenUnconfident ? null : false;
 
     const dropSharedWithin = (x: string[], y: string[]): [string[], string[]] => {
         const both = new Set(x.filter((t) => y.includes(t)));
         return [x.filter((t) => !both.has(t)), y.filter((t) => !both.has(t))];
     };
-    const [tp1, tp2] = dropSharedWithin(
-        looseTokens(participants?.participant1Name),
-        looseTokens(participants?.participant2Name)
-    );
-    const [th, ta] = dropSharedWithin(looseTokens(homeTeamName), looseTokens(awayTeamName));
+    const [tp1, tp2] = dropSharedWithin(looseTokens(participant1Name), looseTokens(participant2Name));
+    const [th, ta] = dropSharedWithin(looseTokens(resolvedHomeTeamName), looseTokens(resolvedAwayTeamName));
     const intersect = (x: string[], y: string[]): string[] => {
         const set = new Set(y);
         return x.filter((t) => set.has(t));
@@ -162,12 +188,18 @@ export const isOddsPapiParticipantsRotated = (
         if (f2 === 'home' && f1 === 'none') return true;
     }
 
-    // No decisive token evidence - whole-name substring, the original rule (tolerates feed suffixes like
-    // "(OLD)" and concatenated short forms)
-    const matches = (x: string, y: string) => x === y || x.includes(y) || y.includes(x);
-    const straight = matches(p1, h) && matches(p2, a);
-    const swapped = matches(p1, a) && matches(p2, h);
-    return swapped && !straight;
+    // No branch produced a confident signal. By default this is reported as unknown rather than guessed,
+    // since a weaker last-resort check (whole-name containment) can't reliably tell "confidently not
+    // rotated" apart from "genuinely unrelated names" - see the null-return contract in the doc comment
+    // above. returnNullWhenUnconfident=false opts back into the legacy guess for callers not yet updated to
+    // handle null.
+    if (!returnNullWhenUnconfident) {
+        const matches = (x: string, y: string) => x === y || x.includes(y) || y.includes(x);
+        const straight = matches(p1, h) && matches(p2, a);
+        const swapped = matches(p1, a) && matches(p2, h);
+        return swapped && !straight;
+    }
+    return null;
 };
 
 // Builds the {participant1Name, participant2Name} shape mapOddsPapiSelection expects, using the CALLER's own

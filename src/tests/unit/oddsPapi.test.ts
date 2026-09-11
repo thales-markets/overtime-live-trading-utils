@@ -194,30 +194,269 @@ describe('OddsPapi', () => {
             ).toBe(false);
         });
 
-        it('keeps the positional default when names are unmatchable', () => {
+        it('returns null (not a guessed false) for genuinely unrelated names', () => {
             expect(
                 isOddsPapiParticipantsRotated(
                     { participant1Name: 'Team Alpha', participant2Name: 'Team Beta' },
                     'Unrelated FC',
                     'Another FC'
                 )
-            ).toBe(false);
+            ).toBeNull();
         });
 
-        it('keeps the positional default when participants or team names are missing', () => {
-            expect(isOddsPapiParticipantsRotated(undefined, 'Home FC', 'Away FC')).toBe(false);
-            expect(
-                isOddsPapiParticipantsRotated({ participant1Name: 'Home FC' }, 'Home FC', 'Away FC')
-            ).toBe(false);
+        it('returns null (not a guessed false) when participants or team names are missing', () => {
+            expect(isOddsPapiParticipantsRotated(undefined, 'Home FC', 'Away FC')).toBeNull();
+            expect(isOddsPapiParticipantsRotated({ participant1Name: 'Home FC' }, 'Home FC', 'Away FC')).toBeNull();
         });
 
-        it('only flips via the fuzzy tier when the caller opts in, and does not flip on typos otherwise', () => {
+        it('only flips via the fuzzy tier when the caller opts in, and stays null (not a guess) on typos otherwise', () => {
             // Both participant names are typo'd (no exact token overlap with either team name), so the
             // token/substring tiers stay fully ambiguous and only the opt-in fuzzy tier can resolve this.
             const participants = { participant1Name: 'Lakesidee FC', participant2Name: 'Riversde FC' };
 
-            expect(isOddsPapiParticipantsRotated(participants, 'Riverside FC', 'Lakeside FC')).toBe(false);
-            expect(isOddsPapiParticipantsRotated(participants, 'Riverside FC', 'Lakeside FC', true, 0.85)).toBe(true);
+            expect(isOddsPapiParticipantsRotated(participants, 'Riverside FC', 'Lakeside FC')).toBeNull();
+            expect(
+                isOddsPapiParticipantsRotated(participants, 'Riverside FC', 'Lakeside FC', undefined, true, 0.85)
+            ).toBe(true);
+        });
+
+        describe('returnNullWhenUnconfident=false (legacy always-guess mode)', () => {
+            it('guesses false instead of null when participants or team names are missing', () => {
+                expect(isOddsPapiParticipantsRotated(undefined, 'Home FC', 'Away FC', undefined, false, 0.8, false)).toBe(
+                    false
+                );
+                expect(
+                    isOddsPapiParticipantsRotated(
+                        { participant1Name: 'Home FC' },
+                        'Home FC',
+                        'Away FC',
+                        undefined,
+                        false,
+                        0.8,
+                        false
+                    )
+                ).toBe(false);
+            });
+
+            it('guesses a true/false from whole-name containment instead of null when no branch is confident', () => {
+                expect(
+                    isOddsPapiParticipantsRotated(
+                        { participant1Name: 'Team Alpha', participant2Name: 'Team Beta' },
+                        'Unrelated FC',
+                        'Another FC',
+                        undefined,
+                        false,
+                        0.8,
+                        false
+                    )
+                ).toBe(false);
+            });
+
+            it('still returns confident true/false results unchanged (the legacy flag only affects the unconfident cases)', () => {
+                expect(
+                    isOddsPapiParticipantsRotated(
+                        { participant1Name: 'Away FC', participant2Name: 'Home FC' },
+                        'Home FC',
+                        'Away FC',
+                        undefined,
+                        false,
+                        0.8,
+                        false
+                    )
+                ).toBe(true);
+            });
+        });
+
+        it('resolves a pairing via teamsMap that plain token/fuzzy matching alone cannot (true alias, not a word-order difference)', () => {
+            const teamsMap = new Map([
+                ['bob', 'Robert'],
+                ['johnny', 'Johnathan'],
+            ]);
+            const participants = { participant1Name: 'Bob', participant2Name: 'Johnny' };
+
+            // Without the alias table, "Bob"/"Johnny" share no tokens (and aren't close enough for fuzzy
+            // matching) with "Robert"/"Johnathan", so there's no confident signal either way.
+            expect(isOddsPapiParticipantsRotated(participants, 'Robert', 'Johnathan')).toBeNull();
+
+            // With the alias table, both names resolve to exact matches on their straight-order side.
+            expect(isOddsPapiParticipantsRotated(participants, 'Robert', 'Johnathan', teamsMap)).toBe(false);
+        });
+
+        it('does not change the result when a teamsMap entry is redundant with what token overlap already resolves', () => {
+            const teamsMap = new Map([['home fc', 'Home FC']]);
+
+            expect(
+                isOddsPapiParticipantsRotated(
+                    { participant1Name: 'Home FC', participant2Name: 'Away FC' },
+                    'Home FC',
+                    'Away FC',
+                    teamsMap
+                )
+            ).toBe(false);
+        });
+
+        it('looks up teamsMap aliases case-insensitively regardless of the authored casing of the name or the map', () => {
+            const teamsMap = new Map([['bob', 'Robert']]);
+
+            expect(
+                isOddsPapiParticipantsRotated(
+                    { participant1Name: 'BOB', participant2Name: 'Johnathan' },
+                    'Robert',
+                    'Johnathan',
+                    teamsMap
+                )
+            ).toBe(false);
+        });
+
+        describe('cross-feed team order (real club/player name scenarios)', () => {
+            const papi = (p1: string, p2: string) => ({ participant1Name: p1, participant2Name: p2 });
+
+            it('straight order stays straight (plain club names)', () => {
+                expect(isOddsPapiParticipantsRotated(papi('Toronto', 'Montreal'), 'Toronto FC', 'CF Montreal')).toBe(
+                    false
+                );
+            });
+
+            it('reversed order flips (word-order-insensitive)', () => {
+                expect(isOddsPapiParticipantsRotated(papi('Montreal', 'Toronto FC'), 'FC Toronto', 'CF Montreal')).toBe(
+                    true
+                );
+            });
+
+            it('tennis "Last, First" pairs with "First Last" in both orders', () => {
+                const home = 'Frances Tiafoe';
+                const away = 'Ben Shelton';
+                expect(isOddsPapiParticipantsRotated(papi('Tiafoe, Frances', 'Shelton, Ben'), home, away)).toBe(false);
+                expect(isOddsPapiParticipantsRotated(papi('Shelton, Ben', 'Tiafoe, Frances'), home, away)).toBe(true);
+            });
+
+            it('decorated club names match on the distinctive token', () => {
+                const home = 'Fenerbahçe Spor Kulübü';
+                const away = 'Galatasaray SK';
+                expect(
+                    isOddsPapiParticipantsRotated(papi('Fenerbahce Istanbul', 'Galatasaray Istanbul'), home, away)
+                ).toBe(false);
+                expect(
+                    isOddsPapiParticipantsRotated(papi('Galatasaray Istanbul', 'Fenerbahce Istanbul'), home, away)
+                ).toBe(true);
+            });
+
+            it('derby: the shared city token carries no side information', () => {
+                const home = 'Manchester United';
+                const away = 'Manchester City';
+                expect(
+                    isOddsPapiParticipantsRotated(papi('Manchester United FC', 'Manchester City FC'), home, away)
+                ).toBe(false);
+                expect(
+                    isOddsPapiParticipantsRotated(papi('Manchester City FC', 'Manchester United FC'), home, away)
+                ).toBe(true);
+            });
+
+            it('an exact token match resolves concatenated/decorated short forms (e.g. "(OLD)" suffixes)', () => {
+                expect(
+                    isOddsPapiParticipantsRotated(papi('Heretics', 'Movistar KOI'), 'Movistar KOI', 'Los Heretics (OLD)')
+                ).toBe(true);
+            });
+
+            it('one recognizable participant decides by elimination', () => {
+                const home = 'Frances Tiafoe';
+                const away = 'Ben Shelton';
+                // p1 confidently the AWAY player, p2 unrecognizable -> flip
+                expect(isOddsPapiParticipantsRotated(papi('Shelton, Ben', 'Qualifier'), home, away)).toBe(true);
+                // p1 confidently the HOME player, p2 unrecognizable -> straight
+                expect(isOddsPapiParticipantsRotated(papi('Tiafoe, Frances', 'TBD'), home, away)).toBe(false);
+                // the decisive side may also be p2
+                expect(isOddsPapiParticipantsRotated(papi('Qualifier', 'Tiafoe, Frances'), home, away)).toBe(true);
+            });
+
+            it('an extra middle name on one feed cannot block or misdirect the match', () => {
+                const home = 'Solana Sierra';
+                const away = 'Maria Lourdes Carle';
+                expect(isOddsPapiParticipantsRotated(papi('Sierra, Solana', 'Carle, Maria'), home, away)).toBe(false);
+                expect(isOddsPapiParticipantsRotated(papi('Carle, Maria', 'Sierra, Solana'), home, away)).toBe(true);
+                // both players share a first name -> the shared token is dropped and the surnames decide
+                expect(isOddsPapiParticipantsRotated(papi('Carle, Maria', 'Sakkari, Maria'), 'Maria Sakkari', away)).toBe(
+                    true
+                );
+            });
+
+            it('tennis abbreviated "Surname I" forms pair with full names', () => {
+                const home = 'Kaitlin Quevedo';
+                const away = 'Sara Sorribes Tormo';
+                expect(isOddsPapiParticipantsRotated(papi('Quevedo K', 'Sorribes Tormo S'), home, away)).toBe(false);
+                expect(isOddsPapiParticipantsRotated(papi('Sorribes Tormo S', 'Quevedo K'), home, away)).toBe(true);
+                // abbreviated on one side only still decides by elimination
+                expect(isOddsPapiParticipantsRotated(papi('Qualifier', 'Quevedo K'), home, away)).toBe(true);
+            });
+
+            it('a rebranded/renamed side (papi-only name) decides by the unchanged side', () => {
+                const home = 'CF Montreal';
+                const away = 'Toronto FC';
+                // papi renamed Toronto to "TRT" -> Montreal alone pins the order
+                expect(isOddsPapiParticipantsRotated(papi('CF Montreal', 'TRT'), home, away)).toBe(false);
+                expect(isOddsPapiParticipantsRotated(papi('TRT', 'CF Montreal'), home, away)).toBe(true);
+            });
+
+            it('a stray generic token (< 4 chars) cannot decide a one-sided flip alone, so it is reported as unknown', () => {
+                // p1's only cross-match with the away side is "fc" (< 4 chars, not distinctive), so unlike the
+                // ported source (which guessed false here), there is genuinely no confident signal either way
+                expect(
+                    isOddsPapiParticipantsRotated(papi('FC Unknown', 'Mystery'), 'Copenhagen', 'Midtjylland FC')
+                ).toBeNull();
+            });
+
+            it('colliding claims (both participants only match the same side) are reported as unknown, not guessed', () => {
+                // both participants share a token with the AWAY team only, so no elimination is possible either way
+                expect(
+                    isOddsPapiParticipantsRotated(papi('FC Kobenhavn', 'Midtjylland'), 'Copenhagen', 'Midtjylland FC')
+                ).toBeNull();
+            });
+
+            describe('fuzzy tier (fuzzyOrientationEnabled)', () => {
+                // pure-typo names: zero exact-token overlap, so only the fuzzy tier can decide
+                const home = 'Fenerbahce';
+                const away = 'Galatasaray';
+
+                it('off by default - a typo-only match is reported as unknown, not guessed', () => {
+                    expect(isOddsPapiParticipantsRotated(papi('Galatasarai', 'Fenerbahge'), home, away)).toBeNull();
+                });
+
+                it('enabled - similarity above threshold decides, both orders', () => {
+                    expect(
+                        isOddsPapiParticipantsRotated(papi('Fenerbahge', 'Galatasarai'), home, away, undefined, true)
+                    ).toBe(false);
+                    expect(
+                        isOddsPapiParticipantsRotated(papi('Galatasarai', 'Fenerbahge'), home, away, undefined, true)
+                    ).toBe(true);
+                });
+
+                it('enabled - one typo side plus an unrecognizable side decides by elimination', () => {
+                    expect(
+                        isOddsPapiParticipantsRotated(papi('Fenerbahge', 'XYZ'), home, away, undefined, true)
+                    ).toBe(false);
+                    expect(
+                        isOddsPapiParticipantsRotated(papi('XYZ', 'Fenerbahge'), home, away, undefined, true)
+                    ).toBe(true);
+                });
+
+                it('a tighter threshold that no similarity clears is reported as unknown, not guessed', () => {
+                    expect(
+                        isOddsPapiParticipantsRotated(papi('Galatasarai', 'Fenerbahge'), home, away, undefined, true, 0.99)
+                    ).toBeNull();
+                });
+            });
+
+            it('an acronym can still decide by elimination when the other side matches distinctively', () => {
+                // "NAVI" doesn't literally match "Natus Vincere", but "Team Spirit" distinctively matches
+                // "Spirit" alone, so elimination still confidently resolves this one
+                expect(isOddsPapiParticipantsRotated(papi('NAVI', 'Team Spirit'), 'Natus Vincere', 'Spirit')).toBe(
+                    false
+                );
+            });
+
+            it('an empty participant name has no signal at all, so it is reported as unknown', () => {
+                expect(isOddsPapiParticipantsRotated(papi('', 'Montreal'), 'Toronto FC', 'CF Montreal')).toBeNull();
+            });
         });
     });
 
