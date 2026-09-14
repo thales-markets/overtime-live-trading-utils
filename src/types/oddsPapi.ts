@@ -21,6 +21,14 @@ export interface OddsPapiLeagueInfo {
 
 export type OddsPapiLeaguesMap = Map<number, OddsPapiLeagueInfo>;
 
+// Raw row shape of the RISK_MANAGEMENT_ODDS_PAPI_LEAGUES_DATA CSV, before buildOddsPapiLeaguesMap parses it
+// into an OddsPapiLeaguesMap.
+export interface OddsPapiLeagueCsvRow {
+    sportId: string | number;
+    oddspapiSportId: string | number;
+    oddspapiTournamentId?: string;
+}
+
 // snake_case shape matching OpticOdds' own SSE stream-event convention, so both vendors' stream events
 // can be folded through one vendor-agnostic pipeline by a consuming repo.
 export interface OddsPapiStreamEvent {

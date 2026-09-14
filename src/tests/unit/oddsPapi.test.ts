@@ -1,5 +1,11 @@
-import { OddsPapiLeaguesMap, OddsPapiResolvedMarket, ResolveOddsPapiMarketDefinition } from '../../types/oddsPapi';
 import {
+    OddsPapiLeagueCsvRow,
+    OddsPapiLeaguesMap,
+    OddsPapiResolvedMarket,
+    ResolveOddsPapiMarketDefinition,
+} from '../../types/oddsPapi';
+import {
+    buildOddsPapiLeaguesMap,
     getOddsPapiLeagueInfo,
     getOddsPapiSportId,
     isOddsPapiParticipantsRotated,
@@ -222,9 +228,9 @@ describe('OddsPapi', () => {
 
         describe('returnNullWhenUnconfident=false (legacy always-guess mode)', () => {
             it('guesses false instead of null when participants or team names are missing', () => {
-                expect(isOddsPapiParticipantsRotated(undefined, 'Home FC', 'Away FC', undefined, false, 0.8, false)).toBe(
-                    false
-                );
+                expect(
+                    isOddsPapiParticipantsRotated(undefined, 'Home FC', 'Away FC', undefined, false, 0.8, false)
+                ).toBe(false);
                 expect(
                     isOddsPapiParticipantsRotated(
                         { participant1Name: 'Home FC' },
@@ -354,7 +360,11 @@ describe('OddsPapi', () => {
 
             it('an exact token match resolves concatenated/decorated short forms (e.g. "(OLD)" suffixes)', () => {
                 expect(
-                    isOddsPapiParticipantsRotated(papi('Heretics', 'Movistar KOI'), 'Movistar KOI', 'Los Heretics (OLD)')
+                    isOddsPapiParticipantsRotated(
+                        papi('Heretics', 'Movistar KOI'),
+                        'Movistar KOI',
+                        'Los Heretics (OLD)'
+                    )
                 ).toBe(true);
             });
 
@@ -375,9 +385,9 @@ describe('OddsPapi', () => {
                 expect(isOddsPapiParticipantsRotated(papi('Sierra, Solana', 'Carle, Maria'), home, away)).toBe(false);
                 expect(isOddsPapiParticipantsRotated(papi('Carle, Maria', 'Sierra, Solana'), home, away)).toBe(true);
                 // both players share a first name -> the shared token is dropped and the surnames decide
-                expect(isOddsPapiParticipantsRotated(papi('Carle, Maria', 'Sakkari, Maria'), 'Maria Sakkari', away)).toBe(
-                    true
-                );
+                expect(
+                    isOddsPapiParticipantsRotated(papi('Carle, Maria', 'Sakkari, Maria'), 'Maria Sakkari', away)
+                ).toBe(true);
             });
 
             it('tennis abbreviated "Surname I" forms pair with full names', () => {
@@ -431,17 +441,24 @@ describe('OddsPapi', () => {
                 });
 
                 it('enabled - one typo side plus an unrecognizable side decides by elimination', () => {
-                    expect(
-                        isOddsPapiParticipantsRotated(papi('Fenerbahge', 'XYZ'), home, away, undefined, true)
-                    ).toBe(false);
-                    expect(
-                        isOddsPapiParticipantsRotated(papi('XYZ', 'Fenerbahge'), home, away, undefined, true)
-                    ).toBe(true);
+                    expect(isOddsPapiParticipantsRotated(papi('Fenerbahge', 'XYZ'), home, away, undefined, true)).toBe(
+                        false
+                    );
+                    expect(isOddsPapiParticipantsRotated(papi('XYZ', 'Fenerbahge'), home, away, undefined, true)).toBe(
+                        true
+                    );
                 });
 
                 it('a tighter threshold that no similarity clears is reported as unknown, not guessed', () => {
                     expect(
-                        isOddsPapiParticipantsRotated(papi('Galatasarai', 'Fenerbahge'), home, away, undefined, true, 0.99)
+                        isOddsPapiParticipantsRotated(
+                            papi('Galatasarai', 'Fenerbahge'),
+                            home,
+                            away,
+                            undefined,
+                            true,
+                            0.99
+                        )
                     ).toBeNull();
                 });
             });
@@ -576,7 +593,10 @@ describe('OddsPapi', () => {
         const leaguesMap: OddsPapiLeaguesMap = new Map([[4, { oddsPapiSportId: 1, oddsPapiTournamentIds: [55, 56] }]]);
 
         it('returns the mapped league info and sportId', () => {
-            expect(getOddsPapiLeagueInfo(4, leaguesMap)).toEqual({ oddsPapiSportId: 1, oddsPapiTournamentIds: [55, 56] });
+            expect(getOddsPapiLeagueInfo(4, leaguesMap)).toEqual({
+                oddsPapiSportId: 1,
+                oddsPapiTournamentIds: [55, 56],
+            });
             expect(getOddsPapiSportId(4, leaguesMap)).toBe(1);
         });
 
@@ -588,6 +608,37 @@ describe('OddsPapi', () => {
         it('returns null when the leagues map itself is undefined', () => {
             expect(getOddsPapiLeagueInfo(4, undefined)).toBeNull();
             expect(getOddsPapiSportId(4, undefined)).toBeNull();
+        });
+    });
+
+    describe('buildOddsPapiLeaguesMap', () => {
+        it('parses the semicolon-delimited tournament ids and maps them by leagueId', () => {
+            const rows: OddsPapiLeagueCsvRow[] = [
+                { sportId: '4', oddspapiSportId: '1', oddspapiTournamentId: '55; 56' },
+            ];
+
+            const map = buildOddsPapiLeaguesMap(rows);
+
+            expect(map.get(4)).toEqual({ oddsPapiSportId: 1, oddsPapiTournamentIds: [55, 56] });
+        });
+
+        it('defaults to an empty tournament ids array when the cell is missing', () => {
+            const rows: OddsPapiLeagueCsvRow[] = [{ sportId: '4', oddspapiSportId: '1' }];
+
+            const map = buildOddsPapiLeaguesMap(rows);
+
+            expect(map.get(4)).toEqual({ oddsPapiSportId: 1, oddsPapiTournamentIds: [] });
+        });
+
+        it('drops rows missing either sportId or oddspapiSportId', () => {
+            const rows: OddsPapiLeagueCsvRow[] = [
+                { sportId: '', oddspapiSportId: '1' },
+                { sportId: '4', oddspapiSportId: '' },
+            ];
+
+            const map = buildOddsPapiLeaguesMap(rows);
+
+            expect(map.size).toBe(0);
         });
     });
 });

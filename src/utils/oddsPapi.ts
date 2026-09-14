@@ -1,11 +1,32 @@
 import { Odd, OddsObject } from '../types/odds';
 import {
+    OddsPapiLeagueCsvRow,
     OddsPapiLeagueInfo,
     OddsPapiLeaguesMap,
     OddsPapiParticipants,
     OddsPapiStreamEvent,
     ResolveOddsPapiMarketDefinition,
 } from '../types/oddsPapi';
+
+// Builds the leagueId -> {oddsPapiSportId, oddsPapiTournamentIds} lookup consumed by getOddsPapiLeagueInfo/
+// getOddsPapiSportId, from the raw RISK_MANAGEMENT_ODDS_PAPI_LEAGUES_DATA CSV rows. Rows missing either id
+// (leagueId or oddsPapiSportId) are dropped - they carry no usable routing information.
+export const buildOddsPapiLeaguesMap = (rawOddsPapiLeaguesData: OddsPapiLeagueCsvRow[]): OddsPapiLeaguesMap => {
+    const oddsPapiLeaguesMap: OddsPapiLeaguesMap = new Map();
+    rawOddsPapiLeaguesData.forEach((row) => {
+        const leagueId = Number(row.sportId);
+        const oddsPapiSportId = Number(row.oddspapiSportId);
+        if (!leagueId || !oddsPapiSportId) return;
+
+        const oddsPapiTournamentIds = (row.oddspapiTournamentId || '')
+            .split(';')
+            .map((id) => Number(id.trim()))
+            .filter((id) => !!id);
+
+        oddsPapiLeaguesMap.set(leagueId, { oddsPapiSportId, oddsPapiTournamentIds });
+    });
+    return oddsPapiLeaguesMap;
+};
 
 // Returns {oddsPapiSportId, oddsPapiTournamentIds} for a league, or null when the league has no
 // RISK_MANAGEMENT_ODDS_PAPI_LEAGUES_DATA row (not routed to OddsPapi).

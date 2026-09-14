@@ -7,3 +7,8 @@ export type BookmakersConfig = {
 };
 
 export type BookmakerWithVendor = { name: string; vendor: string };
+
+export interface MarketVendorIndex {
+    sportDefaultVendorByBookmaker: Map<number, Map<string, string>>; // bookmakerLower -> vendor
+    marketVendorByBookmaker: Map<string, Map<string, string>>; // "sportId:typeId" -> bookmakerLower -> vendor
+}
