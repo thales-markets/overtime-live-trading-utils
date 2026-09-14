@@ -1,12 +1,17 @@
+import { VENDOR_ODDS_PAPI } from '../constants/oddsVendors';
 import { Odd, OddsObject } from '../types/odds';
 import {
     OddsPapiLeagueCsvRow,
     OddsPapiLeagueInfo,
     OddsPapiLeaguesMap,
+    OddsPapiMarketCatalogEntry,
+    OddsPapiMarketMapCsvRow,
     OddsPapiParticipants,
+    OddsPapiResolvedMarket,
     OddsPapiStreamEvent,
     ResolveOddsPapiMarketDefinition,
 } from '../types/oddsPapi';
+import { LastPolledArray } from '../types/sports';
 
 // Builds the leagueId -> {oddsPapiSportId, oddsPapiTournamentIds} lookup consumed by getOddsPapiLeagueInfo/
 // getOddsPapiSportId, from the raw RISK_MANAGEMENT_ODDS_PAPI_LEAGUES_DATA CSV rows. Rows missing either id
@@ -43,6 +48,31 @@ export const getOddsPapiSportId = (
 ): number | null => {
     const info = getOddsPapiLeagueInfo(leagueId, oddsPapiLeaguesMap);
     return info ? info.oddsPapiSportId : null;
+};
+
+// Builds the "oddsPapiSportId:marketType:period" -> our marketName lookup consumed by
+// resolveOddsPapiMarketDefinition, from the raw RISK_MANAGEMENT_ODDS_PAPI_MARKETS_MAP_DATA CSV rows. Keyed
+// per oddsPapiSportId since the same marketType/period pair can map to a different marketName in a different
+// sport. Rows missing the sportId, marketType, period, or our marketName are dropped - they carry no usable
+// mapping.
+export const buildOddsPapiMarketNameMap = (
+    rawOddsPapiMarketsMapData: OddsPapiMarketMapCsvRow[]
+): Map<string, string> => {
+    const oddsPapiMarketNameMap = new Map<string, string>();
+
+    rawOddsPapiMarketsMapData.forEach((row) => {
+        const oddsPapiSportId = Number(row.oddspapiSportId);
+        if (!oddsPapiSportId) return;
+
+        if (row.oddspapiMarketType && row.oddspapiPeriod && row.opticOddsMarketName) {
+            oddsPapiMarketNameMap.set(
+                `${oddsPapiSportId}:${row.oddspapiMarketType}:${row.oddspapiPeriod}`,
+                row.opticOddsMarketName
+            );
+        }
+    });
+
+    return oddsPapiMarketNameMap;
 };
 
 // Unicode combining-diacritical-marks block (U+0300-U+036F), built from character codes rather than
@@ -223,6 +253,34 @@ export const isOddsPapiParticipantsRotated = (
     return null;
 };
 
+// Finds this game's OddsPapi fixture among an already-fetched fixtures array (OddsPapi's /fixtures/live
+// response, or equivalent) by matching externalProviders.opticoddsId against the caller's own OpticOdds
+// gameId - the same field/matching key used everywhere else this pairing is made. Also resolves whether
+// OddsPapi's participant1/participant2 are flipped relative to the caller's home/away via
+// isOddsPapiParticipantsRotated. Returns null when there's no matching fixture OR the rotation can't be
+// determined confidently - callers must treat null as "OddsPapi unavailable for this game" rather than
+// guessing, since attaching an id on an unconfident rotation risks silently swapping home/away prices.
+export const matchOddsPapiFixture = (
+    fixtures: any[],
+    opticOddsGameId: string,
+    homeTeam: string,
+    awayTeam: string,
+    teamsMap?: Map<string, string>
+): { oddsPapiId: string | number; oddsPapiParticipantsRotated: boolean } | null => {
+    const fixture = (fixtures || []).find((f) => f?.externalProviders?.opticoddsId === opticOddsGameId);
+    if (!fixture) return null;
+
+    const participantsRotated = isOddsPapiParticipantsRotated(
+        fixture.participants as OddsPapiParticipants,
+        homeTeam,
+        awayTeam,
+        teamsMap
+    );
+    if (participantsRotated === null) return null;
+
+    return { oddsPapiId: fixture.fixtureId, oddsPapiParticipantsRotated: participantsRotated };
+};
+
 // Builds the {participant1Name, participant2Name} shape mapOddsPapiSelection expects, using the CALLER's own
 // home/away team name strings (so displayed selections stay consistent regardless of vendor) rather than
 // OddsPapi's own participants object. participantsRotated is resolved once per fixture by the caller (e.g.
@@ -254,6 +312,45 @@ const mapOddsPapiSelection = (
         return { selection: undefined, selectionLine: outcomeName.toLowerCase() };
     }
     return { selection: outcomeName, selectionLine: null };
+};
+
+// Resolves one OddsPapi catalog market-definition row (from OddsPapi's own /markets endpoint) to
+// {opticOddsMarketName, handicap, outcomeNameByOutcomeId}, or null when its marketType:period isn't mapped to
+// an OpticOdds marketName in oddsPapiMarketNameMap (e.g. a submarket not configured for any bookmaker yet) -
+// callers must drop the market in that case rather than mis-file it. This is the correctness-critical part of
+// market-definition resolution (the key format and field mapping), factored out so a caching/indexing
+// strategy built on top (see resolveOddsPapiMarketDefinition below) can't drift from a one-off lookup.
+export const mapOddsPapiCatalogMarketDefinition = (
+    marketDef: OddsPapiMarketCatalogEntry,
+    oddsPapiMarketNameMap: Map<string, string>
+): OddsPapiResolvedMarket | null => {
+    const marketTypeAndPeriod = `${marketDef.marketType}:${marketDef.period}`;
+    const opticOddsMarketName = oddsPapiMarketNameMap.get(`${marketDef.sportId}:${marketTypeAndPeriod}`);
+    if (!opticOddsMarketName) return null;
+
+    const outcomeNameByOutcomeId = new Map<number, string>(
+        (marketDef.outcomes || []).map((outcome) => [outcome.outcomeId, outcome.outcomeName])
+    );
+
+    return { opticOddsMarketName, handicap: marketDef.handicap, outcomeNameByOutcomeId };
+};
+
+// Resolves one OddsPapi marketId to {opticOddsMarketName, handicap, outcomeNameByOutcomeId} by a linear find
+// over an already-fetched catalog (OddsPapi's /markets?sportId= response), or null when the market is
+// unknown/unmapped. This is a plain per-call lookup - fine at per-bet/per-request scale, but a caller
+// re-resolving many outcomes against the same catalog (e.g. every odds line of every fixture in a league)
+// should build its own memoized index on top of mapOddsPapiCatalogMarketDefinition instead of calling this
+// per outcome, to avoid rescanning the catalog every time.
+export const resolveOddsPapiMarketDefinition = (
+    oddsPapiSportId: number,
+    marketId: number,
+    oddsPapiMarketNameMap: Map<string, string>,
+    catalogDefinitions: OddsPapiMarketCatalogEntry[]
+): OddsPapiResolvedMarket | null => {
+    const marketDef = catalogDefinitions.find((def) => def.sportId === oddsPapiSportId && def.marketId === marketId);
+    if (!marketDef) return null;
+
+    return mapOddsPapiCatalogMarketDefinition(marketDef, oddsPapiMarketNameMap);
 };
 
 // Shared marketId/outcomeId -> {marketName, points, name, selection, selectionLine} resolution, used by both
@@ -294,8 +391,11 @@ export const mapOddsPapiOutcomeFields = (
 
 // Per OddsPapi's own integration guidance, active:false or marketActive:false is a hard stop for an outcome -
 // dropped here rather than mapped, since a REST snapshot has no "previous" state to reconcile against (a
-// streaming caller should instead treat this as locking/removing an existing price).
-const isOddsPapiOutcomeHardStopped = (outcome: any): boolean => !outcome.active || !outcome.marketActive;
+// streaming caller should instead treat this as locking/removing an existing price). Also hard-stopped when
+// the fixture's own bookmakers metadata flags this outcome's bookmaker with staleOdds:true - that means
+// OddsPapi's own upstream connection to that bookmaker is down, so its odds can't be trusted either.
+const isOddsPapiOutcomeHardStopped = (outcome: any, bookmakersMeta: any): boolean =>
+    !outcome.active || !outcome.marketActive || !!bookmakersMeta?.[outcome.bookmaker]?.staleOdds;
 
 const mapOddsPapiOddsLine = (
     outcomeKey: string,
@@ -303,9 +403,10 @@ const mapOddsPapiOddsLine = (
     isLive: boolean,
     oddsPapiSportId: number,
     participants: OddsPapiParticipants | undefined,
-    resolveMarketDefinition: ResolveOddsPapiMarketDefinition
+    resolveMarketDefinition: ResolveOddsPapiMarketDefinition,
+    bookmakersMeta: any
 ): Odd | null => {
-    if (isOddsPapiOutcomeHardStopped(outcome)) return null;
+    if (isOddsPapiOutcomeHardStopped(outcome, bookmakersMeta)) return null;
 
     const fields = mapOddsPapiOutcomeFields(outcome, oddsPapiSportId, participants, resolveMarketDefinition);
     if (!fields) return null;
@@ -339,6 +440,7 @@ export const mapOddsPapiApiFixtureOdds = (
         const isLive = !!fixtureOdds.status?.live;
         const oddsPapiSportId = fixtureOdds.sport?.sportId;
         const participants = orientOddsPapiParticipants(homeTeam, awayTeam, participantsRotated);
+        const bookmakersMeta = fixtureOdds.bookmakers;
 
         const odds = Object.values(fixtureOdds.odds || {})
             .flatMap((outcomesByKey: any) =>
@@ -349,7 +451,8 @@ export const mapOddsPapiApiFixtureOdds = (
                         isLive,
                         oddsPapiSportId,
                         participants,
-                        resolveMarketDefinition
+                        resolveMarketDefinition,
+                        bookmakersMeta
                     )
                 )
             )
@@ -402,4 +505,28 @@ export const mapOddsPapiStreamOutcomeToEvent = (
         selection: fields.selection,
         selection_line: fields.selectionLine,
     };
+};
+
+// OddsPapi is push-based (WS) with no per-fixture "last actually polled" endpoint like OpticOdds' own. Each
+// bookmaker instead publishes maxDelayLiveInSec - the worst-case refresh delay for their live odds, via
+// OddsPapi's bookmakers metadata endpoint - fetching that is the caller's own concern (out of scope for this
+// library). This synthesizes a last-polled timestamp per bookmaker from that delay (now - maxDelayLiveInSec,
+// i.e. "assume this bookmaker is exactly as stale as its published SLA allows"), tagged vendor: oddspapi so
+// getLastPolledInvalidBookmakers (which defaults an untagged entry to OpticOdds) matches it correctly against
+// an OddsPapi-routed bookmaker. A bookmaker missing from delayByBookmakerLower gets no entry at all (fail
+// safe - getLastPolledInvalidBookmakers treats a missing entry as invalid/stale).
+export const synthesizeOddsPapiLastPolled = (
+    bookmakers: string[],
+    delayByBookmakerLower: Map<string, number>
+): LastPolledArray => {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+
+    return bookmakers
+        .map((bookmaker) => bookmaker.toLowerCase())
+        .filter((bookmakerLower) => delayByBookmakerLower.has(bookmakerLower))
+        .map((bookmakerLower) => ({
+            sportsbook: bookmakerLower,
+            timestamp: nowSeconds - (delayByBookmakerLower.get(bookmakerLower) as number),
+            vendor: VENDOR_ODDS_PAPI,
+        }));
 };

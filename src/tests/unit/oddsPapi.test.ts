@@ -1,18 +1,24 @@
 import {
     OddsPapiLeagueCsvRow,
     OddsPapiLeaguesMap,
+    OddsPapiMarketCatalogEntry,
+    OddsPapiMarketMapCsvRow,
     OddsPapiResolvedMarket,
     ResolveOddsPapiMarketDefinition,
 } from '../../types/oddsPapi';
 import {
     buildOddsPapiLeaguesMap,
+    buildOddsPapiMarketNameMap,
     getOddsPapiLeagueInfo,
     getOddsPapiSportId,
     isOddsPapiParticipantsRotated,
     mapOddsPapiApiFixtureOdds,
     mapOddsPapiOutcomeFields,
     mapOddsPapiStreamOutcomeToEvent,
+    matchOddsPapiFixture,
     orientOddsPapiParticipants,
+    resolveOddsPapiMarketDefinition,
+    synthesizeOddsPapiLastPolled,
 } from '../../utils/oddsPapi';
 
 const MONEYLINE_DEFINITION: OddsPapiResolvedMarket = {
@@ -534,6 +540,38 @@ describe('OddsPapi', () => {
             });
         });
 
+        it('drops outcomes from a bookmaker flagged staleOdds in the fixture bookmakers metadata', () => {
+            const fixtureOddsResult = {
+                gameId: 'game-1',
+                homeTeam: 'Home FC',
+                awayTeam: 'Away FC',
+                participantsRotated: false,
+                fixtureOdds: {
+                    status: { live: true, statusName: 'live' },
+                    sport: { sportId: 1 },
+                    tournament: { tournamentId: 55 },
+                    startTime: 1700000000,
+                    bookmakers: {
+                        draftkings: { staleOdds: false },
+                        pinnacle: { staleOdds: true },
+                    },
+                    odds: {
+                        draftkings: {
+                            'outcome-key-1': buildOutcome({ bookmaker: 'draftkings', outcomeId: 1 }),
+                        },
+                        pinnacle: {
+                            'outcome-key-2': buildOutcome({ bookmaker: 'pinnacle', outcomeId: 1 }),
+                        },
+                    },
+                },
+            };
+
+            const [mapped] = mapOddsPapiApiFixtureOdds([fixtureOddsResult], resolveMarketDefinitionStub);
+
+            expect(mapped.odds).toHaveLength(1);
+            expect(mapped.odds[0]).toMatchObject({ id: 'outcome-key-1', sportsBookName: 'draftkings' });
+        });
+
         it('skips falsy entries in the results array', () => {
             expect(mapOddsPapiApiFixtureOdds([null, undefined], resolveMarketDefinitionStub)).toEqual([]);
         });
@@ -639,6 +677,135 @@ describe('OddsPapi', () => {
             const map = buildOddsPapiLeaguesMap(rows);
 
             expect(map.size).toBe(0);
+        });
+    });
+
+    describe('buildOddsPapiMarketNameMap', () => {
+        it('keys the marketName by oddsPapiSportId:marketType:period', () => {
+            const rows: OddsPapiMarketMapCsvRow[] = [
+                {
+                    oddspapiSportId: '1',
+                    oddspapiMarketType: 'moneyline',
+                    oddspapiPeriod: 'full',
+                    opticOddsMarketName: 'Moneyline',
+                },
+            ];
+
+            const map = buildOddsPapiMarketNameMap(rows);
+
+            expect(map.get('1:moneyline:full')).toBe('Moneyline');
+        });
+
+        it('drops rows missing the sportId, marketType, period, or marketName', () => {
+            const rows: OddsPapiMarketMapCsvRow[] = [
+                {
+                    oddspapiSportId: '',
+                    oddspapiMarketType: 'moneyline',
+                    oddspapiPeriod: 'full',
+                    opticOddsMarketName: 'Moneyline',
+                },
+                { oddspapiSportId: '1', oddspapiPeriod: 'full', opticOddsMarketName: 'Moneyline' },
+                { oddspapiSportId: '1', oddspapiMarketType: 'moneyline', opticOddsMarketName: 'Moneyline' },
+                { oddspapiSportId: '1', oddspapiMarketType: 'moneyline', oddspapiPeriod: 'full' },
+            ];
+
+            const map = buildOddsPapiMarketNameMap(rows);
+
+            expect(map.size).toBe(0);
+        });
+    });
+
+    describe('resolveOddsPapiMarketDefinition', () => {
+        const oddsPapiMarketNameMap = new Map([['1:ml:full', 'Moneyline']]);
+        const catalogDefinitions: OddsPapiMarketCatalogEntry[] = [
+            {
+                sportId: 1,
+                marketId: 100,
+                marketType: 'ml',
+                period: 'full',
+                handicap: 0,
+                outcomes: [
+                    { outcomeId: 1, outcomeName: '1' },
+                    { outcomeId: 2, outcomeName: '2' },
+                ],
+            },
+        ];
+
+        it('resolves a catalog market by (sportId, marketId), mapping its outcomes', () => {
+            const definition = resolveOddsPapiMarketDefinition(1, 100, oddsPapiMarketNameMap, catalogDefinitions);
+
+            expect(definition).toEqual({
+                opticOddsMarketName: 'Moneyline',
+                handicap: 0,
+                outcomeNameByOutcomeId: new Map([
+                    [1, '1'],
+                    [2, '2'],
+                ]),
+            });
+        });
+
+        it('returns null when the marketId is not in the catalog', () => {
+            expect(resolveOddsPapiMarketDefinition(1, 999, oddsPapiMarketNameMap, catalogDefinitions)).toBeNull();
+        });
+
+        it('returns null when the catalog entry has no mapped marketName', () => {
+            expect(resolveOddsPapiMarketDefinition(1, 100, new Map(), catalogDefinitions)).toBeNull();
+        });
+    });
+
+    describe('matchOddsPapiFixture', () => {
+        const fixtures = [
+            {
+                fixtureId: 'papi-1',
+                externalProviders: { opticoddsId: 'game-1' },
+                participants: { participant1Name: 'Home FC', participant2Name: 'Away FC' },
+            },
+        ];
+
+        it('matches by externalProviders.opticoddsId and resolves the rotation flag', () => {
+            const match = matchOddsPapiFixture(fixtures, 'game-1', 'Home FC', 'Away FC');
+
+            expect(match).toEqual({ oddsPapiId: 'papi-1', oddsPapiParticipantsRotated: false });
+        });
+
+        it('returns null when no fixture matches the gameId', () => {
+            expect(matchOddsPapiFixture(fixtures, 'game-unknown', 'Home FC', 'Away FC')).toBeNull();
+        });
+
+        it('returns null when the participant-name rotation is unconfident', () => {
+            const unmatchableFixtures = [
+                {
+                    fixtureId: 'papi-2',
+                    externalProviders: { opticoddsId: 'game-2' },
+                    participants: { participant1Name: 'Team Alpha', participant2Name: 'Team Beta' },
+                },
+            ];
+
+            expect(matchOddsPapiFixture(unmatchableFixtures, 'game-2', 'Unrelated FC', 'Another FC')).toBeNull();
+        });
+    });
+
+    describe('synthesizeOddsPapiLastPolled', () => {
+        it('converts each bookmaker delay into a now-minus-delay timestamp tagged vendor: oddspapi', () => {
+            const nowSeconds = Math.floor(Date.now() / 1000);
+            const delayByBookmakerLower = new Map([['pinnacle', 30]]);
+
+            const [entry] = synthesizeOddsPapiLastPolled(['Pinnacle'], delayByBookmakerLower);
+
+            expect(entry.sportsbook).toBe('pinnacle');
+            expect(entry.vendor).toBe('oddspapi');
+            expect(entry.timestamp).toBeGreaterThanOrEqual(nowSeconds - 30 - 1);
+            expect(entry.timestamp).toBeLessThanOrEqual(nowSeconds - 30 + 1);
+        });
+
+        it('omits bookmakers with no published delay', () => {
+            const result = synthesizeOddsPapiLastPolled(['pinnacle', 'draftkings'], new Map([['pinnacle', 30]]));
+
+            expect(result.map((entry) => entry.sportsbook)).toEqual(['pinnacle']);
+        });
+
+        it('returns an empty array when given no bookmakers', () => {
+            expect(synthesizeOddsPapiLastPolled([], new Map())).toEqual([]);
         });
     });
 });

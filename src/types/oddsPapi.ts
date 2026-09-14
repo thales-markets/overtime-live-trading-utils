@@ -29,6 +29,26 @@ export interface OddsPapiLeagueCsvRow {
     oddspapiTournamentId?: string;
 }
 
+// Raw row shape of the RISK_MANAGEMENT_ODDS_PAPI_MARKETS_MAP_DATA CSV, before buildOddsPapiMarketNameMap
+// parses it into a "oddsPapiSportId:marketType:period" -> our marketName lookup.
+export interface OddsPapiMarketMapCsvRow {
+    oddspapiSportId: string | number;
+    oddspapiMarketType?: string;
+    oddspapiPeriod?: string;
+    opticOddsMarketName?: string;
+}
+
+// One row of OddsPapi's own /markets catalog response (per oddsPapiSportId) - the reference data
+// resolveOddsPapiMarketDefinition resolves a marketId against.
+export interface OddsPapiMarketCatalogEntry {
+    sportId: number;
+    marketId: number;
+    marketType: string;
+    period: string;
+    handicap: number;
+    outcomes?: { outcomeId: number; outcomeName: string }[];
+}
+
 // snake_case shape matching OpticOdds' own SSE stream-event convention, so both vendors' stream events
 // can be folded through one vendor-agnostic pipeline by a consuming repo.
 export interface OddsPapiStreamEvent {
