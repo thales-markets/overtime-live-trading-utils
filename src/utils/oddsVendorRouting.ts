@@ -6,6 +6,27 @@ import { getLeagueInfo } from './sports';
 
 const BOOKMAKER_FIELDS = ['primaryBookmaker', 'secondaryBookmaker', 'tertiaryBookmaker'] as const;
 
+// Strips the vendor suffix from a risk-management CSV row's bookmaker fields, so every existing consumer of
+// bookmakersData/leaguesData (getBookmakersForLeague, getBetTypesForLeague, getLeagueInfo, checkOdds, odds
+// history persistence, etc.) keeps seeing plain bookmaker names, unaware vendor routing exists. Overloaded
+// (rather than generic) since a row is always either one of these two known CSV shapes - never an arbitrary
+// caller-defined type - and each overload returns the same concrete row type it was given.
+export function stripVendorSuffixFromRow(row: BookmakersConfig): BookmakersConfig;
+export function stripVendorSuffixFromRow(row: LeagueConfigInfo): LeagueConfigInfo;
+export function stripVendorSuffixFromRow(
+    row: BookmakersConfig | LeagueConfigInfo
+): BookmakersConfig | LeagueConfigInfo {
+    const cleanedRow = { ...row };
+
+    BOOKMAKER_FIELDS.forEach((field) => {
+        const cell = row[field];
+        if (!cell) return;
+        (cleanedRow as any)[field] = parseBookmakerCell(cell).name;
+    });
+
+    return cleanedRow;
+}
+
 // Parses a row's bookmaker cells into a Map<bookmakerLower, vendor> (primary/secondary/tertiary, stopping at
 // the first empty slot - same truncation rule getBookmakersForTypeId applies, so this only ever records
 // vendors for bookmakers that function would actually resolve).

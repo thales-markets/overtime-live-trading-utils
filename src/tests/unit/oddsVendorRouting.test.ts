@@ -5,6 +5,7 @@ import {
     buildMarketVendorIndex,
     resolveLeagueVendorRouting,
     resolveVendorForBookmaker,
+    stripVendorSuffixFromRow,
 } from '../../utils/oddsVendorRouting';
 
 const buildIndex = ({
@@ -183,6 +184,57 @@ describe('Check odds vendor router', () => {
             // THEN the market row is absent from the override index, so resolution falls through to the sport default
             expect(index.marketVendorByBookmaker.has('11:10001')).toBe(false);
             expect(index.sportDefaultVendorByBookmaker.get(11)?.get('pinnacle')).toBe(VENDOR_ODDS_PAPI);
+        });
+    });
+
+    describe('stripVendorSuffixFromRow', () => {
+        it('strips the vendor suffix from every bookmaker field, case-insensitively', () => {
+            const row = {
+                sportId: 11,
+                sportName: '',
+                primaryBookmaker: 'pinnacle oddspapi',
+                secondaryBookmaker: 'bovada ODDSPAPI',
+                tertiaryBookmaker: 'draftkings',
+            } as BookmakersConfig;
+
+            expect(stripVendorSuffixFromRow(row)).toEqual({
+                sportId: 11,
+                sportName: '',
+                primaryBookmaker: 'pinnacle',
+                secondaryBookmaker: 'bovada',
+                tertiaryBookmaker: 'draftkings',
+            });
+        });
+
+        it('leaves empty bookmaker fields untouched and does not mutate the input row', () => {
+            const row = {
+                sportId: 11,
+                sportName: '',
+                primaryBookmaker: '',
+                secondaryBookmaker: '',
+                tertiaryBookmaker: '',
+            } as BookmakersConfig;
+
+            const cleanedRow = stripVendorSuffixFromRow(row);
+
+            expect(cleanedRow).toEqual(row);
+            expect(cleanedRow).not.toBe(row);
+        });
+
+        it('preserves fields other than the bookmaker columns', () => {
+            const row = {
+                sportId: '11',
+                typeId: '0',
+                marketName: 'Moneyline',
+                primaryBookmaker: 'pinnacle oddspapi',
+            } as unknown as LeagueConfigInfo;
+
+            expect(stripVendorSuffixFromRow(row)).toEqual({
+                sportId: '11',
+                typeId: '0',
+                marketName: 'Moneyline',
+                primaryBookmaker: 'pinnacle',
+            });
         });
     });
 });
