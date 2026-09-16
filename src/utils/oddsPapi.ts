@@ -299,21 +299,41 @@ export const orientOddsPapiParticipants = (
 
 // Best-effort selection mapping from an OddsPapi outcome name to this repo's {selection, selectionLine}
 // convention: "1"/"2" -> home/away participant name (moneyline/spread-style markets), "Over"/"Under" ->
-// selectionLine, everything else (e.g. "Yes"/"No", correct-score outcomes) passes through as selection
-// verbatim. `participants` is expected pre-oriented to the CALLER's home/away convention (see
-// orientOddsPapiParticipants below) - callers must not pass OddsPapi's own participants object directly,
-// since neither OddsPapi's docs nor any bookmaker guarantee "1"/participant1 lines up with any particular
-// provider's home team (see participantsRotated in OddsPapi's own docs).
+// selectionLine, plus - when participantSlot is set (a -team1/-team2 market, e.g. teamtotals-games-team1) -
+// the same specific participant's name as `selection`, since those lines refer to one player/team's total,
+// not a whole-match total (whole-match Over/Under keeps selection: undefined, unchanged). Everything else
+// (e.g. "Yes"/"No", correct-score outcomes) passes through as selection verbatim. `participants` is expected
+// pre-oriented to the CALLER's home/away convention (see orientOddsPapiParticipants below) - callers must not
+// pass OddsPapi's own participants object directly, since neither OddsPapi's docs nor any bookmaker guarantee
+// "1"/participant1 lines up with any particular provider's home team (see participantsRotated in OddsPapi's
+// own docs).
 const mapOddsPapiSelection = (
     outcomeName: string | undefined,
-    participants: OddsPapiParticipants | undefined
+    participants: OddsPapiParticipants | undefined,
+    participantSlot: 1 | 2 | undefined
 ): { selection: string | undefined; selectionLine: string | null } => {
     if (outcomeName === '1') return { selection: participants?.participant1Name, selectionLine: null };
     if (outcomeName === '2') return { selection: participants?.participant2Name, selectionLine: null };
     if (outcomeName === 'Over' || outcomeName === 'Under') {
-        return { selection: undefined, selectionLine: outcomeName.toLowerCase() };
+        const selection =
+            participantSlot === 1
+                ? participants?.participant1Name
+                : participantSlot === 2
+                  ? participants?.participant2Name
+                  : undefined;
+        return { selection, selectionLine: outcomeName.toLowerCase() };
     }
     return { selection: outcomeName, selectionLine: null };
+};
+
+// Detects OddsPapi's own -team1/-team2 marketType suffix convention (e.g. teamtotals-games-team1,
+// exactsets-team2), marking a per-participant market whose Over/Under outcomes must resolve `selection` to
+// that specific participant rather than staying undefined - see participantSlot on OddsPapiResolvedMarket.
+const PARTICIPANT_SLOT_SUFFIX_PATTERN = /-team([12])$/;
+
+const resolveOddsPapiParticipantSlot = (marketType: string): 1 | 2 | undefined => {
+    const match = marketType.match(PARTICIPANT_SLOT_SUFFIX_PATTERN);
+    return match ? (Number(match[1]) as 1 | 2) : undefined;
 };
 
 // Resolves one OddsPapi catalog market-definition row (from OddsPapi's own /markets endpoint) to
@@ -334,7 +354,12 @@ export const mapOddsPapiCatalogMarketDefinition = (
         (marketDef.outcomes || []).map((outcome) => [outcome.outcomeId, outcome.outcomeName])
     );
 
-    return { opticOddsMarketName, handicap: marketDef.handicap, outcomeNameByOutcomeId };
+    return {
+        opticOddsMarketName,
+        handicap: marketDef.handicap,
+        outcomeNameByOutcomeId,
+        participantSlot: resolveOddsPapiParticipantSlot(marketDef.marketType),
+    };
 };
 
 // Resolves one OddsPapi marketId to {opticOddsMarketName, handicap, outcomeNameByOutcomeId} by a linear find
@@ -376,7 +401,7 @@ export const mapOddsPapiOutcomeFields = (
     if (!definition) return null;
 
     const outcomeName = definition.outcomeNameByOutcomeId.get(outcome.outcomeId);
-    const { selection, selectionLine } = mapOddsPapiSelection(outcomeName, participants);
+    const { selection, selectionLine } = mapOddsPapiSelection(outcomeName, participants, definition.participantSlot);
 
     // Adjust to OpticOdds convention where away has opposite sign
     let points = definition.handicap;

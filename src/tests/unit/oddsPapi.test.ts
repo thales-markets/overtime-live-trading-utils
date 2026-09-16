@@ -48,10 +48,32 @@ const TOTAL_DEFINITION: OddsPapiResolvedMarket = {
     ]),
 };
 
+const TEAM1_TOTAL_DEFINITION: OddsPapiResolvedMarket = {
+    opticOddsMarketName: 'Team Total',
+    handicap: 22.5,
+    outcomeNameByOutcomeId: new Map([
+        [30, 'Over'],
+        [31, 'Under'],
+    ]),
+    participantSlot: 1,
+};
+
+const TEAM2_TOTAL_DEFINITION: OddsPapiResolvedMarket = {
+    opticOddsMarketName: 'Team Total',
+    handicap: 20.5,
+    outcomeNameByOutcomeId: new Map([
+        [40, 'Over'],
+        [41, 'Under'],
+    ]),
+    participantSlot: 2,
+};
+
 const resolveMarketDefinitionStub: ResolveOddsPapiMarketDefinition = (_oddsPapiSportId, marketId) => {
     if (marketId === 100) return MONEYLINE_DEFINITION;
     if (marketId === 200) return TOTAL_DEFINITION;
     if (marketId === 300) return SPREAD_DEFINITION;
+    if (marketId === 400) return TEAM1_TOTAL_DEFINITION;
+    if (marketId === 500) return TEAM2_TOTAL_DEFINITION;
     return null;
 };
 
@@ -119,6 +141,66 @@ describe('OddsPapi', () => {
                 points: 2.5,
                 name: 'Under',
                 selection: undefined,
+                selectionLine: 'under',
+            });
+        });
+
+        it('maps "Over"/"Under" outcomes to the team1 participant name when participantSlot is 1', () => {
+            const overFields = mapOddsPapiOutcomeFields(
+                { marketId: 400, outcomeId: 30 },
+                1,
+                participants,
+                resolveMarketDefinitionStub
+            );
+            const underFields = mapOddsPapiOutcomeFields(
+                { marketId: 400, outcomeId: 31 },
+                1,
+                participants,
+                resolveMarketDefinitionStub
+            );
+
+            expect(overFields).toEqual({
+                marketName: 'team total',
+                points: 22.5,
+                name: 'Over',
+                selection: 'home-team',
+                selectionLine: 'over',
+            });
+            expect(underFields).toEqual({
+                marketName: 'team total',
+                points: 22.5,
+                name: 'Under',
+                selection: 'home-team',
+                selectionLine: 'under',
+            });
+        });
+
+        it('maps "Over"/"Under" outcomes to the team2 participant name when participantSlot is 2', () => {
+            const overFields = mapOddsPapiOutcomeFields(
+                { marketId: 500, outcomeId: 40 },
+                1,
+                participants,
+                resolveMarketDefinitionStub
+            );
+            const underFields = mapOddsPapiOutcomeFields(
+                { marketId: 500, outcomeId: 41 },
+                1,
+                participants,
+                resolveMarketDefinitionStub
+            );
+
+            expect(overFields).toEqual({
+                marketName: 'team total',
+                points: 20.5,
+                name: 'Over',
+                selection: 'away-team',
+                selectionLine: 'over',
+            });
+            expect(underFields).toEqual({
+                marketName: 'team total',
+                points: 20.5,
+                name: 'Under',
+                selection: 'away-team',
                 selectionLine: 'under',
             });
         });
@@ -863,6 +945,50 @@ describe('OddsPapi', () => {
                 handicap: 0,
                 outcomeNameByOutcomeId: new Map(),
             });
+        });
+
+        it('resolves participantSlot: 1 from a -team1 marketType suffix (e.g. teamtotals-games-team1)', () => {
+            const teamTotalsMap = new Map([['1:teamtotals-games-team1:full', 'Team Total']]);
+            const teamTotalsCatalog: OddsPapiMarketCatalogEntry[] = [
+                {
+                    sportId: 1,
+                    marketId: 400,
+                    marketType: 'teamtotals-games-team1',
+                    period: 'full',
+                    handicap: 22.5,
+                    outcomes: [
+                        { outcomeId: 30, outcomeName: 'Over' },
+                        { outcomeId: 31, outcomeName: 'Under' },
+                    ],
+                },
+            ];
+
+            const definition = resolveOddsPapiMarketDefinition(1, 400, teamTotalsMap, teamTotalsCatalog);
+
+            expect(definition?.participantSlot).toBe(1);
+        });
+
+        it('resolves participantSlot: 2 from a -team2 marketType suffix (e.g. exactsets-team2)', () => {
+            const exactSetsMap = new Map([['1:exactsets-team2:full', 'Exact Sets']]);
+            const exactSetsCatalog: OddsPapiMarketCatalogEntry[] = [
+                {
+                    sportId: 1,
+                    marketId: 500,
+                    marketType: 'exactsets-team2',
+                    period: 'full',
+                    handicap: 0,
+                },
+            ];
+
+            const definition = resolveOddsPapiMarketDefinition(1, 500, exactSetsMap, exactSetsCatalog);
+
+            expect(definition?.participantSlot).toBe(2);
+        });
+
+        it('leaves participantSlot undefined for a marketType with no -team1/-team2 suffix', () => {
+            const definition = resolveOddsPapiMarketDefinition(1, 100, oddsPapiMarketNameMap, catalogDefinitions);
+
+            expect(definition?.participantSlot).toBeUndefined();
         });
     });
 
