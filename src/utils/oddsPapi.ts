@@ -50,7 +50,7 @@ export const getOddsPapiSportId = (
     return info ? info.oddsPapiSportId : null;
 };
 
-const normalizeOddsPapiPeriod = (period: unknown): string => (period == null ? '' : String(period));
+export const normalizeOddsPapiPeriod = (period: unknown): string => (period == null ? '' : String(period));
 
 // Builds the "oddsPapiSportId:marketType:period" -> our marketName lookup consumed by
 // resolveOddsPapiMarketDefinition, from the raw RISK_MANAGEMENT_ODDS_PAPI_MARKETS_MAP_DATA CSV rows. Keyed
