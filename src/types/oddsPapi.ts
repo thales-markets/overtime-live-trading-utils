@@ -44,7 +44,7 @@ export interface OddsPapiMarketCatalogEntry {
     sportId: number;
     marketId: number;
     marketType: string;
-    period: string;
+    period?: string | null;
     handicap: number;
     outcomes?: { outcomeId: number; outcomeName: string }[];
 }

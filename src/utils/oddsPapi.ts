@@ -50,11 +50,13 @@ export const getOddsPapiSportId = (
     return info ? info.oddsPapiSportId : null;
 };
 
+const normalizeOddsPapiPeriod = (period: unknown): string => (period == null ? '' : String(period));
+
 // Builds the "oddsPapiSportId:marketType:period" -> our marketName lookup consumed by
 // resolveOddsPapiMarketDefinition, from the raw RISK_MANAGEMENT_ODDS_PAPI_MARKETS_MAP_DATA CSV rows. Keyed
 // per oddsPapiSportId since the same marketType/period pair can map to a different marketName in a different
-// sport. Rows missing the sportId, marketType, period, or our marketName are dropped - they carry no usable
-// mapping.
+// sport. Rows missing the sportId, marketType, or our marketName are dropped - they carry no usable mapping.
+// A blank oddspapiPeriod is not dropped - see normalizeOddsPapiPeriod.
 export const buildOddsPapiMarketNameMap = (
     rawOddsPapiMarketsMapData: OddsPapiMarketMapCsvRow[]
 ): Map<string, string> => {
@@ -64,9 +66,9 @@ export const buildOddsPapiMarketNameMap = (
         const oddsPapiSportId = Number(row.oddspapiSportId);
         if (!oddsPapiSportId) return;
 
-        if (row.oddspapiMarketType && row.oddspapiPeriod && row.opticOddsMarketName) {
+        if (row.oddspapiMarketType && row.opticOddsMarketName) {
             oddsPapiMarketNameMap.set(
-                `${oddsPapiSportId}:${row.oddspapiMarketType}:${row.oddspapiPeriod}`,
+                `${oddsPapiSportId}:${row.oddspapiMarketType}:${normalizeOddsPapiPeriod(row.oddspapiPeriod)}`,
                 row.opticOddsMarketName
             );
         }
@@ -324,7 +326,7 @@ export const mapOddsPapiCatalogMarketDefinition = (
     marketDef: OddsPapiMarketCatalogEntry,
     oddsPapiMarketNameMap: Map<string, string>
 ): OddsPapiResolvedMarket | null => {
-    const marketTypeAndPeriod = `${marketDef.marketType}:${marketDef.period}`;
+    const marketTypeAndPeriod = `${marketDef.marketType}:${normalizeOddsPapiPeriod(marketDef.period)}`;
     const opticOddsMarketName = oddsPapiMarketNameMap.get(`${marketDef.sportId}:${marketTypeAndPeriod}`);
     if (!opticOddsMarketName) return null;
 

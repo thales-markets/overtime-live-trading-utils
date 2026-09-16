@@ -779,7 +779,7 @@ describe('OddsPapi', () => {
             expect(map.get('1:moneyline:full')).toBe('Moneyline');
         });
 
-        it('drops rows missing the sportId, marketType, period, or marketName', () => {
+        it('drops rows missing the sportId, marketType, or marketName', () => {
             const rows: OddsPapiMarketMapCsvRow[] = [
                 {
                     oddspapiSportId: '',
@@ -788,13 +788,22 @@ describe('OddsPapi', () => {
                     opticOddsMarketName: 'Moneyline',
                 },
                 { oddspapiSportId: '1', oddspapiPeriod: 'full', opticOddsMarketName: 'Moneyline' },
-                { oddspapiSportId: '1', oddspapiMarketType: 'moneyline', opticOddsMarketName: 'Moneyline' },
                 { oddspapiSportId: '1', oddspapiMarketType: 'moneyline', oddspapiPeriod: 'full' },
             ];
 
             const map = buildOddsPapiMarketNameMap(rows);
 
             expect(map.size).toBe(0);
+        });
+
+        it('registers a row with an empty/missing oddspapiPeriod under the empty-string sentinel', () => {
+            const rows: OddsPapiMarketMapCsvRow[] = [
+                { oddspapiSportId: '1', oddspapiMarketType: 'correctscore', opticOddsMarketName: 'Correct Score' },
+            ];
+
+            const map = buildOddsPapiMarketNameMap(rows);
+
+            expect(map.get('1:correctscore:')).toBe('Correct Score');
         });
     });
 
@@ -833,6 +842,27 @@ describe('OddsPapi', () => {
 
         it('returns null when the catalog entry has no mapped marketName', () => {
             expect(resolveOddsPapiMarketDefinition(1, 100, new Map(), catalogDefinitions)).toBeNull();
+        });
+
+        it('resolves a catalog entry with period undefined against a mapping with an empty period', () => {
+            const noPeriodMap = new Map([['1:correctscore:', 'Correct Score']]);
+            const noPeriodCatalog: OddsPapiMarketCatalogEntry[] = [
+                {
+                    sportId: 1,
+                    marketId: 200,
+                    marketType: 'correctscore',
+                    period: undefined,
+                    handicap: 0,
+                },
+            ];
+
+            const definition = resolveOddsPapiMarketDefinition(1, 200, noPeriodMap, noPeriodCatalog);
+
+            expect(definition).toEqual({
+                opticOddsMarketName: 'Correct Score',
+                handicap: 0,
+                outcomeNameByOutcomeId: new Map(),
+            });
         });
     });
 
