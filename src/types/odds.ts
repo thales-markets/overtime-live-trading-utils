@@ -43,7 +43,7 @@ export type ScoresObject = {
     status: string;
     isLive: boolean;
     clock: string;
-    period: string;
+    period: string | null;
     homeTeam: string;
     awayTeam: string;
     homeTotal: string;
