@@ -575,10 +575,57 @@ describe('OddsPapi', () => {
         it('skips falsy entries in the results array', () => {
             expect(mapOddsPapiApiFixtureOdds([null, undefined], resolveMarketDefinitionStub)).toEqual([]);
         });
+
+        it('converts a Date.now()-scale (ms) changedAt to epoch seconds', () => {
+            const nowMillis = Date.now();
+            const fixtureOddsResult = {
+                gameId: 'game-1',
+                homeTeam: 'Home FC',
+                awayTeam: 'Away FC',
+                participantsRotated: false,
+                fixtureOdds: {
+                    status: { live: true, statusName: 'live' },
+                    sport: { sportId: 1 },
+                    tournament: { tournamentId: 55 },
+                    odds: {
+                        draftkings: {
+                            'outcome-key-1': buildOutcome({ changedAt: nowMillis }),
+                        },
+                    },
+                },
+            };
+
+            const [mapped] = mapOddsPapiApiFixtureOdds([fixtureOddsResult], resolveMarketDefinitionStub);
+
+            expect(mapped.odds[0].timestamp).toBeCloseTo(nowMillis / 1000, 0);
+        });
+
+        it('passes a missing/non-number changedAt through unconverted', () => {
+            const fixtureOddsResult = {
+                gameId: 'game-1',
+                homeTeam: 'Home FC',
+                awayTeam: 'Away FC',
+                participantsRotated: false,
+                fixtureOdds: {
+                    status: { live: true, statusName: 'live' },
+                    sport: { sportId: 1 },
+                    tournament: { tournamentId: 55 },
+                    odds: {
+                        draftkings: {
+                            'outcome-key-1': buildOutcome({ changedAt: undefined }),
+                        },
+                    },
+                },
+            };
+
+            const [mapped] = mapOddsPapiApiFixtureOdds([fixtureOddsResult], resolveMarketDefinitionStub);
+
+            expect(mapped.odds[0].timestamp).toBeUndefined();
+        });
     });
 
     describe('mapOddsPapiStreamOutcomeToEvent', () => {
-        it('maps a stored outcome to the snake_case OpticOdds-style stream event shape', () => {
+        it('maps a stored outcome to the snake_case OpticOdds-style stream event shape, converting changedAt (ms) to epoch seconds', () => {
             const event = mapOddsPapiStreamOutcomeToEvent(
                 'outcome-key-1',
                 {
@@ -586,7 +633,7 @@ describe('OddsPapi', () => {
                     marketId: 100,
                     outcomeId: 2,
                     price: 2.05,
-                    changedAt: 1700000010,
+                    changedAt: 1700000010000,
                     mainLine: true,
                     playerId: null,
                 },
@@ -624,6 +671,42 @@ describe('OddsPapi', () => {
             );
 
             expect(event).toBeNull();
+        });
+
+        it('converts a Date.now()-scale (ms) changedAt to epoch seconds', () => {
+            const nowMillis = Date.now();
+            const event = mapOddsPapiStreamOutcomeToEvent(
+                'outcome-key-1',
+                { bookmaker: 'draftkings', marketId: 100, outcomeId: 1, price: 1.91, changedAt: nowMillis },
+                'game-1',
+                1,
+                participants,
+                resolveMarketDefinitionStub
+            );
+
+            expect(event?.timestamp).toBeCloseTo(nowMillis / 1000, 0);
+        });
+
+        it('passes a missing/non-number changedAt through unconverted', () => {
+            const missing = mapOddsPapiStreamOutcomeToEvent(
+                'outcome-key-1',
+                { bookmaker: 'draftkings', marketId: 100, outcomeId: 1, price: 1.91 },
+                'game-1',
+                1,
+                participants,
+                resolveMarketDefinitionStub
+            );
+            expect(missing?.timestamp).toBeUndefined();
+
+            const nonNumber = mapOddsPapiStreamOutcomeToEvent(
+                'outcome-key-1',
+                { bookmaker: 'draftkings', marketId: 100, outcomeId: 1, price: 1.91, changedAt: 'not-a-number' },
+                'game-1',
+                1,
+                participants,
+                resolveMarketDefinitionStub
+            );
+            expect(nonNumber?.timestamp).toBe('not-a-number');
         });
     });
 

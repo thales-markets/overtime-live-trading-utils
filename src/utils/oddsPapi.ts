@@ -397,6 +397,13 @@ export const mapOddsPapiOutcomeFields = (
 const isOddsPapiOutcomeHardStopped = (outcome: any, bookmakersMeta: any): boolean =>
     !outcome.active || !outcome.marketActive || !!bookmakersMeta?.[outcome.bookmaker]?.staleOdds;
 
+// Odd.timestamp/OddsPapiStreamEvent.timestamp are always epoch seconds, matching OpticOdds' own convention,
+// regardless of the vendor's own native units - OddsPapi's changedAt is epoch milliseconds. A non-number
+// value (missing/malformed changedAt) is passed through as-is rather than coerced to NaN, so a caller's own
+// "non-number timestamp = always stale" fallback still works correctly.
+const toEpochSeconds = (epochMillis: unknown): number =>
+    typeof epochMillis === 'number' ? epochMillis / 1000 : (epochMillis as number);
+
 const mapOddsPapiOddsLine = (
     outcomeKey: string,
     outcome: any,
@@ -416,7 +423,7 @@ const mapOddsPapiOddsLine = (
         sportsBookName: outcome.bookmaker,
         name: fields.name,
         price: outcome.price,
-        timestamp: outcome.changedAt,
+        timestamp: toEpochSeconds(outcome.changedAt),
         points: fields.points,
         isMain: outcome.mainLine,
         isLive,
@@ -496,7 +503,7 @@ export const mapOddsPapiStreamOutcomeToEvent = (
         sportsbook: storedOutcome.bookmaker,
         name: fields.name,
         price: storedOutcome.price,
-        timestamp: storedOutcome.changedAt,
+        timestamp: toEpochSeconds(storedOutcome.changedAt),
         points: fields.points,
         is_main: storedOutcome.mainLine,
         is_live: true,
