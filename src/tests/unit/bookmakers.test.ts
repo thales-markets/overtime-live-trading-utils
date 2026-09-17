@@ -915,7 +915,11 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
         it('Should return all bookmakers from league config lowercased', () => {
             const bookmakers = getBookmakersForTypeId(['pinnacle'], [leagueInfoWithAllBookmakers], 3001);
 
-            expect(bookmakers).toEqual(['draftkings', 'bovada', 'superbet']);
+            expect(bookmakers).toEqual([
+                { name: 'draftkings', vendor: 'opticodds' },
+                { name: 'bovada', vendor: 'opticodds' },
+                { name: 'superbet', vendor: 'opticodds' },
+            ]);
         });
 
         it('Should ignore tertiary bookmaker when secondary is not defined', () => {
@@ -926,7 +930,7 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
 
             const bookmakers = getBookmakersForTypeId(['pinnacle'], [leagueInfo], 3001);
 
-            expect(bookmakers).toEqual(['draftkings']);
+            expect(bookmakers).toEqual([{ name: 'draftkings', vendor: 'opticodds' }]);
         });
 
         it('Should fall back to all default providers when league config has no primary bookmaker', () => {
@@ -943,13 +947,34 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
                 3001
             );
 
-            expect(bookmakers).toEqual(['draftkings', 'bovada', 'superbet', 'pinnacle']);
+            expect(bookmakers).toEqual([
+                { name: 'draftkings', vendor: 'opticodds' },
+                { name: 'bovada', vendor: 'opticodds' },
+                { name: 'superbet', vendor: 'opticodds' },
+                { name: 'pinnacle', vendor: 'opticodds' },
+            ]);
         });
 
         it('Should fall back to default providers when no league config matches typeId', () => {
             const bookmakers = getBookmakersForTypeId(['pinnacle', 'bet365'], [leagueInfoWithAllBookmakers], 9999);
 
-            expect(bookmakers).toEqual(['pinnacle', 'bet365']);
+            expect(bookmakers).toEqual([
+                { name: 'pinnacle', vendor: 'opticodds' },
+                { name: 'bet365', vendor: 'opticodds' },
+            ]);
+        });
+
+        it('Should parse the "oddspapi" vendor suffix off a bookmaker cell', () => {
+            const leagueInfo = {
+                ...leagueInfoWithAllBookmakers,
+                primaryBookmaker: 'DraftKings oddspapi',
+                secondaryBookmaker: undefined,
+                tertiaryBookmaker: undefined,
+            };
+
+            const bookmakers = getBookmakersForTypeId(['pinnacle'], [leagueInfo], 3001);
+
+            expect(bookmakers).toEqual([{ name: 'draftkings', vendor: 'oddspapi' }]);
         });
     });
 });
