@@ -98,6 +98,17 @@ const looseTokens = (value: unknown): string[] =>
         .split(/[^a-z0-9]+/)
         .filter(Boolean);
 
+// Order-insensitive whole-name key: words split on whitespace/commas (hyphenated parts stay together),
+// each accent-stripped and reduced to a-z0-9, sorted and concatenated. "Lu, Chen-Yu" and "Chen-Yu Lu" share
+// a key, "Seonyong Han" and "Seon Yong Han" too, but "Jia-Jing Lu" and "Jing-Jing Lu" do not.
+const wholeNameKey = (value: string): string =>
+    value
+        .split(/[\s,]+/)
+        .map(looseSlug)
+        .filter(Boolean)
+        .sort()
+        .join('');
+
 const levenshteinDistance = (a: string, b: string): number => {
     if (a === b) return 0;
     if (!a.length) return b.length;
@@ -175,6 +186,14 @@ export const isOddsPapiParticipantsRotated = (
     const h = looseSlug(resolvedHomeTeamName);
     const a = looseSlug(resolvedAwayTeamName);
     if (!p1 || !p2 || !h || !a) return returnNullWhenUnconfident ? null : false;
+
+    const k1 = wholeNameKey(participant1Name);
+    const k2 = wholeNameKey(participant2Name);
+    const kh = wholeNameKey(resolvedHomeTeamName);
+    const ka = wholeNameKey(resolvedAwayTeamName);
+    const wholeStraight = k1 === kh && k2 === ka;
+    const wholeSwapped = k1 === ka && k2 === kh;
+    if (wholeStraight !== wholeSwapped) return wholeSwapped;
 
     const dropSharedWithin = (x: string[], y: string[]): [string[], string[]] => {
         const both = new Set(x.filter((t) => y.includes(t)));

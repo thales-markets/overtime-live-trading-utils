@@ -487,6 +487,24 @@ describe('OddsPapi', () => {
                 expect(isOddsPapiParticipantsRotated(papi('Qualifier', 'Quevedo K'), home, away)).toBe(true);
             });
 
+            it('whole-name match decides where shared or hyphen-split tokens leave token overlap with no signal', () => {
+                const cases: [string, string, string, string][] = [
+                    // near-identical hyphenated names
+                    ['Lu, Jia-Jing', 'Lu, Jing-Jing', 'Jing-Jing Lu', 'Jia-Jing Lu'],
+                    // "Chen-Yu Lu" vs "Yu Chen" collapse to the same tokens
+                    ['Lu, Chen-Yu', 'Chen, Yu', 'Yu Chen', 'Chen-Yu Lu'],
+                    ['Lin, Yu-Chen', 'Chen, Yu', 'Yu Chen', 'Yu-Chen Lin'],
+                    // shared surname + a spelling split ("Seonyong" / "Seon Yong")
+                    ['Seonyong Han', 'Han Shi', 'Han Shi', 'Seon Yong Han'],
+                    // two different players told apart only by the "(USA)" marker
+                    ['Jones, Emerson (USA)', 'Jones, Emerson', 'Emerson Jones', 'Emerson (USA) Jones'],
+                ];
+                cases.forEach(([p1, p2, home, away]) => {
+                    expect(isOddsPapiParticipantsRotated(papi(p1, p2), home, away)).toBe(true);
+                    expect(isOddsPapiParticipantsRotated(papi(p2, p1), home, away)).toBe(false);
+                });
+            });
+
             it('a rebranded/renamed side (papi-only name) decides by the unchanged side', () => {
                 const home = 'CF Montreal';
                 const away = 'Toronto FC';
