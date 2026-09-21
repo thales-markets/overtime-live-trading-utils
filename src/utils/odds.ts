@@ -255,7 +255,9 @@ export const filterOdds = (
             // vendors disagree on "no line": OpticOdds sends points null for e.g. moneyline while OddsPapi sends 0
             // (catalog handicap), so both are keyed as 0 or the primary/secondary bookmaker lookup never matches
             const keyPoints = points ?? 0;
-            const key = `${getBookmakerOddsId(sportsBookName, vendor)}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${keyPoints}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`;
+            // same for "no selection" (whole-match total/spread line): OpticOdds sends "", OddsPapi leaves it undefined
+            const keySelection = selection ?? '';
+            const key = `${getBookmakerOddsId(sportsBookName, vendor)}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${keyPoints}${SPLIT_DELIMITER}${keySelection}${SPLIT_DELIMITER}${selectionLine}`;
             acc[key] = {
                 ...odd,
                 ...info, // using .find() for team totals means that we will always assign 10017 as typeID at this point

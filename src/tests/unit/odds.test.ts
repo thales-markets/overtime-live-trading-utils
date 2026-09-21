@@ -372,6 +372,68 @@ describe('Odds', () => {
         });
     });
 
+    describe('filterOdds selection normalization', () => {
+        // whole-match total: OpticOdds sends selection "", OddsPapi leaves it undefined
+        const totalInfo: LeagueConfigInfo[] = [
+            {
+                sportId: '153',
+                enabled: 'true',
+                marketName: 'Total Games',
+                typeId: '10002',
+                type: LiveMarketType.TOTAL,
+                maxOdds: '0.25',
+                minOdds: '0.75',
+                primaryBookmaker: 'pinnacle oddspapi',
+                secondaryBookmaker: 'unibet',
+            },
+        ];
+        const line = (
+            sportsBookName: string,
+            vendor: string | undefined,
+            selection: string | undefined,
+            side: string
+        ) =>
+            ({
+                sportsBookName,
+                marketName: 'total games',
+                selection,
+                selectionLine: side,
+                price: 1.9,
+                points: 22.5,
+                isMain: true,
+                playerId: null,
+                vendor,
+            }) as any;
+        const polled = [
+            { sportsbook: 'pinnacle', timestamp: Date.now(), vendor: 'oddspapi' },
+            { sportsbook: 'unibet', timestamp: Date.now() },
+        ];
+
+        it('matches an OddsPapi total (selection undefined) against an OpticOdds total (selection "")', () => {
+            const result = checkOdds(
+                filterOdds(
+                    [
+                        line('pinnacle', 'oddspapi', undefined, 'over'),
+                        line('pinnacle', 'oddspapi', undefined, 'under'),
+                        line('Unibet', undefined, '', 'over'),
+                        line('Unibet', undefined, '', 'under'),
+                    ],
+                    totalInfo,
+                    playersMap
+                ),
+                totalInfo,
+                ['pinnacle'],
+                polled,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                ODDS_THRESHOLD_ANCHORS,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
+            );
+
+            expect(result.errorsMap.has(10002)).toBe(false);
+            expect(result.odds).toHaveLength(2);
+        });
+    });
+
     describe('filterOdds points normalization', () => {
         // OpticOdds sends points null for moneyline, OddsPapi sends 0 (catalog handicap)
         const moneylineInfo: LeagueConfigInfo[] = [
