@@ -66,4 +66,5 @@ export interface OddsPapiStreamEvent {
     player_id: string;
     selection: string | undefined;
     selection_line: string | null;
+    vendor?: string;
 }

@@ -5,7 +5,7 @@ import { NO_MARKETS_FOR_LEAGUE_ID, REMOVE_MIN_MAX_ODDS } from '../constants/erro
 import { LiveMarketType } from '../enums/sports';
 import { Anchor, HomeAwayTeams, Odd, OddsObject, OddsWithLeagueInfo } from '../types/odds';
 import { ChildMarket, LastPolledArray, LeagueConfigInfo } from '../types/sports';
-import { checkOdds } from './bookmakers';
+import { checkOdds, getBookmakerOddsId } from './bookmakers';
 import { getLeagueInfo } from './sports';
 import { sanityCheckForOdds } from './spread';
 
@@ -236,11 +236,10 @@ export const filterOdds = (
     leagueInfos: LeagueConfigInfo[],
     playersMap: Map<string, number>
 ): { [key: string]: OddsWithLeagueInfo } => {
-    const allMarketsTypes = leagueInfos
-        .map((leagueInfo) => leagueInfo.marketName.toLowerCase());
+    const allMarketsTypes = leagueInfos.map((leagueInfo) => leagueInfo.marketName.toLowerCase());
     return oddsArray.reduce((acc: any, odd: any) => {
         if (allMarketsTypes.includes(odd.marketName.toLowerCase())) {
-            const { points, marketName, selection, selectionLine, sportsBookName, playerId } = odd;
+            const { points, marketName, selection, selectionLine, sportsBookName, playerId, vendor } = odd;
             const info = leagueInfos.find(
                 (leagueInfo) => leagueInfo.marketName.toLowerCase() === odd.marketName.toLowerCase()
             );
@@ -253,7 +252,10 @@ export const filterOdds = (
             ) {
                 return acc;
             }
-            const key = `${sportsBookName.toLowerCase()}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`;
+            // vendors disagree on "no line": OpticOdds sends points null for e.g. moneyline while OddsPapi sends 0
+            // (catalog handicap), so both are keyed as 0 or the primary/secondary bookmaker lookup never matches
+            const keyPoints = points ?? 0;
+            const key = `${getBookmakerOddsId(sportsBookName, vendor)}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${keyPoints}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`;
             acc[key] = {
                 ...odd,
                 ...info, // using .find() for team totals means that we will always assign 10017 as typeID at this point
@@ -377,8 +379,7 @@ export const groupAndFormatTotalOdds = (oddsArray: any[], commonData: HomeAwayTe
 
         // if we have away team in total odds we know the market is team total and we need to increase typeId by one.
         // if this is false, typeId is already mapped correctly
-        const shouldIncreaseTypeId =
-            selection === commonData.awayTeam && (isTeamTotal || !(value as any).playerProps);
+        const shouldIncreaseTypeId = selection === commonData.awayTeam && (isTeamTotal || !(value as any).playerProps);
 
         const odds = [(value as any).over, (value as any).under];
         const hasOdds = odds.some((odd) => odd !== null);

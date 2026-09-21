@@ -757,6 +757,7 @@ describe('OddsPapi', () => {
                 player_id: null,
                 selection: 'away-team',
                 selection_line: null,
+                vendor: 'oddspapi',
             });
         });
 

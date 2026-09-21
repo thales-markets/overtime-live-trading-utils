@@ -1,4 +1,9 @@
+import { DIFF_BETWEEN_BOOKMAKERS_MESSAGE, NO_MATCHING_BOOKMAKERS_MESSAGE } from '../../constants/errors';
+import { LiveMarketType } from '../../enums/sports';
+import { LeagueConfigInfo } from '../../types/sports';
+import { checkOdds } from '../../utils/bookmakers';
 import { processMarket } from '../../utils/markets';
+import { filterOdds } from '../../utils/odds';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
 import { ODDS_THRESHOLD_ANCHORS } from '../mock/MockAnchors';
 import { LeagueMocks } from '../mock/MockLeagueMap';
@@ -282,6 +287,165 @@ describe('Odds', () => {
             expect(playerPropsMarket.playerProps.playerId).toBe(playersMap.get(expectedOdd.player_id));
             expect(playerPropsMarket.odds).toHaveLength(1);
             expect(playerPropsMarket.odds[0].decimal).toBe(expectedOdd.price);
+        });
+    });
+
+    describe('same bookmaker from two vendors', () => {
+        const info = (primaryBookmaker: string, secondaryBookmaker: string): LeagueConfigInfo[] => [
+            {
+                sportId: '153',
+                enabled: 'true',
+                marketName: 'Moneyline',
+                typeId: '0',
+                type: LiveMarketType.MONEYLINE,
+                maxOdds: '0.25',
+                minOdds: '0.75',
+                primaryBookmaker,
+                secondaryBookmaker,
+            },
+        ];
+        const line = (vendor: string | undefined, selection: string, price: number) =>
+            ({
+                sportsBookName: 'Pinnacle',
+                marketName: 'moneyline',
+                selection,
+                selectionLine: null,
+                price,
+                points: 0,
+                isMain: true,
+                playerId: null,
+                vendor,
+            }) as any;
+        const polled = [
+            { sportsbook: 'pinnacle', timestamp: Date.now() },
+            { sportsbook: 'pinnacle', timestamp: Date.now(), vendor: 'oddspapi' },
+        ];
+        const run = (papiPrices: [number, number], opticPrices: [number, number]) => {
+            const leagueInfos = info('pinnacle oddspapi', 'pinnacle');
+            return checkOdds(
+                filterOdds(
+                    [
+                        line('oddspapi', 'Home', papiPrices[0]),
+                        line('oddspapi', 'Away', papiPrices[1]),
+                        line(undefined, 'Home', opticPrices[0]),
+                        line(undefined, 'Away', opticPrices[1]),
+                    ],
+                    leagueInfos,
+                    playersMap
+                ),
+                leagueInfos,
+                ['pinnacle'],
+                polled,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                ODDS_THRESHOLD_ANCHORS,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
+            );
+        };
+
+        it('keeps only the primary vendor lines and compares them with the other vendor (no key collision)', () => {
+            const result = run([1.5, 2.6], [1.5, 2.6]);
+            expect(result.errorsMap.size).toBe(0);
+            // one line per selection, all from the primary (OddsPapi) feed - not duplicated by the Optic feed
+            expect(result.odds).toHaveLength(2);
+            expect(result.odds.every((odd: any) => odd.vendor === 'oddspapi')).toBe(true);
+        });
+
+        it('blocks when the two vendors disagree beyond the anchors (a bookmaker compared with itself never would)', () => {
+            const result = run([1.5, 4.0], [1.5, 2.0]);
+            expect(result.errorsMap.get(0)).toBe(DIFF_BETWEEN_BOOKMAKERS_MESSAGE);
+            // blocking is per line: the agreeing Home line survives, the diverging Away line is dropped
+            expect(result.odds.map((odd: any) => odd.selection)).toEqual(['Home']);
+        });
+
+        it('reports no matching bookmakers when the other vendor has no line for that bookmaker', () => {
+            const leagueInfos = info('pinnacle oddspapi', 'pinnacle');
+            const result = checkOdds(
+                filterOdds([line('oddspapi', 'Home', 1.5)], leagueInfos, playersMap),
+                leagueInfos,
+                ['pinnacle'],
+                polled,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                ODDS_THRESHOLD_ANCHORS,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
+            );
+            expect(result.errorsMap.get(0)).toBe(NO_MATCHING_BOOKMAKERS_MESSAGE);
+        });
+    });
+
+    describe('filterOdds points normalization', () => {
+        // OpticOdds sends points null for moneyline, OddsPapi sends 0 (catalog handicap)
+        const moneylineInfo: LeagueConfigInfo[] = [
+            {
+                sportId: '153',
+                enabled: 'true',
+                marketName: 'Moneyline',
+                typeId: '0',
+                type: LiveMarketType.MONEYLINE,
+                maxOdds: '0.25',
+                minOdds: '0.75',
+                primaryBookmaker: 'pinnacle',
+                secondaryBookmaker: 'unibet',
+            },
+        ];
+        const line = (sportsBookName: string, selection: string, price: number, points: number | null) =>
+            ({
+                sportsBookName,
+                marketName: 'moneyline',
+                selection,
+                selectionLine: null,
+                price,
+                points,
+                isMain: true,
+                playerId: null,
+            }) as any;
+        const polled = [
+            { sportsbook: 'pinnacle', timestamp: Date.now() },
+            { sportsbook: 'unibet', timestamp: Date.now() },
+        ];
+        const run = (pinnaclePoints: number | null, unibetPoints: number | null) =>
+            checkOdds(
+                filterOdds(
+                    [
+                        line('pinnacle', 'Home', 1.5, pinnaclePoints),
+                        line('pinnacle', 'Away', 2.6, pinnaclePoints),
+                        line('unibet', 'Home', 1.5, unibetPoints),
+                        line('unibet', 'Away', 2.6, unibetPoints),
+                    ],
+                    moneylineInfo,
+                    playersMap
+                ),
+                moneylineInfo,
+                ['pinnacle', 'unibet'],
+                polled,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                ODDS_THRESHOLD_ANCHORS,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
+            );
+
+        it('matches a primary with points 0 against a secondary with points null (and the reverse)', () => {
+            [
+                [0, null],
+                [null, 0],
+                [null, null],
+                [0, 0],
+            ].forEach(([pinnaclePoints, unibetPoints]) => {
+                const result = run(pinnaclePoints, unibetPoints);
+                expect(result.errorsMap.has(0)).toBe(false);
+                expect(result.odds).toHaveLength(2);
+            });
+        });
+
+        it('still reports no matching bookmakers when the secondary is really missing', () => {
+            const result = checkOdds(
+                filterOdds([line('pinnacle', 'Home', 1.5, 0)], moneylineInfo, playersMap),
+                moneylineInfo,
+                ['pinnacle', 'unibet'],
+                polled,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                ODDS_THRESHOLD_ANCHORS,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
+            );
+            expect(result.errorsMap.get(0)).toBe(NO_MATCHING_BOOKMAKERS_MESSAGE);
         });
     });
 });

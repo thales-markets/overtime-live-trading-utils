@@ -477,6 +477,7 @@ const mapOddsPapiOddsLine = (
         playerId: outcome.playerId,
         selection: fields.selection,
         selectionLine: fields.selectionLine,
+        vendor: VENDOR_ODDS_PAPI,
     } as Odd;
 };
 
@@ -557,6 +558,7 @@ export const mapOddsPapiStreamOutcomeToEvent = (
         player_id: storedOutcome.playerId,
         selection: fields.selection,
         selection_line: fields.selectionLine,
+        vendor: VENDOR_ODDS_PAPI,
     };
 };
 

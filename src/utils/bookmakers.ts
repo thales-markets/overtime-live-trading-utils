@@ -30,6 +30,16 @@ export const parseBookmakerCell = (rawValue: string): BookmakerWithVendor => {
     return { name: trimmed.toLowerCase(), vendor: VENDOR_OPTIC_ODDS };
 };
 
+// Identity of a bookmaker inside an odds key: the plain lowercase name for the default vendor (OpticOdds - keys
+// stay exactly as they always were) and "<name> oddspapi" for OddsPapi, the same convention as the CSV cells.
+// Lets the same bookmaker from two vendors coexist (and be compared) within one market instead of colliding.
+export const getBookmakerOddsId = (name: string, vendor?: string): string => {
+    const lowerName = name.toLowerCase();
+    return (vendor || DEFAULT_BOOKMAKER_VENDOR) === VENDOR_ODDS_PAPI
+        ? `${lowerName} ${ODDS_PAPI_BOOKMAKER_SUFFIX}`
+        : lowerName;
+};
+
 export const getBookmakersArray = (
     bookmakersData: BookmakersConfig[],
     sportId: any,
@@ -211,18 +221,25 @@ export const checkOdds = (
                 const primaryBookmaker = bookmakers[0];
                 const secondaryBookmaker = bookmakers[1];
                 if (primaryBookmaker && !secondaryBookmaker) {
-                    if (sportsBookName.toLowerCase() === primaryBookmaker.name.toLowerCase()) {
+                    if (
+                        sportsBookName.toLowerCase() ===
+                        getBookmakerOddsId(primaryBookmaker.name, primaryBookmaker.vendor)
+                    ) {
                         if (value.playerId && !value.isMain) return acc;
                         acc.push(value);
                     }
                 } else {
-                    if (sportsBookName.toLowerCase() === primaryBookmaker.name) {
+                    if (
+                        sportsBookName.toLowerCase() ===
+                        getBookmakerOddsId(primaryBookmaker.name, primaryBookmaker.vendor)
+                    ) {
                         if (value.playerId && !value.isMain) return acc; // Skip if not main for player props
                         // check primary odds against every other configured bookmaker (secondary and tertiary)
                         for (const otherBookmaker of bookmakers.slice(1)) {
+                            const otherBookmakerId = getBookmakerOddsId(otherBookmaker.name, otherBookmaker.vendor);
                             const otherBookmakerObject =
                                 odds[
-                                    `${otherBookmaker.name}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
+                                    `${otherBookmakerId}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
                                 ];
                             if (otherBookmakerObject) {
                                 if (shouldBlockOdds(value.price, otherBookmakerObject.price, anchors)) {
@@ -248,7 +265,7 @@ export const checkOdds = (
 
                                         const adjustedBookmakerObject =
                                             odds[
-                                                `${otherBookmaker.name}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${adjustedPoints}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
+                                                `${otherBookmakerId}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${adjustedPoints}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
                                             ];
 
                                         if (adjustedBookmakerObject) {

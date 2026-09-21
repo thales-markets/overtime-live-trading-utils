@@ -27,23 +27,26 @@ export function stripVendorSuffixFromRow(
     return cleanedRow;
 }
 
-// Parses a row's bookmaker cells into a Map<bookmakerLower, vendor> (primary/secondary/tertiary, stopping at
+// Parses a row's bookmaker cells into a Map<bookmakerLower, vendors[]> (primary/secondary/tertiary, stopping at
 // the first empty slot - same truncation rule getBookmakersForTypeId applies, so this only ever records
-// vendors for bookmakers that function would actually resolve).
+// vendors for bookmakers that function would actually resolve). A bookmaker keeps EVERY vendor it appears
+// with in the row ("pinnacle oddspapi" + "pinnacle" -> both): they are different feeds, compared to each other.
 const parseBookmakerVendorsForRow = (row: {
     primaryBookmaker?: string;
     secondaryBookmaker?: string;
     tertiaryBookmaker?: string;
-}): Map<string, string> => {
-    const vendorByBookmaker = new Map<string, string>();
+}): Map<string, string[]> => {
+    const vendorsByBookmaker = new Map<string, string[]>();
     for (const field of BOOKMAKER_FIELDS) {
         const cell = row[field];
         if (!cell) break;
         const { name, vendor } = parseBookmakerCell(cell);
         if (!name) break;
-        vendorByBookmaker.set(name.toLowerCase(), vendor);
+        const vendors = vendorsByBookmaker.get(name.toLowerCase()) || [];
+        if (!vendors.includes(vendor)) vendors.push(vendor);
+        vendorsByBookmaker.set(name.toLowerCase(), vendors);
     }
-    return vendorByBookmaker;
+    return vendorsByBookmaker;
 };
 
 // Builds a pure vendor LOOKUP (not a bookmaker-name resolver - that's still getBookmakersForTypeId/
@@ -58,12 +61,12 @@ export const buildMarketVendorIndex = (
     rawBookmakersData: BookmakersConfig[],
     rawLeaguesData: LeagueConfigInfo[]
 ): MarketVendorIndex => {
-    const sportDefaultVendorByBookmaker = new Map<number, Map<string, string>>();
+    const sportDefaultVendorByBookmaker = new Map<number, Map<string, string[]>>();
     rawBookmakersData.forEach((row) => {
         sportDefaultVendorByBookmaker.set(Number(row.sportId), parseBookmakerVendorsForRow(row));
     });
 
-    const marketVendorByBookmaker = new Map<string, Map<string, string>>();
+    const marketVendorByBookmaker = new Map<string, Map<string, string[]>>();
     rawLeaguesData.forEach((row) => {
         if (!row.primaryBookmaker) return; // no override on this market row - falls through to sport default
         marketVendorByBookmaker.set(`${Number(row.sportId)}:${row.typeId}`, parseBookmakerVendorsForRow(row));
@@ -77,22 +80,34 @@ export const buildMarketVendorIndex = (
 // bookmakers-per-sport default, else OpticOdds (the same default phase 1 always used - a bookmaker absent
 // from marketVendorIndex entirely, e.g. no CSV row ever carried the "oddspapi" suffix for it, is not an
 // OddsPapi signal, it just means "no vendor info" and defaults to OpticOdds).
+// A bookmaker configured under several vendors in one row (e.g. "pinnacle oddspapi" + "pinnacle") resolves to
+// all of them, so each vendor fetches it and the two feeds can be compared.
+export const resolveVendorsForBookmaker = (
+    sportId: number | string,
+    typeId: number | string,
+    bookmakerLower: string,
+    marketVendorIndex: MarketVendorIndex | undefined,
+    isVendorRoutingDisabled = false
+): string[] => {
+    if (isVendorRoutingDisabled || !marketVendorIndex) return [VENDOR_OPTIC_ODDS];
+
+    const marketVendors = marketVendorIndex.marketVendorByBookmaker.get(`${Number(sportId)}:${typeId}`);
+    if (marketVendors && marketVendors.has(bookmakerLower)) return marketVendors.get(bookmakerLower) as string[];
+
+    return (
+        marketVendorIndex.sportDefaultVendorByBookmaker.get(Number(sportId))?.get(bookmakerLower) || [VENDOR_OPTIC_ODDS]
+    );
+};
+
+// Single-vendor view of resolveVendorsForBookmaker (the first configured vendor), kept for callers that only
+// ever deal with one vendor per bookmaker.
 export const resolveVendorForBookmaker = (
     sportId: number | string,
     typeId: number | string,
     bookmakerLower: string,
     marketVendorIndex: MarketVendorIndex | undefined,
     isVendorRoutingDisabled = false
-): string => {
-    if (isVendorRoutingDisabled || !marketVendorIndex) return VENDOR_OPTIC_ODDS;
-
-    const marketVendors = marketVendorIndex.marketVendorByBookmaker.get(`${Number(sportId)}:${typeId}`);
-    if (marketVendors && marketVendors.has(bookmakerLower)) return marketVendors.get(bookmakerLower) as string;
-
-    return (
-        marketVendorIndex.sportDefaultVendorByBookmaker.get(Number(sportId))?.get(bookmakerLower) || VENDOR_OPTIC_ODDS
-    );
-};
+): string => resolveVendorsForBookmaker(sportId, typeId, bookmakerLower, marketVendorIndex, isVendorRoutingDisabled)[0];
 
 // Resolves per-market vendor routing for every enabled market row of a league in one pass. Bookmaker NAME
 // resolution for each market reuses getBookmakersForTypeId/getBookmakersArray (row override with
@@ -138,7 +153,7 @@ export const resolveLeagueVendorRouting = (
             ).map((b) => b.name);
 
             bookmakersForMarket.forEach((bookmakerLower) => {
-                const vendor = resolveVendorForBookmaker(
+                const vendors = resolveVendorsForBookmaker(
                     leagueId,
                     row.typeId,
                     bookmakerLower,
@@ -146,13 +161,15 @@ export const resolveLeagueVendorRouting = (
                     isVendorRoutingDisabled
                 );
                 const pairKey = `${marketNameLower}:${bookmakerLower}`;
-                if (vendor === VENDOR_ODDS_PAPI) {
-                    oddsPapiBookmakers.add(bookmakerLower);
-                    oddsPapiPairSet.add(pairKey);
-                } else {
-                    opticOddsBookmakers.add(bookmakerLower);
-                    opticOddsPairSet.add(pairKey);
-                }
+                vendors.forEach((vendor) => {
+                    if (vendor === VENDOR_ODDS_PAPI) {
+                        oddsPapiBookmakers.add(bookmakerLower);
+                        oddsPapiPairSet.add(pairKey);
+                    } else {
+                        opticOddsBookmakers.add(bookmakerLower);
+                        opticOddsPairSet.add(pairKey);
+                    }
+                });
             });
         });
 

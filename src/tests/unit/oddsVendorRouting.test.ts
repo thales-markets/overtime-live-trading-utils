@@ -8,6 +8,12 @@ import {
     stripVendorSuffixFromRow,
 } from '../../utils/oddsVendorRouting';
 
+const toVendorLists = (entries: [string, string][]): Map<string, string[]> => {
+    const lists = new Map<string, string[]>();
+    entries.forEach(([name, vendor]) => lists.set(name, [...(lists.get(name) || []), vendor]));
+    return lists;
+};
+
 const buildIndex = ({
     sportDefault = [],
     marketOverrides = [],
@@ -15,8 +21,8 @@ const buildIndex = ({
     sportDefault?: [number, [string, string][]][];
     marketOverrides?: [string, [string, string][]][];
 } = {}): MarketVendorIndex => ({
-    sportDefaultVendorByBookmaker: new Map(sportDefault.map(([sportId, entries]) => [sportId, new Map(entries)])),
-    marketVendorByBookmaker: new Map(marketOverrides.map(([key, entries]) => [key, new Map(entries)])),
+    sportDefaultVendorByBookmaker: new Map(sportDefault.map(([sportId, entries]) => [sportId, toVendorLists(entries)])),
+    marketVendorByBookmaker: new Map(marketOverrides.map(([key, entries]) => [key, toVendorLists(entries)])),
 });
 
 describe('Check odds vendor router', () => {
@@ -142,8 +148,8 @@ describe('Check odds vendor router', () => {
             const index = buildMarketVendorIndex(bookmakersData, []);
 
             const sport11Defaults = index.sportDefaultVendorByBookmaker.get(11);
-            expect(sport11Defaults?.get('pinnacle')).toBe(VENDOR_ODDS_PAPI);
-            expect(sport11Defaults?.get('draftkings')).toBe(VENDOR_OPTIC_ODDS);
+            expect(sport11Defaults?.get('pinnacle')).toEqual([VENDOR_ODDS_PAPI]);
+            expect(sport11Defaults?.get('draftkings')).toEqual([VENDOR_OPTIC_ODDS]);
         });
 
         it('records a market row override, matching case-insensitively', () => {
@@ -161,7 +167,7 @@ describe('Check odds vendor router', () => {
             const index = buildMarketVendorIndex([], leaguesData);
 
             const sport12MarketOverride = index.marketVendorByBookmaker.get('12:0');
-            expect(sport12MarketOverride?.get('bovada')).toBe(VENDOR_ODDS_PAPI);
+            expect(sport12MarketOverride?.get('bovada')).toEqual([VENDOR_ODDS_PAPI]);
         });
 
         it('leaves a market row without a bookmaker override absent from marketVendorByBookmaker', () => {
@@ -183,7 +189,43 @@ describe('Check odds vendor router', () => {
 
             // THEN the market row is absent from the override index, so resolution falls through to the sport default
             expect(index.marketVendorByBookmaker.has('11:10001')).toBe(false);
-            expect(index.sportDefaultVendorByBookmaker.get(11)?.get('pinnacle')).toBe(VENDOR_ODDS_PAPI);
+            expect(index.sportDefaultVendorByBookmaker.get(11)?.get('pinnacle')).toEqual([VENDOR_ODDS_PAPI]);
+        });
+    });
+
+    describe('the same bookmaker under two vendors in one row', () => {
+        const leaguesData = [
+            {
+                sportId: '12',
+                typeId: '0',
+                marketName: 'Moneyline',
+                enabled: 'true',
+                primaryBookmaker: 'pinnacle oddspapi',
+                secondaryBookmaker: 'pinnacle',
+                tertiaryBookmaker: '',
+            },
+        ] as unknown as LeagueConfigInfo[];
+
+        it('keeps both vendors in the index instead of the last slot overwriting the first', () => {
+            const index = buildMarketVendorIndex([], leaguesData);
+            expect(index.marketVendorByBookmaker.get('12:0')?.get('pinnacle')).toEqual([
+                VENDOR_ODDS_PAPI,
+                VENDOR_OPTIC_ODDS,
+            ]);
+        });
+
+        it('routes the bookmaker to both vendors for that market', () => {
+            const index = buildMarketVendorIndex([], leaguesData);
+            // the routing sees plain names (vendor suffix stripped), exactly as thales-api passes them
+            const stripped = leaguesData.map((row) => stripVendorSuffixFromRow(row));
+
+            const { opticOddsBookmakers, oddsPapiBookmakers, opticOddsPairSet, oddsPapiPairSet } =
+                resolveLeagueVendorRouting(12, stripped, [], index, ['draftkings']);
+
+            expect(opticOddsBookmakers).toEqual(['pinnacle']);
+            expect(oddsPapiBookmakers).toEqual(['pinnacle']);
+            expect(Array.from(opticOddsPairSet)).toEqual(['moneyline:pinnacle']);
+            expect(Array.from(oddsPapiPairSet)).toEqual(['moneyline:pinnacle']);
         });
     });
 
