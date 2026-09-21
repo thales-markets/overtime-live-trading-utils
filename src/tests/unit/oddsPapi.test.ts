@@ -3,6 +3,7 @@ import {
     OddsPapiLeaguesMap,
     OddsPapiMarketCatalogEntry,
     OddsPapiMarketMapCsvRow,
+    OddsPapiParticipants,
     OddsPapiResolvedMarket,
     ResolveOddsPapiMarketDefinition,
 } from '../../types/oddsPapi';
@@ -221,6 +222,59 @@ describe('OddsPapi', () => {
 
             expect(homeFields?.points).toBe(1.5);
             expect(awayFields?.points).toBe(-1.5);
+        });
+
+        describe('correct score outcomes', () => {
+            const CORRECT_SCORE_DEFINITION: OddsPapiResolvedMarket = {
+                opticOddsMarketName: '1st Set Correct Score',
+                handicap: 0,
+                outcomeNameByOutcomeId: new Map([
+                    [12404, '6:0'],
+                    [12410, '7:6'],
+                    [12411, '0:6'],
+                    [12416, '5:7'],
+                    [12500, '1:1'],
+                ]),
+            };
+            const resolveCorrectScore: ResolveOddsPapiMarketDefinition = () => CORRECT_SCORE_DEFINITION;
+            const fieldsFor = (outcomeId: number, oriented: OddsPapiParticipants = participants) =>
+                mapOddsPapiOutcomeFields({ marketId: 12404, outcomeId }, 12, oriented, resolveCorrectScore);
+
+            it('maps a participant1 win to participant1 with the score written winner-first', () => {
+                expect(fieldsFor(12404)).toMatchObject({
+                    marketName: '1st set correct score',
+                    points: 0,
+                    selection: 'home-team',
+                    selectionLine: '6:0',
+                });
+                expect(fieldsFor(12410)).toMatchObject({ selection: 'home-team', selectionLine: '7:6' });
+            });
+
+            it('maps a participant2 win to participant2 with the score flipped to winner-first', () => {
+                expect(fieldsFor(12411)).toMatchObject({ selection: 'away-team', selectionLine: '6:0' });
+                expect(fieldsFor(12416)).toMatchObject({ selection: 'away-team', selectionLine: '7:5' });
+            });
+
+            it('maps a level score to Draw', () => {
+                expect(fieldsFor(12500)).toMatchObject({ selection: 'Draw', selectionLine: '1:1' });
+            });
+
+            it('follows the caller-oriented participants when the fixture is rotated', () => {
+                // OddsPapi participant1 is really the caller's away team
+                const rotated = orientOddsPapiParticipants('home-team', 'away-team', true);
+                expect(fieldsFor(12404, rotated)).toMatchObject({ selection: 'away-team', selectionLine: '6:0' });
+                expect(fieldsFor(12411, rotated)).toMatchObject({ selection: 'home-team', selectionLine: '6:0' });
+            });
+
+            it('leaves non-score outcome names untouched', () => {
+                expect(
+                    mapOddsPapiOutcomeFields({ marketId: 1, outcomeId: 1 }, 1, participants, () => ({
+                        opticOddsMarketName: 'Odd Even',
+                        handicap: 0,
+                        outcomeNameByOutcomeId: new Map([[1, 'Odd']]),
+                    }))
+                ).toMatchObject({ selection: 'Odd', selectionLine: null });
+            });
         });
 
         it('returns null (not a throw) when resolveMarketDefinition cannot resolve the market', () => {

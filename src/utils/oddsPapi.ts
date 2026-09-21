@@ -1,3 +1,4 @@
+import { DRAW } from '../constants/common';
 import { VENDOR_ODDS_PAPI } from '../constants/oddsVendors';
 import { Odd, OddsObject } from '../types/odds';
 import {
@@ -316,6 +317,9 @@ export const orientOddsPapiParticipants = (
     participant2Name: participantsRotated ? homeTeam : awayTeam,
 });
 
+// Correct-score outcome names are "<participant1 games>:<participant2 games>", e.g. "6:4".
+const CORRECT_SCORE_OUTCOME_PATTERN = /^(\d+):(\d+)$/;
+
 // Best-effort selection mapping from an OddsPapi outcome name to this repo's {selection, selectionLine}
 // convention: "1"/"2" -> home/away participant name (moneyline/spread-style markets), "Over"/"Under" ->
 // selectionLine, plus - when participantSlot is set (a -team1/-team2 market, e.g. teamtotals-games-team1) -
@@ -341,6 +345,22 @@ const mapOddsPapiSelection = (
                   ? participants?.participant2Name
                   : undefined;
         return { selection, selectionLine: outcomeName.toLowerCase() };
+    }
+    // Correct score ("6:4" = participant1:participant2). OpticOdds' convention is the WINNING side as selection
+    // ("Draw" for a level score) with the score written winner-first in selectionLine, so "4:6" becomes
+    // participant2 + "6:4". participants are already oriented to the caller's home/away (see below).
+    const score = outcomeName?.match(CORRECT_SCORE_OUTCOME_PATTERN);
+    if (score) {
+        const [participant1Score, participant2Score] = [Number(score[1]), Number(score[2])];
+        if (participant1Score === participant2Score) return { selection: DRAW, selectionLine: outcomeName as string };
+        const participant1Wins = participant1Score > participant2Score;
+        return {
+            selection: participant1Wins ? participants?.participant1Name : participants?.participant2Name,
+            selectionLine: `${Math.max(participant1Score, participant2Score)}:${Math.min(
+                participant1Score,
+                participant2Score
+            )}`,
+        };
     }
     return { selection: outcomeName, selectionLine: null };
 };

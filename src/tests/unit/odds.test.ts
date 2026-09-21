@@ -2,6 +2,7 @@ import { DIFF_BETWEEN_BOOKMAKERS_MESSAGE, NO_MATCHING_BOOKMAKERS_MESSAGE } from 
 import { LiveMarketType } from '../../enums/sports';
 import { LeagueConfigInfo } from '../../types/sports';
 import { checkOdds } from '../../utils/bookmakers';
+import { mapOddsPapiOutcomeFields } from '../../utils/oddsPapi';
 import { processMarket } from '../../utils/markets';
 import { filterOdds } from '../../utils/odds';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
@@ -369,6 +370,85 @@ describe('Odds', () => {
                 MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
             expect(result.errorsMap.get(0)).toBe(NO_MATCHING_BOOKMAKERS_MESSAGE);
+        });
+    });
+
+    describe('correct score across vendors', () => {
+        const info: LeagueConfigInfo[] = [
+            {
+                sportId: '153',
+                enabled: 'true',
+                marketName: '1st Set Correct Score',
+                typeId: '10101',
+                type: LiveMarketType.CORRECT_SCORE,
+                maxOdds: '0.25',
+                minOdds: '0.75',
+                primaryBookmaker: 'fanduel oddspapi',
+                secondaryBookmaker: 'draftkings',
+            },
+        ];
+        const opticLine = (selection: string, selectionLine: string, price: number) =>
+            ({
+                sportsBookName: 'DraftKings',
+                marketName: '1st set correct score',
+                selection,
+                selectionLine,
+                price,
+                points: null,
+                isMain: true,
+                playerId: null,
+            }) as any;
+        const papiLines = (outcomeName: string, price: number) => {
+            const fields = mapOddsPapiOutcomeFields(
+                { marketId: 12404, outcomeId: 1 },
+                12,
+                { participant1Name: 'Sinja Kraus', participant2Name: 'Lizette Cabrera' },
+                () => ({
+                    opticOddsMarketName: '1st Set Correct Score',
+                    handicap: 0,
+                    outcomeNameByOutcomeId: new Map([[1, outcomeName]]),
+                })
+            ) as any;
+            return {
+                sportsBookName: 'fanduel',
+                vendor: 'oddspapi',
+                ...fields,
+                price,
+                isMain: true,
+                playerId: null,
+            } as any;
+        };
+        const polled = [
+            { sportsbook: 'fanduel', timestamp: Date.now(), vendor: 'oddspapi' },
+            { sportsbook: 'draftkings', timestamp: Date.now() },
+        ];
+
+        it('matches OddsPapi participant-ordered scores against OpticOdds winner-first scores', () => {
+            const result = checkOdds(
+                filterOdds(
+                    [
+                        // OddsPapi "6:4" (participant1 wins) and "4:6" (participant2 wins the same 6:4)
+                        papiLines('6:4', 8),
+                        papiLines('4:6', 9),
+                        opticLine('Sinja Kraus', '6:4', 8),
+                        opticLine('Lizette Cabrera', '6:4', 9),
+                    ],
+                    info,
+                    playersMap
+                ),
+                info,
+                ['fanduel'],
+                polled,
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                ODDS_THRESHOLD_ANCHORS,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
+            );
+
+            expect(result.errorsMap.has(10101)).toBe(false);
+            expect(result.odds.map((odd: any) => `${odd.selection} ${odd.selectionLine}`).sort()).toEqual([
+                'Lizette Cabrera 6:4',
+                'Sinja Kraus 6:4',
+            ]);
         });
     });
 
