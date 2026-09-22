@@ -694,6 +694,36 @@ describe('OddsPapi', () => {
             });
         });
 
+        it('does NOT hard-stop an outcome whose active/marketActive fields are simply absent (only an explicit false does)', () => {
+            const fixtureOddsResult = {
+                gameId: 'game-1',
+                homeTeam: 'Home FC',
+                awayTeam: 'Away FC',
+                participantsRotated: false,
+                fixtureOdds: {
+                    status: { live: true, statusName: 'live' },
+                    sport: { sportId: 1 },
+                    tournament: { tournamentId: 55 },
+                    startTime: 1700000000,
+                    odds: {
+                        draftkings: {
+                            // marketActive omitted entirely, as OddsPapi sometimes sends live - not `false`
+                            'outcome-key-no-market-active': (() => {
+                                const outcome: any = buildOutcome({ outcomeId: 1 });
+                                delete outcome.marketActive;
+                                return outcome;
+                            })(),
+                        },
+                    },
+                },
+            };
+
+            const [mapped] = mapOddsPapiApiFixtureOdds([fixtureOddsResult], resolveMarketDefinitionStub);
+
+            expect(mapped.odds).toHaveLength(1);
+            expect(mapped.odds[0]).toMatchObject({ id: 'outcome-key-no-market-active', price: 1.91 });
+        });
+
         it('drops outcomes from a bookmaker flagged staleOdds in the fixture bookmakers metadata', () => {
             const fixtureOddsResult = {
                 gameId: 'game-1',

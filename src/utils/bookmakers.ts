@@ -227,6 +227,11 @@ export const checkOdds = (
                     ) {
                         if (value.playerId && !value.isMain) return acc;
                         acc.push(value);
+                    } else {
+                        const existingErrorMessage = errorMessageMap.get(Number(value.typeId));
+                        if (!existingErrorMessage) {
+                            errorMessageMap.set(Number(value.typeId), NO_MATCHING_BOOKMAKERS_MESSAGE);
+                        }
                     }
                 } else {
                     if (

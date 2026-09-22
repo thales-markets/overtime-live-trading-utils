@@ -461,7 +461,7 @@ export const mapOddsPapiOutcomeFields = (
 // the fixture's own bookmakers metadata flags this outcome's bookmaker with staleOdds:true - that means
 // OddsPapi's own upstream connection to that bookmaker is down, so its odds can't be trusted either.
 const isOddsPapiOutcomeHardStopped = (outcome: any, bookmakersMeta: any): boolean =>
-    !outcome.active || !outcome.marketActive || !!bookmakersMeta?.[outcome.bookmaker]?.staleOdds;
+    outcome.active === false || outcome.marketActive === false || !!bookmakersMeta?.[outcome.bookmaker]?.staleOdds;
 
 // Odd.timestamp/OddsPapiStreamEvent.timestamp are always epoch seconds, matching OpticOdds' own convention,
 // regardless of the vendor's own native units - OddsPapi's changedAt is epoch milliseconds. A non-number
