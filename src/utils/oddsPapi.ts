@@ -460,7 +460,7 @@ export const mapOddsPapiOutcomeFields = (
 // streaming caller should instead treat this as locking/removing an existing price). Also hard-stopped when
 // the fixture's own bookmakers metadata flags this outcome's bookmaker with staleOdds:true - that means
 // OddsPapi's own upstream connection to that bookmaker is down, so its odds can't be trusted either.
-const isOddsPapiOutcomeHardStopped = (outcome: any, bookmakersMeta: any): boolean =>
+export const isOddsPapiOutcomeHardStopped = (outcome: any, bookmakersMeta?: any): boolean =>
     outcome.active === false || outcome.marketActive === false || !!bookmakersMeta?.[outcome.bookmaker]?.staleOdds;
 
 // Odd.timestamp/OddsPapiStreamEvent.timestamp are always epoch seconds, matching OpticOdds' own convention,
