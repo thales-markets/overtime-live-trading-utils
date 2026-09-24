@@ -20,6 +20,7 @@ export type Odd = {
     playerId: string;
     selection: string;
     selectionLine: string;
+    vendor?: string; // odds vendor of this line; absent means OpticOdds (the default vendor)
 };
 
 export type OddsObject = {
@@ -43,7 +44,7 @@ export type ScoresObject = {
     status: string;
     isLive: boolean;
     clock: string;
-    period: string;
+    period: string | null;
     homeTeam: string;
     awayTeam: string;
     homeTotal: string;

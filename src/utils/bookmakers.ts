@@ -7,10 +7,38 @@ import {
     ZERO_ODDS_MESSAGE,
     ZERO_ODDS_MESSAGE_SINGLE_BOOKMAKER,
 } from '../constants/errors';
+import {
+    DEFAULT_BOOKMAKER_VENDOR,
+    ODDS_PAPI_BOOKMAKER_SUFFIX,
+    VENDOR_ODDS_PAPI,
+    VENDOR_OPTIC_ODDS,
+} from '../constants/oddsVendors';
 import { LiveMarketType } from '../enums/sports';
-import { BookmakersConfig } from '../types/bookmakers';
+import { BookmakersConfig, BookmakerWithVendor } from '../types/bookmakers';
 import { Anchor, OddsWithLeagueInfo } from '../types/odds';
 import { LastPolledArray, LeagueConfigInfo } from '../types/sports';
+
+export const parseBookmakerCell = (rawValue: string): BookmakerWithVendor => {
+    const trimmed = (rawValue || '').trim();
+    if (!trimmed) {
+        return { name: '', vendor: '' };
+    }
+    const parts = trimmed.split(/\s+/);
+    if (parts.length > 1 && parts[parts.length - 1].toLowerCase() === ODDS_PAPI_BOOKMAKER_SUFFIX) {
+        return { name: parts.slice(0, -1).join(' ').toLowerCase(), vendor: VENDOR_ODDS_PAPI };
+    }
+    return { name: trimmed.toLowerCase(), vendor: VENDOR_OPTIC_ODDS };
+};
+
+// Identity of a bookmaker inside an odds key: the plain lowercase name for the default vendor (OpticOdds - keys
+// stay exactly as they always were) and "<name> oddspapi" for OddsPapi, the same convention as the CSV cells.
+// Lets the same bookmaker from two vendors coexist (and be compared) within one market instead of colliding.
+export const getBookmakerOddsId = (name: string, vendor?: string): string => {
+    const lowerName = name.toLowerCase();
+    return (vendor || DEFAULT_BOOKMAKER_VENDOR) === VENDOR_ODDS_PAPI
+        ? `${lowerName} ${ODDS_PAPI_BOOKMAKER_SUFFIX}`
+        : lowerName;
+};
 
 export const getBookmakersArray = (
     bookmakersData: BookmakersConfig[],
@@ -193,18 +221,30 @@ export const checkOdds = (
                 const primaryBookmaker = bookmakers[0];
                 const secondaryBookmaker = bookmakers[1];
                 if (primaryBookmaker && !secondaryBookmaker) {
-                    if (sportsBookName.toLowerCase() === primaryBookmaker.toLowerCase()) {
+                    if (
+                        sportsBookName.toLowerCase() ===
+                        getBookmakerOddsId(primaryBookmaker.name, primaryBookmaker.vendor)
+                    ) {
                         if (value.playerId && !value.isMain) return acc;
                         acc.push(value);
+                    } else {
+                        const existingErrorMessage = errorMessageMap.get(Number(value.typeId));
+                        if (!existingErrorMessage) {
+                            errorMessageMap.set(Number(value.typeId), NO_MATCHING_BOOKMAKERS_MESSAGE);
+                        }
                     }
                 } else {
-                    if (sportsBookName.toLowerCase() === primaryBookmaker) {
+                    if (
+                        sportsBookName.toLowerCase() ===
+                        getBookmakerOddsId(primaryBookmaker.name, primaryBookmaker.vendor)
+                    ) {
                         if (value.playerId && !value.isMain) return acc; // Skip if not main for player props
                         // check primary odds against every other configured bookmaker (secondary and tertiary)
                         for (const otherBookmaker of bookmakers.slice(1)) {
+                            const otherBookmakerId = getBookmakerOddsId(otherBookmaker.name, otherBookmaker.vendor);
                             const otherBookmakerObject =
                                 odds[
-                                    `${otherBookmaker}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
+                                    `${otherBookmakerId}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
                                 ];
                             if (otherBookmakerObject) {
                                 if (shouldBlockOdds(value.price, otherBookmakerObject.price, anchors)) {
@@ -230,7 +270,7 @@ export const checkOdds = (
 
                                         const adjustedBookmakerObject =
                                             odds[
-                                                `${otherBookmaker}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${adjustedPoints}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
+                                                `${otherBookmakerId}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${adjustedPoints}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
                                             ];
 
                                         if (adjustedBookmakerObject) {
@@ -284,7 +324,7 @@ export const getBookmakersForTypeId = (
     defaultProviders: string[],
     leagueInfos: LeagueConfigInfo[], // LeagueConfigInfo for specific sport, not the entire list from csv
     typeId: number
-): string[] => {
+): BookmakerWithVendor[] => {
     const info = leagueInfos.find((leagueInfo) => Number(leagueInfo.typeId) === typeId);
 
     // bookmakers in priority order: from league config when defined there, otherwise default providers
@@ -294,10 +334,10 @@ export const getBookmakersForTypeId = (
             : defaultProviders;
 
     // take bookmakers in order until the first missing one (e.g. tertiary is ignored when no secondary is defined)
-    const bookmakers: string[] = [];
+    const bookmakers: BookmakerWithVendor[] = [];
     for (const bookmaker of configuredBookmakers) {
         if (!bookmaker) break;
-        bookmakers.push(bookmaker.toLowerCase());
+        bookmakers.push(parseBookmakerCell(bookmaker));
     }
     return bookmakers;
 };
@@ -305,12 +345,14 @@ export const getBookmakersForTypeId = (
 export const getLastPolledInvalidBookmakers = (
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
-    bookmakers: string[]
+    bookmakers: BookmakerWithVendor[]
 ): string[] => {
     const now = new Date();
-    const invalidBookmakers = bookmakers.filter((bookmakerId) => {
+    const invalidBookmakers = bookmakers.filter(({ name, vendor }) => {
         const lastPolledTime = lastPolledData.find(
-            (entry) => entry.sportsbook.toLowerCase() === bookmakerId.toLowerCase()
+            (entry) =>
+                entry.sportsbook.toLowerCase() === name.toLowerCase() &&
+                (entry.vendor ?? DEFAULT_BOOKMAKER_VENDOR) === vendor
         )?.timestamp;
         if (typeof lastPolledTime !== 'number') {
             return true;
@@ -323,7 +365,7 @@ export const getLastPolledInvalidBookmakers = (
         return false;
     });
 
-    return invalidBookmakers;
+    return invalidBookmakers.map((b) => b.name);
 };
 
 export const calculateImpliedOddsDifference = (impliedOddsA: number, impliedOddsB: number): number => {

@@ -1,5 +1,5 @@
 import { League, Sport, getLeagueSport } from 'overtime-utils';
-import { GAME_CLOCK_ERROR, GAME_NOT_LIVE } from '../constants/errors';
+import { GAME_CLOCK_ERROR, GAME_NOT_LIVE, GAME_PERIOD_MISSING_ERROR } from '../constants/errors';
 import { ScoresObject } from '../types/odds';
 
 export const checkGameContraints = (
@@ -32,9 +32,13 @@ export const checkGameContraints = (
 
 export const allowSoccerGame = (
     currentClock: string,
-    currentPeriod: string,
+    currentPeriod: string | null,
     soccerMinuteLimitForLiveTrading: number | undefined
 ) => {
+    if (currentPeriod === null) {
+        return { allow: false, message: GAME_PERIOD_MISSING_ERROR };
+    }
+
     const currentClockNumber = Number(currentClock);
     if (
         (!Number.isNaN(currentClockNumber) &&
