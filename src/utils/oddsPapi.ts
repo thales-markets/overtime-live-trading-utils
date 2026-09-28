@@ -459,9 +459,17 @@ export const mapOddsPapiOutcomeFields = (
 // dropped here rather than mapped, since a REST snapshot has no "previous" state to reconcile against (a
 // streaming caller should instead treat this as locking/removing an existing price). Also hard-stopped when
 // the fixture's own bookmakers metadata flags this outcome's bookmaker with staleOdds:true - that means
-// OddsPapi's own upstream connection to that bookmaker is down, so its odds can't be trusted either.
-export const isOddsPapiOutcomeHardStopped = (outcome: any, bookmakersMeta?: any): boolean =>
-    outcome.active === false || outcome.marketActive === false || !!bookmakersMeta?.[outcome.bookmaker]?.staleOdds;
+// OddsPapi's own upstream connection to that bookmaker is down, so its odds can't be trusted either - or with
+// suspended:true, meaning the bookmaker itself has suspended betting on this fixture.
+export const isOddsPapiOutcomeHardStopped = (outcome: any, bookmakersMeta?: any): boolean => {
+    const bookmakerMeta = bookmakersMeta?.[outcome.bookmaker];
+    return (
+        outcome.active === false ||
+        outcome.marketActive === false ||
+        !!bookmakerMeta?.staleOdds ||
+        !!bookmakerMeta?.suspended
+    );
+};
 
 // Odd.timestamp/OddsPapiStreamEvent.timestamp are always epoch seconds, matching OpticOdds' own convention,
 // regardless of the vendor's own native units - OddsPapi's changedAt/bookmakerChangedAt are epoch milliseconds. A non-number

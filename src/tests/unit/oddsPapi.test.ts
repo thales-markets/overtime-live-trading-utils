@@ -756,6 +756,38 @@ describe('OddsPapi', () => {
             expect(mapped.odds[0]).toMatchObject({ id: 'outcome-key-1', sportsBookName: 'draftkings' });
         });
 
+        it('drops outcomes from a bookmaker flagged suspended in the fixture bookmakers metadata', () => {
+            const fixtureOddsResult = {
+                gameId: 'game-1',
+                homeTeam: 'Home FC',
+                awayTeam: 'Away FC',
+                participantsRotated: false,
+                fixtureOdds: {
+                    status: { live: true, statusName: 'live' },
+                    sport: { sportId: 1 },
+                    tournament: { tournamentId: 55 },
+                    startTime: 1700000000,
+                    bookmakers: {
+                        draftkings: { staleOdds: false, suspended: false },
+                        pinnacle: { staleOdds: false, suspended: true },
+                    },
+                    odds: {
+                        draftkings: {
+                            'outcome-key-1': buildOutcome({ bookmaker: 'draftkings', outcomeId: 1 }),
+                        },
+                        pinnacle: {
+                            'outcome-key-2': buildOutcome({ bookmaker: 'pinnacle', outcomeId: 1 }),
+                        },
+                    },
+                },
+            };
+
+            const [mapped] = mapOddsPapiApiFixtureOdds([fixtureOddsResult], resolveMarketDefinitionStub);
+
+            expect(mapped.odds).toHaveLength(1);
+            expect(mapped.odds[0]).toMatchObject({ id: 'outcome-key-1', sportsBookName: 'draftkings' });
+        });
+
         it('skips falsy entries in the results array', () => {
             expect(mapOddsPapiApiFixtureOdds([null, undefined], resolveMarketDefinitionStub)).toEqual([]);
         });
