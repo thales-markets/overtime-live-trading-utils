@@ -464,11 +464,17 @@ export const isOddsPapiOutcomeHardStopped = (outcome: any, bookmakersMeta?: any)
     outcome.active === false || outcome.marketActive === false || !!bookmakersMeta?.[outcome.bookmaker]?.staleOdds;
 
 // Odd.timestamp/OddsPapiStreamEvent.timestamp are always epoch seconds, matching OpticOdds' own convention,
-// regardless of the vendor's own native units - OddsPapi's changedAt is epoch milliseconds. A non-number
+// regardless of the vendor's own native units - OddsPapi's changedAt/bookmakerChangedAt are epoch milliseconds. A non-number
 // value (missing/malformed changedAt) is passed through as-is rather than coerced to NaN, so a caller's own
 // "non-number timestamp = always stale" fallback still works correctly.
 const toEpochSeconds = (epochMillis: unknown): number =>
     typeof epochMillis === 'number' ? epochMillis / 1000 : (epochMillis as number);
+
+// Prefers bookmakerChangedAt (epoch ms, nullable) - when the bookmaker itself changed the price, i.e. the price's
+// true age. changedAt is when OddsPapi observed that change, always at or after bookmakerChangedAt, so using it
+// would overstate freshness. Falls back to changedAt when the bookmaker doesn't provide its own timestamp.
+const getOddsPapiOutcomeTimestamp = (outcome: any): number =>
+    toEpochSeconds(typeof outcome.bookmakerChangedAt === 'number' ? outcome.bookmakerChangedAt : outcome.changedAt);
 
 const mapOddsPapiOddsLine = (
     outcomeKey: string,
@@ -489,7 +495,7 @@ const mapOddsPapiOddsLine = (
         sportsBookName: outcome.bookmaker,
         name: fields.name,
         price: outcome.price,
-        timestamp: toEpochSeconds(outcome.changedAt),
+        timestamp: getOddsPapiOutcomeTimestamp(outcome),
         points: fields.points,
         isMain: outcome.mainLine,
         isLive,
@@ -570,7 +576,7 @@ export const mapOddsPapiStreamOutcomeToEvent = (
         sportsbook: storedOutcome.bookmaker,
         name: fields.name,
         price: storedOutcome.price,
-        timestamp: toEpochSeconds(storedOutcome.changedAt),
+        timestamp: getOddsPapiOutcomeTimestamp(storedOutcome),
         points: fields.points,
         is_main: storedOutcome.mainLine,
         is_live: true,

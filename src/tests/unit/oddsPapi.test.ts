@@ -806,6 +806,31 @@ describe('OddsPapi', () => {
 
             expect(mapped.odds[0].timestamp).toBeUndefined();
         });
+
+        it('prefers bookmakerChangedAt over changedAt, falling back to changedAt when bookmakerChangedAt is null', () => {
+            const fixtureOddsResult = {
+                gameId: 'game-1',
+                homeTeam: 'Home FC',
+                awayTeam: 'Away FC',
+                participantsRotated: false,
+                fixtureOdds: {
+                    status: { live: true, statusName: 'live' },
+                    sport: { sportId: 1 },
+                    tournament: { tournamentId: 55 },
+                    odds: {
+                        draftkings: {
+                            'outcome-key-1': buildOutcome({ bookmakerChangedAt: 1700000003000, changedAt: 1700000005000 }),
+                            'outcome-key-2': buildOutcome({ bookmakerChangedAt: null, changedAt: 1700000005000 }),
+                        },
+                    },
+                },
+            };
+
+            const [mapped] = mapOddsPapiApiFixtureOdds([fixtureOddsResult], resolveMarketDefinitionStub);
+
+            expect(mapped.odds[0].timestamp).toBe(1700000003);
+            expect(mapped.odds[1].timestamp).toBe(1700000005);
+        });
     });
 
     describe('mapOddsPapiStreamOutcomeToEvent', () => {
@@ -892,6 +917,22 @@ describe('OddsPapi', () => {
                 resolveMarketDefinitionStub
             );
             expect(nonNumber?.timestamp).toBe('not-a-number');
+        });
+
+        it('prefers bookmakerChangedAt over changedAt, falling back to changedAt when bookmakerChangedAt is null', () => {
+            const outcome = { bookmaker: 'draftkings', marketId: 100, outcomeId: 1, price: 1.91, changedAt: 1700000005000 };
+            const mapEvent = (bookmakerChangedAt: number | null) =>
+                mapOddsPapiStreamOutcomeToEvent(
+                    'outcome-key-1',
+                    { ...outcome, bookmakerChangedAt },
+                    'game-1',
+                    1,
+                    participants,
+                    resolveMarketDefinitionStub
+                );
+
+            expect(mapEvent(1700000003000)?.timestamp).toBe(1700000003);
+            expect(mapEvent(null)?.timestamp).toBe(1700000005);
         });
     });
 
