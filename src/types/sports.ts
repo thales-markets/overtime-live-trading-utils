@@ -30,4 +30,4 @@ export type ChildMarket = {
     positionNames?: string[];
 };
 
-export type LastPolledArray = { sportsbook: string; timestamp: number }[];
+export type LastPolledArray = { sportsbook: string; timestamp: number; vendor?: string }[];

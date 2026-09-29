@@ -10,3 +10,4 @@ export const LAST_POLLED_TOO_OLD = 'Last polled data is too old';
 export const REMOVE_MIN_MAX_ODDS = 'Removing market due to min/max odds constraints';
 export const GAME_NOT_LIVE = 'Blocking game because it is no longer live.';
 export const GAME_CLOCK_ERROR = 'Blocking game due to clock:';
+export const GAME_PERIOD_MISSING_ERROR = 'Blocking game because period is missing';

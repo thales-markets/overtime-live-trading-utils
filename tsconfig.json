@@ -13,5 +13,7 @@
         "outDir": "build",
         "declaration": true,
         "strict": true,
+        "ignoreDeprecations": "6.0",
+        "types": ["jest", "node"]
     }
 }

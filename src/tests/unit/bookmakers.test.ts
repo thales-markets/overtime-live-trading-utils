@@ -393,7 +393,9 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
                     price: secondaryPrice,
                 } as OddsWithLeagueInfo;
 
-                odds[`bovada${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`] = secondaryMockOdd;
+                odds[
+                    `bovada${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
+                ] = secondaryMockOdd;
             }
 
             return odds;
@@ -424,6 +426,75 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             expect(result.errorsMap.has(1001)).toBe(true);
             expect(result.errorsMap.get(1001)).toBe(LAST_POLLED_TOO_OLD);
             expect(result.odds.length).toBe(0);
+        });
+
+        describe('single-bookmaker markets (no secondary configured)', () => {
+            const singleBookmakerInfo: LeagueConfigInfo[] = [
+                {
+                    sportId: '4',
+                    enabled: 'true',
+                    marketName: 'Player Games Won',
+                    typeId: '10017',
+                    type: LiveMarketType.TOTAL,
+                    maxOdds: '0.95',
+                    minOdds: '0.05',
+                    primaryBookmaker: 'draftkings oddspapi',
+                },
+            ];
+            const freshPolled = [{ sportsbook: 'draftkings', timestamp: Date.now(), vendor: 'oddspapi' }];
+            const line = (sportsBookName: string, vendor: string | undefined) =>
+                ({
+                    sportsBookName,
+                    marketName: 'player games won',
+                    selection: 'Fajing Sun',
+                    selectionLine: 'over',
+                    points: 11.5,
+                    price: 1.769,
+                    isMain: false,
+                    playerId: 0,
+                    vendor,
+                    // filterOdds spreads the matched leagueInfo row (incl. typeId) onto every odd it keeps - built
+                    // by hand here (bypassing filterOdds) so it must be included the same way.
+                    typeId: 10017,
+                }) as any;
+
+            it('accepts the configured bookmaker+vendor with no cross-check needed', () => {
+                const odds = {
+                    [`draftkings oddspapi${SPLIT_DELIMITER}player games won${SPLIT_DELIMITER}11.5${SPLIT_DELIMITER}Fajing Sun${SPLIT_DELIMITER}over`]:
+                        line('draftkings', 'oddspapi'),
+                };
+                const result = checkOdds(
+                    odds,
+                    singleBookmakerInfo,
+                    ['draftkings'],
+                    freshPolled,
+                    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                    ODDS_THRESHOLD_ANCHORS,
+                    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
+                );
+                expect(result.errorsMap.has(10017)).toBe(false);
+                expect(result.odds).toHaveLength(1);
+            });
+
+            it('records NO_MATCHING_BOOKMAKERS_MESSAGE (not a silent empty errorsMap) when the only key present is for a different vendor than configured', () => {
+                // same bookmaker NAME, but no "oddspapi" tag - e.g. the raw OpticOdds feed's own line for a
+                // bookmaker actually routed to OddsPapi for this market
+                const odds = {
+                    [`draftkings${SPLIT_DELIMITER}player games won${SPLIT_DELIMITER}11.5${SPLIT_DELIMITER}Fajing Sun${SPLIT_DELIMITER}over`]:
+                        line('draftkings', undefined),
+                };
+                const result = checkOdds(
+                    odds,
+                    singleBookmakerInfo,
+                    ['draftkings'],
+                    freshPolled,
+                    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                    ODDS_THRESHOLD_ANCHORS,
+                    MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
+                );
+                expect(result.errorsMap.get(10017)).toBe(NO_MATCHING_BOOKMAKERS_MESSAGE);
+                expect(result.odds).toHaveLength(0);
+            });
         });
 
         it('Should add DIFF_BETWEEN_BOOKMAKERS_MESSAGE error when odds difference exceeds anchor threshold', () => {
@@ -843,7 +914,9 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             );
             // Tertiary bookmaker with 11.0 points (within 10% tolerance of 10.5)
             odds[`superbet${SPLIT_DELIMITER}spread${SPLIT_DELIMITER}11${SPLIT_DELIMITER}over${SPLIT_DELIMITER}0`] = {
-                ...odds[`draftkings${SPLIT_DELIMITER}spread${SPLIT_DELIMITER}10.5${SPLIT_DELIMITER}over${SPLIT_DELIMITER}0`],
+                ...odds[
+                    `draftkings${SPLIT_DELIMITER}spread${SPLIT_DELIMITER}10.5${SPLIT_DELIMITER}over${SPLIT_DELIMITER}0`
+                ],
                 sportsBookName: 'superbet',
                 points: 11.0,
                 price: 1.88,
@@ -915,7 +988,11 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
         it('Should return all bookmakers from league config lowercased', () => {
             const bookmakers = getBookmakersForTypeId(['pinnacle'], [leagueInfoWithAllBookmakers], 3001);
 
-            expect(bookmakers).toEqual(['draftkings', 'bovada', 'superbet']);
+            expect(bookmakers).toEqual([
+                { name: 'draftkings', vendor: 'opticodds' },
+                { name: 'bovada', vendor: 'opticodds' },
+                { name: 'superbet', vendor: 'opticodds' },
+            ]);
         });
 
         it('Should ignore tertiary bookmaker when secondary is not defined', () => {
@@ -926,7 +1003,7 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
 
             const bookmakers = getBookmakersForTypeId(['pinnacle'], [leagueInfo], 3001);
 
-            expect(bookmakers).toEqual(['draftkings']);
+            expect(bookmakers).toEqual([{ name: 'draftkings', vendor: 'opticodds' }]);
         });
 
         it('Should fall back to all default providers when league config has no primary bookmaker', () => {
@@ -943,13 +1020,34 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
                 3001
             );
 
-            expect(bookmakers).toEqual(['draftkings', 'bovada', 'superbet', 'pinnacle']);
+            expect(bookmakers).toEqual([
+                { name: 'draftkings', vendor: 'opticodds' },
+                { name: 'bovada', vendor: 'opticodds' },
+                { name: 'superbet', vendor: 'opticodds' },
+                { name: 'pinnacle', vendor: 'opticodds' },
+            ]);
         });
 
         it('Should fall back to default providers when no league config matches typeId', () => {
             const bookmakers = getBookmakersForTypeId(['pinnacle', 'bet365'], [leagueInfoWithAllBookmakers], 9999);
 
-            expect(bookmakers).toEqual(['pinnacle', 'bet365']);
+            expect(bookmakers).toEqual([
+                { name: 'pinnacle', vendor: 'opticodds' },
+                { name: 'bet365', vendor: 'opticodds' },
+            ]);
+        });
+
+        it('Should parse the "oddspapi" vendor suffix off a bookmaker cell', () => {
+            const leagueInfo = {
+                ...leagueInfoWithAllBookmakers,
+                primaryBookmaker: 'DraftKings oddspapi',
+                secondaryBookmaker: undefined,
+                tertiaryBookmaker: undefined,
+            };
+
+            const bookmakers = getBookmakersForTypeId(['pinnacle'], [leagueInfo], 3001);
+
+            expect(bookmakers).toEqual([{ name: 'draftkings', vendor: 'oddspapi' }]);
         });
     });
 });
