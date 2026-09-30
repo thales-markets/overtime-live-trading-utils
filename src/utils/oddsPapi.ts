@@ -53,11 +53,20 @@ export const getOddsPapiSportId = (
 
 export const normalizeOddsPapiPeriod = (period: unknown): string => (period == null ? '' : String(period));
 
-// Builds the "oddsPapiSportId:marketType:period" -> our marketName lookup consumed by
-// resolveOddsPapiMarketDefinition, from the raw RISK_MANAGEMENT_ODDS_PAPI_MARKETS_MAP_DATA CSV rows. Keyed
-// per oddsPapiSportId since the same marketType/period pair can map to a different marketName in a different
-// sport. Rows missing the sportId, marketType, or our marketName are dropped - they carry no usable mapping.
-// A blank oddspapiPeriod is not dropped - see normalizeOddsPapiPeriod.
+// Key of an exact-marketId mapping in oddsPapiMarketNameMap. "#" never appears in an OddsPapi marketType, so
+// these keys can't collide with the generic "oddsPapiSportId:marketType:period" ones.
+export const getOddsPapiMarketIdMapKey = (oddsPapiSportId: number | string, marketId: number | string): string =>
+    `${oddsPapiSportId}:#${marketId}`;
+
+// Builds the our-marketName lookup consumed by resolveOddsPapiMarketDefinition, from the raw
+// RISK_MANAGEMENT_ODDS_PAPI_MARKETS_MAP_DATA CSV rows. Keyed per oddsPapiSportId since the same marketType/period
+// pair can map to a different marketName in a different sport. Two kinds of row:
+//  - exact (oddspapiMarketId set): maps that single catalog market. Needed because OddsPapi's marketType:period
+//    isn't unique per sport (e.g. basketball First/Second Half Winner are both "moneyline" with no period, ice
+//    hockey exact-goals and "N+" ladders share one marketType:period and even marketName).
+//  - generic (oddspapiMarketType set): maps every catalog market with that marketType:period.
+// Rows missing the sportId, our marketName, or both marketId and marketType are dropped - they carry no usable
+// mapping. A blank oddspapiPeriod is not dropped - see normalizeOddsPapiPeriod.
 export const buildOddsPapiMarketNameMap = (
     rawOddsPapiMarketsMapData: OddsPapiMarketMapCsvRow[]
 ): Map<string, string> => {
@@ -65,9 +74,18 @@ export const buildOddsPapiMarketNameMap = (
 
     rawOddsPapiMarketsMapData.forEach((row) => {
         const oddsPapiSportId = Number(row.oddspapiSportId);
-        if (!oddsPapiSportId) return;
+        if (!oddsPapiSportId || !row.opticOddsMarketName) return;
 
-        if (row.oddspapiMarketType && row.opticOddsMarketName) {
+        const oddsPapiMarketId = Number(row.oddspapiMarketId);
+        if (oddsPapiMarketId) {
+            oddsPapiMarketNameMap.set(
+                getOddsPapiMarketIdMapKey(oddsPapiSportId, oddsPapiMarketId),
+                row.opticOddsMarketName
+            );
+            return;
+        }
+
+        if (row.oddspapiMarketType) {
             oddsPapiMarketNameMap.set(
                 `${oddsPapiSportId}:${row.oddspapiMarketType}:${normalizeOddsPapiPeriod(row.oddspapiPeriod)}`,
                 row.opticOddsMarketName
@@ -376,9 +394,10 @@ const resolveOddsPapiParticipantSlot = (marketType: string): 1 | 2 | undefined =
 };
 
 // Resolves one OddsPapi catalog market-definition row (from OddsPapi's own /markets endpoint) to
-// {opticOddsMarketName, handicap, outcomeNameByOutcomeId}, or null when its marketType:period isn't mapped to
-// an OpticOdds marketName in oddsPapiMarketNameMap (e.g. a submarket not configured for any bookmaker yet) -
-// callers must drop the market in that case rather than mis-file it. This is the correctness-critical part of
+// {opticOddsMarketName, handicap, outcomeNameByOutcomeId}, or null when neither its exact marketId nor its
+// marketType:period is mapped to an OpticOdds marketName in oddsPapiMarketNameMap (e.g. a submarket not
+// configured for any bookmaker yet) - callers must drop the market in that case rather than mis-file it. An
+// exact marketId mapping wins over the generic marketType:period one. This is the correctness-critical part of
 // market-definition resolution (the key format and field mapping), factored out so a caching/indexing
 // strategy built on top (see resolveOddsPapiMarketDefinition below) can't drift from a one-off lookup.
 export const mapOddsPapiCatalogMarketDefinition = (
@@ -386,7 +405,9 @@ export const mapOddsPapiCatalogMarketDefinition = (
     oddsPapiMarketNameMap: Map<string, string>
 ): OddsPapiResolvedMarket | null => {
     const marketTypeAndPeriod = `${marketDef.marketType}:${normalizeOddsPapiPeriod(marketDef.period)}`;
-    const opticOddsMarketName = oddsPapiMarketNameMap.get(`${marketDef.sportId}:${marketTypeAndPeriod}`);
+    const opticOddsMarketName =
+        oddsPapiMarketNameMap.get(getOddsPapiMarketIdMapKey(marketDef.sportId, marketDef.marketId)) ||
+        oddsPapiMarketNameMap.get(`${marketDef.sportId}:${marketTypeAndPeriod}`);
     if (!opticOddsMarketName) return null;
 
     const outcomeNameByOutcomeId = new Map<number, string>(

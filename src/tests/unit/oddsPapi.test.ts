@@ -11,6 +11,7 @@ import {
     buildOddsPapiLeaguesMap,
     buildOddsPapiMarketNameMap,
     getOddsPapiLeagueInfo,
+    getOddsPapiMarketIdMapKey,
     getOddsPapiSportId,
     isOddsPapiParticipantsRotated,
     mapOddsPapiApiFixtureOdds,
@@ -1063,6 +1064,48 @@ describe('OddsPapi', () => {
 
             expect(map.get('1:correctscore:')).toBe('Correct Score');
         });
+
+        it('keys a row with oddspapiMarketId by the exact marketId, ignoring its marketType/period', () => {
+            const rows: OddsPapiMarketMapCsvRow[] = [
+                {
+                    oddspapiSportId: '11',
+                    oddspapiMarketType: 'moneyline',
+                    oddspapiMarketId: '11344',
+                    opticOddsMarketName: '1st Half Moneyline',
+                },
+                { oddspapiSportId: '11', oddspapiMarketId: 11346, opticOddsMarketName: '2nd Half Moneyline' },
+            ];
+
+            const map = buildOddsPapiMarketNameMap(rows);
+
+            expect(map.get(getOddsPapiMarketIdMapKey(11, 11344))).toBe('1st Half Moneyline');
+            expect(map.get(getOddsPapiMarketIdMapKey(11, 11346))).toBe('2nd Half Moneyline');
+            expect(map.has('11:moneyline:')).toBe(false);
+            expect(map.size).toBe(2);
+        });
+
+        it('treats a non-numeric oddspapiMarketId as absent, falling back to the generic marketType:period row', () => {
+            const rows: OddsPapiMarketMapCsvRow[] = [
+                {
+                    oddspapiSportId: '1',
+                    oddspapiMarketType: 'moneyline',
+                    oddspapiPeriod: 'full',
+                    oddspapiMarketId: 'abc',
+                    opticOddsMarketName: 'Moneyline',
+                },
+            ];
+
+            const map = buildOddsPapiMarketNameMap(rows);
+
+            expect(map.get('1:moneyline:full')).toBe('Moneyline');
+            expect(map.size).toBe(1);
+        });
+
+        it('drops an exact-marketId row missing the marketName', () => {
+            const map = buildOddsPapiMarketNameMap([{ oddspapiSportId: '11', oddspapiMarketId: '11344' }]);
+
+            expect(map.size).toBe(0);
+        });
     });
 
     describe('resolveOddsPapiMarketDefinition', () => {
@@ -1165,6 +1208,78 @@ describe('OddsPapi', () => {
             const definition = resolveOddsPapiMarketDefinition(1, 100, oddsPapiMarketNameMap, catalogDefinitions);
 
             expect(definition?.participantSlot).toBeUndefined();
+        });
+
+        describe('exact oddspapiMarketId mapping', () => {
+            // Real basketball catalog entries: both half-winner markets come with no period, so a generic
+            // "11:moneyline:" row can't tell them apart
+            const halfWinnersCatalog: OddsPapiMarketCatalogEntry[] = [
+                {
+                    sportId: 11,
+                    marketId: 11344,
+                    marketType: 'moneyline',
+                    handicap: 0,
+                    outcomes: [
+                        { outcomeId: 11344, outcomeName: '1' },
+                        { outcomeId: 11345, outcomeName: '2' },
+                    ],
+                },
+                {
+                    sportId: 11,
+                    marketId: 11346,
+                    marketType: 'moneyline',
+                    handicap: 0,
+                    outcomes: [
+                        { outcomeId: 11346, outcomeName: '1' },
+                        { outcomeId: 11347, outcomeName: '2' },
+                    ],
+                },
+            ];
+
+            it('resolves each market sharing one marketType:period to its own marketName', () => {
+                const map = buildOddsPapiMarketNameMap([
+                    { oddspapiSportId: '11', oddspapiMarketId: '11344', opticOddsMarketName: '1st Half Moneyline' },
+                    { oddspapiSportId: '11', oddspapiMarketId: '11346', opticOddsMarketName: '2nd Half Moneyline' },
+                ]);
+
+                const firstHalf = resolveOddsPapiMarketDefinition(11, 11344, map, halfWinnersCatalog);
+                const secondHalf = resolveOddsPapiMarketDefinition(11, 11346, map, halfWinnersCatalog);
+
+                expect(firstHalf?.opticOddsMarketName).toBe('1st Half Moneyline');
+                expect(firstHalf?.outcomeNameByOutcomeId.get(11344)).toBe('1');
+                expect(secondHalf?.opticOddsMarketName).toBe('2nd Half Moneyline');
+                expect(secondHalf?.outcomeNameByOutcomeId.get(11347)).toBe('2');
+            });
+
+            it('leaves a sibling market unmapped when only one of them has an exact row and there is no generic row', () => {
+                const map = buildOddsPapiMarketNameMap([
+                    { oddspapiSportId: '11', oddspapiMarketId: '11344', opticOddsMarketName: '1st Half Moneyline' },
+                ]);
+
+                expect(resolveOddsPapiMarketDefinition(11, 11346, map, halfWinnersCatalog)).toBeNull();
+            });
+
+            it('prefers the exact row over a generic row for the same market, the generic row still resolving the rest', () => {
+                const map = buildOddsPapiMarketNameMap([
+                    { oddspapiSportId: '11', oddspapiMarketType: 'moneyline', opticOddsMarketName: 'Half Moneyline' },
+                    { oddspapiSportId: '11', oddspapiMarketId: '11344', opticOddsMarketName: '1st Half Moneyline' },
+                ]);
+
+                expect(resolveOddsPapiMarketDefinition(11, 11344, map, halfWinnersCatalog)?.opticOddsMarketName).toBe(
+                    '1st Half Moneyline'
+                );
+                expect(resolveOddsPapiMarketDefinition(11, 11346, map, halfWinnersCatalog)?.opticOddsMarketName).toBe(
+                    'Half Moneyline'
+                );
+            });
+
+            it('scopes an exact row to its own sportId', () => {
+                const map = buildOddsPapiMarketNameMap([
+                    { oddspapiSportId: '12', oddspapiMarketId: '11344', opticOddsMarketName: '1st Half Moneyline' },
+                ]);
+
+                expect(resolveOddsPapiMarketDefinition(11, 11344, map, halfWinnersCatalog)).toBeNull();
+            });
         });
     });
 

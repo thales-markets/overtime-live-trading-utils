@@ -31,11 +31,13 @@ export interface OddsPapiLeagueCsvRow {
 }
 
 // Raw row shape of the RISK_MANAGEMENT_ODDS_PAPI_MARKETS_MAP_DATA CSV, before buildOddsPapiMarketNameMap
-// parses it into a "oddsPapiSportId:marketType:period" -> our marketName lookup.
+// parses it into a "oddsPapiSportId:marketType:period" (or exact "oddsPapiSportId:#marketId") -> our marketName
+// lookup.
 export interface OddsPapiMarketMapCsvRow {
     oddspapiSportId: string | number;
     oddspapiMarketType?: string;
     oddspapiPeriod?: string;
+    oddspapiMarketId?: string | number;
     opticOddsMarketName?: string;
 }
 
