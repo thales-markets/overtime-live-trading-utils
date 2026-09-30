@@ -10,6 +10,7 @@ import {
 import {
     buildOddsPapiLeaguesMap,
     buildOddsPapiMarketNameMap,
+    findOddsPapiMarketCollisions,
     getOddsPapiLeagueInfo,
     getOddsPapiMarketIdMapKey,
     getOddsPapiSportId,
@@ -1280,6 +1281,125 @@ describe('OddsPapi', () => {
 
                 expect(resolveOddsPapiMarketDefinition(11, 11344, map, halfWinnersCatalog)).toBeNull();
             });
+        });
+    });
+
+    describe('findOddsPapiMarketCollisions', () => {
+        const outcomes = (...names: string[]) =>
+            names.map((outcomeName, i) => ({ outcomeId: 1000 + i, outcomeName }));
+
+        // Real basketball entries: both half winners come with no period
+        const firstHalfWinner: OddsPapiMarketCatalogEntry = {
+            sportId: 11,
+            marketId: 11344,
+            marketType: 'moneyline',
+            marketName: 'First Half Winner',
+            handicap: 0,
+            outcomes: outcomes('1', '2'),
+        };
+        const secondHalfWinner: OddsPapiMarketCatalogEntry = {
+            ...firstHalfWinner,
+            marketId: 11346,
+            marketName: 'Second Half Winner',
+        };
+        const fullGameWinner: OddsPapiMarketCatalogEntry = {
+            ...firstHalfWinner,
+            marketId: 110,
+            period: 'result',
+            marketName: 'Winner (incl. overtime)',
+        };
+        const catalog = [firstHalfWinner, secondHalfWinner, fullGameWinner];
+
+        it('reports markets resolving to the same marketName/handicap with overlapping outcomes', () => {
+            const map = buildOddsPapiMarketNameMap([
+                { oddspapiSportId: '11', oddspapiMarketType: 'moneyline', opticOddsMarketName: 'Half Moneyline' },
+                {
+                    oddspapiSportId: '11',
+                    oddspapiMarketType: 'moneyline',
+                    oddspapiPeriod: 'result',
+                    opticOddsMarketName: 'Moneyline',
+                },
+            ]);
+
+            expect(findOddsPapiMarketCollisions(catalog, map)).toEqual([
+                {
+                    opticOddsMarketName: 'Half Moneyline',
+                    handicap: 0,
+                    participantSlot: undefined,
+                    markets: [firstHalfWinner, secondHalfWinner],
+                },
+            ]);
+        });
+
+        it('reports nothing once the colliding markets are mapped by oddspapiMarketId', () => {
+            const map = buildOddsPapiMarketNameMap([
+                { oddspapiSportId: '11', oddspapiMarketId: '11344', opticOddsMarketName: '1st Half Moneyline' },
+                { oddspapiSportId: '11', oddspapiMarketId: '11346', opticOddsMarketName: '2nd Half Moneyline' },
+            ]);
+
+            expect(findOddsPapiMarketCollisions(catalog, map)).toEqual([]);
+        });
+
+        it('ignores markets on the same marketName with disjoint outcomes (tennis best-of-3 vs best-of-5)', () => {
+            const bestOf3: OddsPapiMarketCatalogEntry = {
+                sportId: 12,
+                marketId: 12883,
+                marketType: 'correctscore',
+                period: 'result',
+                handicap: 0,
+                outcomes: outcomes('2:0', '2:1', '0:2', '1:2'),
+            };
+            const bestOf5: OddsPapiMarketCatalogEntry = {
+                ...bestOf3,
+                marketId: 12887,
+                outcomes: outcomes('3:0', '3:1', '3:2', '0:3', '1:3', '2:3'),
+            };
+            const map = new Map([['12:correctscore:result', 'Correct Score']]);
+
+            expect(findOddsPapiMarketCollisions([bestOf3, bestOf5], map)).toEqual([]);
+        });
+
+        it('ignores markets on different handicap lines or participant slots', () => {
+            const over25: OddsPapiMarketCatalogEntry = {
+                sportId: 12,
+                marketId: 12231,
+                marketType: 'totals',
+                period: 'result',
+                handicap: 2.5,
+                outcomes: outcomes('Over', 'Under'),
+            };
+            const over35: OddsPapiMarketCatalogEntry = { ...over25, marketId: 12233, handicap: 3.5 };
+            const team1: OddsPapiMarketCatalogEntry = {
+                ...over25,
+                marketId: 500,
+                marketType: 'teamtotals-team1',
+                handicap: 10.5,
+            };
+            const team2: OddsPapiMarketCatalogEntry = { ...team1, marketId: 501, marketType: 'teamtotals-team2' };
+            const map = new Map([
+                ['12:totals:result', 'Total Sets'],
+                ['12:teamtotals-team1:result', 'Team Total'],
+                ['12:teamtotals-team2:result', 'Team Total'],
+            ]);
+
+            expect(findOddsPapiMarketCollisions([over25, over35, team1, team2], map)).toEqual([]);
+        });
+
+        it('ignores phantom catalog entries with no outcomes', () => {
+            const phantom: OddsPapiMarketCatalogEntry = { ...secondHalfWinner, outcomes: [] };
+            const map = new Map([['11:moneyline:', 'Half Moneyline']]);
+
+            expect(findOddsPapiMarketCollisions([firstHalfWinner, phantom], map)).toEqual([]);
+        });
+
+        it('keeps the same marketName in different sports apart', () => {
+            const otherSport: OddsPapiMarketCatalogEntry = { ...secondHalfWinner, sportId: 12 };
+            const map = new Map([
+                ['11:moneyline:', 'Half Moneyline'],
+                ['12:moneyline:', 'Half Moneyline'],
+            ]);
+
+            expect(findOddsPapiMarketCollisions([firstHalfWinner, otherSport], map)).toEqual([]);
         });
     });
 

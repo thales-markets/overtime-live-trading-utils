@@ -49,7 +49,17 @@ export interface OddsPapiMarketCatalogEntry {
     marketType: string;
     period?: string | null;
     handicap: number;
+    marketName?: string;
     outcomes?: { outcomeId: number; outcomeName: string }[];
+}
+
+// Catalog markets that resolve to the same OpticOdds market (marketName + handicap + participant slot) with at
+// least one outcome name in common - see findOddsPapiMarketCollisions.
+export interface OddsPapiMarketCollision {
+    opticOddsMarketName: string;
+    handicap: number;
+    participantSlot?: 1 | 2;
+    markets: OddsPapiMarketCatalogEntry[];
 }
 
 // snake_case shape matching OpticOdds' own SSE stream-event convention, so both vendors' stream events

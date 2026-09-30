@@ -6,6 +6,7 @@ import {
     OddsPapiLeagueInfo,
     OddsPapiLeaguesMap,
     OddsPapiMarketCatalogEntry,
+    OddsPapiMarketCollision,
     OddsPapiMarketMapCsvRow,
     OddsPapiParticipants,
     OddsPapiResolvedMarket,
@@ -438,6 +439,61 @@ export const resolveOddsPapiMarketDefinition = (
     if (!marketDef) return null;
 
     return mapOddsPapiCatalogMarketDefinition(marketDef, oddsPapiMarketNameMap);
+};
+
+// OddsPapi's marketType:period isn't always unique per sport (e.g. basketball First/Second Half Winner are both
+// "moneyline" with no period, ice hockey exact-goals and "N+" ladders share one marketType:period). When a
+// generic CSV row maps such a key, every market behind it resolves to the same OpticOdds market, and if they
+// also share a handicap, participant slot and at least one outcome name, their prices land on the same
+// selection - silently mispriced. Returns those groups so the caller can drop every market in them (a missing
+// market beats a mispriced one); the fix is mapping each one by oddspapiMarketId. Groups with disjoint outcome
+// sets (e.g. tennis best-of-3 vs best-of-5 Correct Score) can't clash and aren't returned, nor are catalog
+// entries with no outcomes (OddsPapi lists phantom marketIds that are just another market's outcomeId).
+// One pass over the catalog - meant to run once per catalog/marketNameMap pair, not per outcome.
+export const findOddsPapiMarketCollisions = (
+    catalogDefinitions: OddsPapiMarketCatalogEntry[],
+    oddsPapiMarketNameMap: Map<string, string>
+): OddsPapiMarketCollision[] => {
+    const entriesByTarget = new Map<
+        string,
+        { marketDef: OddsPapiMarketCatalogEntry; definition: OddsPapiResolvedMarket; outcomeNames: Set<string> }[]
+    >();
+
+    catalogDefinitions.forEach((marketDef) => {
+        if (!(marketDef.outcomes || []).length) return;
+        const definition = mapOddsPapiCatalogMarketDefinition(marketDef, oddsPapiMarketNameMap);
+        if (!definition) return;
+
+        const target = `${marketDef.sportId}:${definition.opticOddsMarketName}:${definition.handicap}:${
+            definition.participantSlot || ''
+        }`;
+        const entries = entriesByTarget.get(target) || [];
+        entries.push({ marketDef, definition, outcomeNames: new Set(definition.outcomeNameByOutcomeId.values()) });
+        entriesByTarget.set(target, entries);
+    });
+
+    const collisions: OddsPapiMarketCollision[] = [];
+    entriesByTarget.forEach((entries) => {
+        if (entries.length < 2) return;
+
+        const colliding = entries.filter((entry) =>
+            entries.some(
+                (other) =>
+                    other !== entry && Array.from(entry.outcomeNames).some((name) => other.outcomeNames.has(name))
+            )
+        );
+        if (!colliding.length) return;
+
+        const { definition } = colliding[0];
+        collisions.push({
+            opticOddsMarketName: definition.opticOddsMarketName,
+            handicap: definition.handicap,
+            participantSlot: definition.participantSlot,
+            markets: colliding.map((entry) => entry.marketDef),
+        });
+    });
+
+    return collisions;
 };
 
 // Shared marketId/outcomeId -> {marketName, points, name, selection, selectionLine} resolution, used by both
