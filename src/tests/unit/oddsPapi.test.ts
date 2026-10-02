@@ -279,6 +279,50 @@ describe('OddsPapi', () => {
             });
         });
 
+        it('maps a 1x2 market\'s "1"/"X"/"2" outcomes to home/Draw/away (baseball 4th inning 3-way)', () => {
+            const catalog: OddsPapiMarketCatalogEntry[] = [
+                {
+                    marketId: 13109,
+                    sportId: 13,
+                    handicap: 0,
+                    period: 'p4',
+                    marketType: '1x2',
+                    outcomes: [
+                        { outcomeId: 13109, outcomeName: '1' },
+                        { outcomeId: 13110, outcomeName: 'X' },
+                        { outcomeId: 13111, outcomeName: '2' },
+                    ],
+                } as OddsPapiMarketCatalogEntry,
+            ];
+            const marketNameMap = buildOddsPapiMarketNameMap([
+                {
+                    oddspapiSportId: '13',
+                    oddspapiMarketType: '1x2',
+                    oddspapiPeriod: 'p4',
+                    opticOddsMarketName: '4th Inning Moneyline 3-Way',
+                } as OddsPapiMarketMapCsvRow,
+            ]);
+            const resolve: ResolveOddsPapiMarketDefinition = (sportId, marketId) =>
+                resolveOddsPapiMarketDefinition(sportId, marketId, marketNameMap, catalog);
+            const fieldsFor = (outcomeId: number) =>
+                mapOddsPapiOutcomeFields({ marketId: 13109, outcomeId }, 13, participants, resolve);
+
+            expect(fieldsFor(13109)).toMatchObject({
+                marketName: '4th inning moneyline 3-way',
+                name: '1',
+                selection: 'home-team',
+                selectionLine: null,
+            });
+            expect(fieldsFor(13110)).toMatchObject({
+                marketName: '4th inning moneyline 3-way',
+                points: 0,
+                name: 'X',
+                selection: 'Draw',
+                selectionLine: null,
+            });
+            expect(fieldsFor(13111)).toMatchObject({ name: '2', selection: 'away-team', selectionLine: null });
+        });
+
         it('returns null (not a throw) when resolveMarketDefinition cannot resolve the market', () => {
             expect(() =>
                 mapOddsPapiOutcomeFields({ marketId: 999, outcomeId: 1 }, 1, participants, resolveMarketDefinitionStub)
