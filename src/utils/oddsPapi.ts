@@ -356,6 +356,7 @@ const mapOddsPapiSelection = (
 ): { selection: string | undefined; selectionLine: string | null } => {
     if (outcomeName === '1') return { selection: participants?.participant1Name, selectionLine: null };
     if (outcomeName === '2') return { selection: participants?.participant2Name, selectionLine: null };
+    if (outcomeName === 'X') return { selection: DRAW, selectionLine: null };
     if (outcomeName === 'Over' || outcomeName === 'Under') {
         const selection =
             participantSlot === 1
