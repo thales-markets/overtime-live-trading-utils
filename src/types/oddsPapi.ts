@@ -3,6 +3,7 @@ export interface OddsPapiResolvedMarket {
     handicap: number;
     outcomeNameByOutcomeId: Map<number, string>;
     participantSlot?: 1 | 2;
+    marketType?: string;
 }
 
 export type ResolveOddsPapiMarketDefinition = (

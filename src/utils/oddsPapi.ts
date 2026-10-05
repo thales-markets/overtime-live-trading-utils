@@ -336,8 +336,19 @@ export const orientOddsPapiParticipants = (
     participant2Name: participantsRotated ? homeTeam : awayTeam,
 });
 
+// Joins the two halves of a double-chance selection, e.g. "Hungary Or Draw" - see mapOddsPapiSelection.
+const DOUBLE_CHANCE_SEPARATOR = ' Or ';
+
 // Correct-score outcome names are "<participant1 games>:<participant2 games>", e.g. "6:4".
 const CORRECT_SCORE_OUTCOME_PATTERN = /^(\d+):(\d+)$/;
+
+// Halftime/fulltime outcome names are "<half time result>/<full time result>", e.g. "1/X".
+const HALFTIME_FULLTIME_OUTCOME_PATTERN = /^([1X2])\/([1X2])$/;
+const HALFTIME_FULLTIME_SEPARATOR = ' :: ';
+
+// OddsPapi's exact-number-of-goals market types: exactscore, exactscore-team1, exactscore-team2.
+const isOddsPapiExactScoreMarket = (marketType: string | undefined): boolean =>
+    !!marketType && /^exactscore(-|$)/.test(marketType);
 
 // Best-effort selection mapping from an OddsPapi outcome name to this repo's {selection, selectionLine}
 // convention: "1"/"2" -> home/away participant name (moneyline/spread-style markets), "Over"/"Under" ->
@@ -352,19 +363,54 @@ const CORRECT_SCORE_OUTCOME_PATTERN = /^(\d+):(\d+)$/;
 const mapOddsPapiSelection = (
     outcomeName: string | undefined,
     participants: OddsPapiParticipants | undefined,
-    participantSlot: 1 | 2 | undefined
+    participantSlot: 1 | 2 | undefined,
+    marketType?: string
 ): { selection: string | undefined; selectionLine: string | null } => {
+    const slotParticipantName =
+        participantSlot === 1
+            ? participants?.participant1Name
+            : participantSlot === 2
+              ? participants?.participant2Name
+              : undefined;
+
+    // Exact number of goals: the outcome is a count ("1" is one goal, not participant1), kept as is for a
+    // whole-match market and written "<team> - <count>" for a team one, as OpticOdds does.
+    if (isOddsPapiExactScoreMarket(marketType)) {
+        return {
+            selection: participantSlot ? `${slotParticipantName} - ${outcomeName}` : outcomeName,
+            selectionLine: null,
+        };
+    }
+    // Team odd/even: OpticOdds sends the team as selection and odd/even as selection line.
+    if (participantSlot && (outcomeName === 'Odd' || outcomeName === 'Even')) {
+        return { selection: slotParticipantName, selectionLine: outcomeName.toLowerCase() };
+    }
+    // Halftime/fulltime ("1/X" = participant1 leads at half time, draw at full time) -> "<half> :: <full>".
+    const halftimeFulltime = outcomeName?.match(HALFTIME_FULLTIME_OUTCOME_PATTERN);
+    if (halftimeFulltime) {
+        const sideName = (side: string) =>
+            side === '1' ? participants?.participant1Name : side === '2' ? participants?.participant2Name : DRAW;
+        return {
+            selection: `${sideName(halftimeFulltime[1])}${HALFTIME_FULLTIME_SEPARATOR}${sideName(halftimeFulltime[2])}`,
+            selectionLine: null,
+        };
+    }
     if (outcomeName === '1') return { selection: participants?.participant1Name, selectionLine: null };
     if (outcomeName === '2') return { selection: participants?.participant2Name, selectionLine: null };
     if (outcomeName === 'X') return { selection: DRAW, selectionLine: null };
+    if (outcomeName === '1X' || outcomeName === 'X1') {
+        return { selection: `${participants?.participant1Name}${DOUBLE_CHANCE_SEPARATOR}${DRAW}`, selectionLine: null };
+    }
+    if (outcomeName === '2X' || outcomeName === 'X2') {
+        return { selection: `${participants?.participant2Name}${DOUBLE_CHANCE_SEPARATOR}${DRAW}`, selectionLine: null };
+    }
+    if (outcomeName === '12' || outcomeName === '21') {
+        // OpticOdds orders the two teams alphabetically, not home-first (home Ukraine -> "Hungary Or Ukraine")
+        const teams = [`${participants?.participant1Name}`, `${participants?.participant2Name}`].sort();
+        return { selection: teams.join(DOUBLE_CHANCE_SEPARATOR), selectionLine: null };
+    }
     if (outcomeName === 'Over' || outcomeName === 'Under') {
-        const selection =
-            participantSlot === 1
-                ? participants?.participant1Name
-                : participantSlot === 2
-                  ? participants?.participant2Name
-                  : undefined;
-        return { selection, selectionLine: outcomeName.toLowerCase() };
+        return { selection: slotParticipantName, selectionLine: outcomeName.toLowerCase() };
     }
     // Correct score ("6:4" = participant1:participant2). OpticOdds' convention is the WINNING side as selection
     // ("Draw" for a level score) with the score written winner-first in selectionLine, so "4:6" becomes
@@ -421,6 +467,7 @@ export const mapOddsPapiCatalogMarketDefinition = (
         handicap: marketDef.handicap,
         outcomeNameByOutcomeId,
         participantSlot: resolveOddsPapiParticipantSlot(marketDef.marketType),
+        marketType: marketDef.marketType,
     };
 };
 
@@ -518,11 +565,16 @@ export const mapOddsPapiOutcomeFields = (
     if (!definition) return null;
 
     const outcomeName = definition.outcomeNameByOutcomeId.get(outcome.outcomeId);
-    const { selection, selectionLine } = mapOddsPapiSelection(outcomeName, participants, definition.participantSlot);
+    const { selection, selectionLine } = mapOddsPapiSelection(
+        outcomeName,
+        participants,
+        definition.participantSlot,
+        definition.marketType
+    );
 
     // Adjust to OpticOdds convention where away has opposite sign
     let points = definition.handicap;
-    if (outcomeName === '2') points = -1 * definition.handicap;
+    if (outcomeName === '2' && !isOddsPapiExactScoreMarket(definition.marketType)) points = -1 * definition.handicap;
 
     return {
         marketName: definition.opticOddsMarketName.toLowerCase(),
