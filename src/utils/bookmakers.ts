@@ -14,7 +14,7 @@ import {
     VENDOR_OPTIC_ODDS,
 } from '../constants/oddsVendors';
 import { LiveMarketType } from '../enums/sports';
-import { BookmakersConfig, BookmakerWithVendor } from '../types/bookmakers';
+import { BookmakersConfig, BookmakerWithVendor, LastPolledCheckConfig } from '../types/bookmakers';
 import { Anchor, OddsWithLeagueInfo } from '../types/odds';
 import { LastPolledArray, LeagueConfigInfo } from '../types/sports';
 
@@ -199,7 +199,8 @@ export const checkOdds = (
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
     anchors: Anchor[],
-    maxPercentageDiffForLines: number
+    maxPercentageDiffForLines: number,
+    lastPolledCheck?: LastPolledCheckConfig
 ): { odds: OddsWithLeagueInfo[]; errorsMap: Map<number, string>; errorsDetailsMap: Map<number, string> } => {
     const errorMessageMap = new Map<number, string>();
     const errorDetailsMap = new Map<number, string>();
@@ -214,7 +215,8 @@ export const checkOdds = (
             const invalidBookmakers = getLastPolledInvalidBookmakers(
                 lastPolledData,
                 maxAllowedProviderDataStaleDelay,
-                bookmakers
+                bookmakers,
+                lastPolledCheck
             );
 
             if (!invalidBookmakers.length) {
@@ -342,13 +344,24 @@ export const getBookmakersForTypeId = (
     return bookmakers;
 };
 
+// Exempt bookmakers (see LastPolledCheckConfig) are dropped before the lookup, since a missing last-polled entry
+// is otherwise treated as stale. bookmakers are expected in priority order (primary first), as
+// getBookmakersForTypeId returns them - lastPolledCheck.primaryOnly relies on it.
 export const getLastPolledInvalidBookmakers = (
     lastPolledData: LastPolledArray,
     maxAllowedProviderDataStaleDelay: number,
-    bookmakers: BookmakerWithVendor[]
+    bookmakers: BookmakerWithVendor[],
+    lastPolledCheck: LastPolledCheckConfig = {}
 ): string[] => {
+    if (lastPolledCheck.disabled) return [];
+
+    const disabledVendors = (lastPolledCheck.disabledVendors || []).map((vendor) => vendor.trim().toLowerCase());
+    const checkedBookmakers = (lastPolledCheck.primaryOnly ? bookmakers.slice(0, 1) : bookmakers).filter(
+        ({ vendor }) => !disabledVendors.includes((vendor || DEFAULT_BOOKMAKER_VENDOR).toLowerCase())
+    );
+
     const now = new Date();
-    const invalidBookmakers = bookmakers.filter(({ name, vendor }) => {
+    const invalidBookmakers = checkedBookmakers.filter(({ name, vendor }) => {
         const lastPolledTime = lastPolledData.find(
             (entry) =>
                 entry.sportsbook.toLowerCase() === name.toLowerCase() &&
