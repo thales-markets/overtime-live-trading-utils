@@ -15,6 +15,7 @@ import { adjustAddedSpread } from './spread';
  * @param {LastPolledArray} lastPolledData - Array containing last polled timestamps for bookmakers
  * @param {Number} maxAllowedProviderDataStaleDelay - Maximum allowed delay for provider data to be considered fresh
  * @param {Map<string, number>} playersMap - Map of player OO IDs to our internal player ID
+ * @param {LastPolledCheckConfig} lastPolledCheck - Optional relaxation of the last polled check (disabled fully, primary bookmaker only, or per vendor)
  * @returns {Promise<Object|null>} A promise that resolves to the processed event object or null if the event is invalid or mapping fails.
  */
 export const processMarket = (params: ProcessMarketParams) => {
@@ -28,6 +29,7 @@ export const processMarket = (params: ProcessMarketParams) => {
         maxAllowedProviderDataStaleDelay,
         playersMap,
         maxPercentageDiffForLines,
+        lastPolledCheck,
     } = params;
 
     const leagueInfo = getLeagueInfo(market.leagueId, leagueMap);
@@ -46,6 +48,7 @@ export const processMarket = (params: ProcessMarketParams) => {
         anchors,
         playersMap,
         maxPercentageDiffForLines,
+        lastPolledCheck,
     });
 
     market.odds = market.odds.map(() => {

@@ -5,10 +5,18 @@ import {
     NO_MATCHING_BOOKMAKERS_MESSAGE,
     NO_MATCHING_BOOKMAKERS_MESSAGE_ALT_LINES,
 } from '../../constants/errors';
+import { VENDOR_ODDS_PAPI, VENDOR_OPTIC_ODDS } from '../../constants/oddsVendors';
 import { LiveMarketType } from '../../enums/sports';
+import { BookmakerWithVendor, LastPolledCheckConfig } from '../../types/bookmakers';
 import { OddsWithLeagueInfo } from '../../types/odds';
 import { LeagueConfigInfo } from '../../types/sports';
-import { __test__, checkOdds, getBookmakersForLeague, getBookmakersForTypeId } from '../../utils/bookmakers';
+import {
+    __test__,
+    checkOdds,
+    getBookmakersForLeague,
+    getBookmakersForTypeId,
+    getLastPolledInvalidBookmakers,
+} from '../../utils/bookmakers';
 import { processMarket } from '../../utils/markets';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
 import { ODDS_THRESHOLD_ANCHORS } from '../mock/MockAnchors';
@@ -426,6 +434,75 @@ describe('Bookmakers - Player Props Point Adjustment', () => {
             expect(result.errorsMap.has(1001)).toBe(true);
             expect(result.errorsMap.get(1001)).toBe(LAST_POLLED_TOO_OLD);
             expect(result.odds.length).toBe(0);
+        });
+
+        it('Should not add LAST_POLLED_TOO_OLD error for stale last polled data when the check is disabled', () => {
+            const odds = createMockOddsData(1001, 'Moneyline', 1.85, 1.9);
+
+            const result = checkOdds(
+                odds,
+                mockLeagueInfos,
+                ['draftkings', 'bovada'],
+                createOldLastPolledData(),
+                MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                ODDS_THRESHOLD_ANCHORS,
+                MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
+                { disabled: true }
+            );
+
+            expect(result.errorsMap.has(1001)).toBe(false);
+            expect(result.odds.length).toBe(1);
+        });
+
+        describe('getLastPolledInvalidBookmakers lastPolledCheck', () => {
+            const nowSeconds = Math.floor(Date.now() / 1000);
+            const staleSeconds = Math.floor((Date.now() - MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST - 10000) / 1000);
+            const bookmakers: BookmakerWithVendor[] = [
+                { name: 'draftkings', vendor: VENDOR_OPTIC_ODDS },
+                { name: 'bovada', vendor: VENDOR_OPTIC_ODDS },
+                { name: 'pinnacle', vendor: VENDOR_ODDS_PAPI },
+            ];
+            // primary fresh, secondary stale, tertiary (oddspapi) missing altogether
+            const lastPolled = [
+                { sportsbook: 'draftkings', timestamp: nowSeconds },
+                { sportsbook: 'bovada', timestamp: staleSeconds },
+            ];
+            const invalidFor = (lastPolledCheck?: LastPolledCheckConfig, data = lastPolled, checked = bookmakers) =>
+                getLastPolledInvalidBookmakers(
+                    data,
+                    MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                    checked,
+                    lastPolledCheck
+                );
+
+            it('checks every bookmaker when no config is given', () => {
+                expect(invalidFor()).toEqual(['bovada', 'pinnacle']);
+                expect(invalidFor({})).toEqual(['bovada', 'pinnacle']);
+            });
+
+            it('checks nothing when disabled', () => {
+                expect(invalidFor({ disabled: true })).toEqual([]);
+            });
+
+            it('checks only the primary bookmaker when primaryOnly is set', () => {
+                expect(invalidFor({ primaryOnly: true })).toEqual([]);
+                expect(
+                    invalidFor({ primaryOnly: true }, [{ sportsbook: 'draftkings', timestamp: staleSeconds }])
+                ).toEqual(['draftkings']);
+            });
+
+            it('skips bookmakers of disabled vendors (case-insensitive)', () => {
+                expect(invalidFor({ disabledVendors: ['OddsPapi'] })).toEqual(['bovada']);
+                expect(invalidFor({ disabledVendors: [VENDOR_OPTIC_ODDS] })).toEqual(['pinnacle']);
+                expect(invalidFor({ disabledVendors: [VENDOR_OPTIC_ODDS, VENDOR_ODDS_PAPI] })).toEqual([]);
+            });
+
+            it('combines primaryOnly with disabledVendors', () => {
+                const stalePrimary = [{ sportsbook: 'draftkings', timestamp: staleSeconds }];
+                expect(invalidFor({ primaryOnly: true, disabledVendors: [VENDOR_OPTIC_ODDS] }, stalePrimary)).toEqual(
+                    []
+                );
+            });
         });
 
         describe('single-bookmaker markets (no secondary configured)', () => {

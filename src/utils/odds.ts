@@ -3,6 +3,7 @@ import { getLeagueSport, isOneSideExtendedPlayerPropsMarket, MarketType, MarketT
 import { DRAW, SPLIT_DELIMITER, ZERO } from '../constants/common';
 import { NO_MARKETS_FOR_LEAGUE_ID, REMOVE_MIN_MAX_ODDS } from '../constants/errors';
 import { LiveMarketType } from '../enums/sports';
+import { LastPolledCheckConfig } from '../types/bookmakers';
 import { Anchor, HomeAwayTeams, Odd, OddsObject, OddsWithLeagueInfo } from '../types/odds';
 import { ChildMarket, LastPolledArray, LeagueConfigInfo } from '../types/sports';
 import { checkOdds, getBookmakerOddsId } from './bookmakers';
@@ -48,6 +49,7 @@ export const getOddsFromTo = (from: string, to: string, input: number): number =
  * @param {Array} params.anchors - Anchors array
  * @param {Map} params.playersMap - Players map
  * @param {Number} params.maxPercentageDiffForLines - Max percentage diff for PP lines
+ * @param {Object} params.lastPolledCheck - Optional relaxation of the last polled check
  * @returns {Object} Object containing markets array and errorsMap
  */
 export const generateMarkets: (params: {
@@ -60,6 +62,7 @@ export const generateMarkets: (params: {
     anchors: Anchor[];
     playersMap: Map<string, number>;
     maxPercentageDiffForLines: number;
+    lastPolledCheck?: LastPolledCheckConfig;
 }) => { markets: ChildMarket[]; errorsMap: Map<number, string>; errorsDetailsMap?: Map<number, string> } = ({
     apiResponseWithOdds,
     leagueId,
@@ -70,6 +73,7 @@ export const generateMarkets: (params: {
     anchors,
     playersMap,
     maxPercentageDiffForLines,
+    lastPolledCheck,
 }) => {
     const [
         spreadOdds,
@@ -102,7 +106,8 @@ export const generateMarkets: (params: {
             lastPolledData,
             maxAllowedProviderDataStaleDelay,
             anchors,
-            maxPercentageDiffForLines
+            maxPercentageDiffForLines,
+            lastPolledCheck
         );
         checkedOdds.forEach((odd) => {
             if (odd.type === LiveMarketType.TOTAL) {

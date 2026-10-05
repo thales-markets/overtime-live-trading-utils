@@ -1,3 +1,4 @@
+import { LastPolledCheckConfig } from './bookmakers';
 import { LastPolledArray, LeagueConfigInfo } from './sports';
 
 export type Fixture = {
@@ -78,4 +79,5 @@ export interface ProcessMarketParams {
     maxAllowedProviderDataStaleDelay: number;
     playersMap: Map<string, number>;
     maxPercentageDiffForLines: number;
+    lastPolledCheck?: LastPolledCheckConfig;
 }
