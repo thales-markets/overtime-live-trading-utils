@@ -1,5 +1,13 @@
 import * as oddslib from 'oddslib';
-import { getLeagueSport, isOneSideExtendedPlayerPropsMarket, MarketType, MarketTypeMap, Sport } from 'overtime-utils';
+import {
+    getLeagueSport,
+    isHomeTeamMarket,
+    isOneSideExtendedPlayerPropsMarket,
+    isTotalExactMarket,
+    MarketType,
+    MarketTypeMap,
+    Sport,
+} from 'overtime-utils';
 import { DRAW, SPLIT_DELIMITER, ZERO } from '../constants/common';
 import { NO_MARKETS_FOR_LEAGUE_ID, REMOVE_MIN_MAX_ODDS } from '../constants/errors';
 import { LiveMarketType } from '../enums/sports';
@@ -85,8 +93,9 @@ export const generateMarkets: (params: {
         oddEvenOdds,
         halftimeFulltimeOdds,
         oneSidePlayerPropsOdds,
+        totalExactOdds,
         markets,
-    ]: any[] = [[], [], [], [], [], [], [], [], [], []];
+    ]: any[] = [[], [], [], [], [], [], [], [], [], [], []];
     const leagueInfo = getLeagueInfo(leagueId, leagueMap).filter((value) => value.enabled === 'true');
     const commonData = {
         homeTeam: apiResponseWithOdds.homeTeam,
@@ -111,7 +120,8 @@ export const generateMarkets: (params: {
         );
         checkedOdds.forEach((odd) => {
             if (odd.type === LiveMarketType.TOTAL) {
-                if (Math.abs(Number(odd.points) % 0.5) === 0) totalOdds.push(odd);
+                if (isTotalExactMarket(Number(odd.typeId))) totalExactOdds.push(odd);
+                else if (Math.abs(Number(odd.points) % 0.5) === 0) totalOdds.push(odd);
             } else if (odd.type === LiveMarketType.SPREAD) {
                 if (Math.abs(Number(odd.points) % 0.5) === 0) spreadOdds.push(odd);
             } else if (odd.type === LiveMarketType.MONEYLINE) {
@@ -143,6 +153,7 @@ export const generateMarkets: (params: {
         const otherFormattedOdds = [
             ...groupAndFormatCorrectScoreOdds(correctScoreOdds, commonData),
             ...groupAndFormatHalftimeFulltimeOdds(halftimeFulltimeOdds, commonData),
+            ...groupAndFormatTotalExactOdds(totalExactOdds, commonData),
         ];
 
         // odds are converted to implied probability inside adjustSpreadOnChildOdds
@@ -972,6 +983,70 @@ export const groupAndFormatCorrectScoreOdds = (oddsArray: any[], commonData: Hom
     });
 
     return marketObjects;
+};
+
+// Positions of an exact number of goals market, in the order consumers expect (see positionNamesMap.json in
+// thales-api and the dapp): whole-match markets have one more "N+" position than team ones.
+const TOTAL_EXACT_POSITIONS = ['0', '1', '2', '3', '4', '5', '3+', '4+', '5+', '6+'];
+const TOTAL_EXACT_TEAM_POSITIONS = ['0', '1', '2', '3', '4', '5', '3+', '4+', '5+'];
+const TOTAL_EXACT_TEAM_SELECTION_SEPARATOR = ' - ';
+
+/**
+ * Groups exact number of goals odds (e.g. Total Goals Exact, Team Total Exact) into one market per typeId, with
+ * one price per position. Whole-match selections are the count itself ("2", "3+"), team selections are
+ * "<team> - <count>"; the away team market typeId is increased by 1 (same as team totals).
+ *
+ * @param {Array} oddsArray - The input array of odds objects.
+ * @param {Object} commonData - The common data object containing homeTeam and awayTeam information.
+ * @returns {Array} The grouped and formatted exact number of goals odds.
+ */
+export const groupAndFormatTotalExactOdds = (oddsArray: any[], commonData: HomeAwayTeams): any[] => {
+    const marketsByTypeId = oddsArray.reduce((acc: any, odd: any) => {
+        const selection = String(odd.selection ?? '');
+        const isTeamMarket = isHomeTeamMarket(Number(odd.typeId));
+
+        let count = selection;
+        let positionPrefix = '';
+        let typeId = Number(odd.typeId);
+        if (isTeamMarket) {
+            const separatorIndex = selection.lastIndexOf(TOTAL_EXACT_TEAM_SELECTION_SEPARATOR);
+            if (separatorIndex === -1) return acc;
+            const team = selection.slice(0, separatorIndex).toLowerCase();
+            count = selection.slice(separatorIndex + TOTAL_EXACT_TEAM_SELECTION_SEPARATOR.length);
+
+            if (team === commonData.awayTeam.toLowerCase()) {
+                typeId += 1;
+                positionPrefix = 'away_team_';
+            } else if (team === commonData.homeTeam.toLowerCase()) {
+                positionPrefix = 'home_team_';
+            } else {
+                return acc;
+            }
+        }
+
+        const positions = isTeamMarket ? TOTAL_EXACT_TEAM_POSITIONS : TOTAL_EXACT_POSITIONS;
+        const position = positions.indexOf(count.trim());
+        if (position === -1) return acc;
+
+        if (!acc[typeId]) {
+            acc[typeId] = {
+                homeTeam: commonData.homeTeam,
+                awayTeam: commonData.awayTeam,
+                line: 0,
+                positionNames: positions.map((positionName) => `${positionPrefix}${positionName}`),
+                odds: Array(positions.length).fill(ZERO),
+                type: odd.type,
+                typeId,
+                sportId: odd.sportId,
+                marketName: odd.marketName,
+            };
+        }
+        acc[typeId].odds[position] = odd.price;
+
+        return acc;
+    }, {});
+
+    return Object.values(marketsByTypeId);
 };
 
 /**

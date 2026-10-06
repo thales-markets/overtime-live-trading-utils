@@ -4,7 +4,7 @@ import { LeagueConfigInfo } from '../../types/sports';
 import { checkOdds } from '../../utils/bookmakers';
 import { mapOddsPapiOutcomeFields } from '../../utils/oddsPapi';
 import { processMarket } from '../../utils/markets';
-import { filterOdds } from '../../utils/odds';
+import { filterOdds, generateMarkets } from '../../utils/odds';
 import { mapOpticOddsApiFixtureOdds } from '../../utils/opticOdds';
 import { ODDS_THRESHOLD_ANCHORS } from '../mock/MockAnchors';
 import { LeagueMocks } from '../mock/MockLeagueMap';
@@ -588,6 +588,96 @@ describe('Odds', () => {
                 MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK
             );
             expect(result.errorsMap.get(0)).toBe(NO_MATCHING_BOOKMAKERS_MESSAGE);
+        });
+    });
+
+    describe('exact number of goals markets', () => {
+        // configured as Total in the league config, same as live-markets-soccer-map.csv
+        const exactInfo = (typeId: string, marketName: string): LeagueConfigInfo => ({
+            sportId: '9806',
+            enabled: 'true',
+            marketName,
+            typeId,
+            type: LiveMarketType.TOTAL,
+            maxOdds: '0.05',
+            minOdds: '0.95',
+            primaryBookmaker: 'pinnacle',
+        });
+        const leagueMap = [
+            exactInfo('10136', '1st Half Total Goals Exact'),
+            exactInfo('10143', 'Team Total Exact'),
+            exactInfo('10144', 'Team Total Exact'),
+        ];
+        const line = (marketName: string, selection: string, price: number) =>
+            ({
+                sportsBookName: 'pinnacle',
+                marketName: marketName.toLowerCase(),
+                selection,
+                selectionLine: null,
+                price,
+                points: null,
+                isMain: true,
+                playerId: null,
+            }) as any;
+        const run = (odds: any[]) =>
+            generateMarkets({
+                apiResponseWithOdds: { homeTeam: 'Ukraine', awayTeam: 'Hungary', odds } as any,
+                leagueId: 9806,
+                liveOddsProviders: ['pinnacle'],
+                leagueMap,
+                lastPolledData: [{ sportsbook: 'pinnacle', timestamp: Math.floor(Date.now() / 1000) }],
+                maxAllowedProviderDataStaleDelay: MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
+                anchors: ODDS_THRESHOLD_ANCHORS,
+                playersMap,
+                maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
+            });
+
+        it('builds one whole-match market with a price per position, zeroing only out-of-range positions', () => {
+            const { markets } = run([
+                line('1st Half Total Goals Exact', '0', 1.25),
+                line('1st Half Total Goals Exact', '1', 5.3),
+                line('1st Half Total Goals Exact', '2', 33), // implied 0.03, below maxOdds
+                line('1st Half Total Goals Exact', '3+', 12),
+            ]);
+
+            expect(markets).toHaveLength(1);
+            const [market] = markets;
+            expect(market.typeId).toBe(10136);
+            expect(market.line).toBe(0);
+            expect(market.positionNames).toEqual(['0', '1', '2', '3', '4', '5', '3+', '4+', '5+', '6+']);
+            expect(market.odds).toHaveLength(10);
+            expect(market.odds[0]).toBeCloseTo(1 / 1.25);
+            expect(market.odds[1]).toBeCloseTo(1 / 5.3);
+            expect(market.odds[2]).toBe(0);
+            expect(market.odds[6]).toBeCloseTo(1 / 12);
+            [3, 4, 5, 7, 8, 9].forEach((position) => expect(market.odds[position]).toBe(0));
+        });
+
+        it('splits team markets by team, with the away team on the next typeId', () => {
+            const { markets } = run([
+                line('Team Total Exact', 'Ukraine - 0', 2.5),
+                line('Team Total Exact', 'Ukraine - 1', 2.8),
+                line('Team Total Exact', 'Hungary - 0', 2.2),
+                line('Team Total Exact', 'Hungary - 3+', 15),
+                line('Team Total Exact', 'Someone Else - 1', 3),
+            ]);
+
+            expect(markets.map((market) => market.typeId).sort()).toEqual([10143, 10144]);
+            const home = markets.find((market) => market.typeId === 10143) as any;
+            const away = markets.find((market) => market.typeId === 10144) as any;
+
+            expect(home.positionNames).toHaveLength(9);
+            expect(home.positionNames[0]).toBe('home_team_0');
+            expect(home.odds[0]).toBeCloseTo(1 / 2.5);
+            expect(home.odds[1]).toBeCloseTo(1 / 2.8);
+            expect(away.positionNames[6]).toBe('away_team_3+');
+            expect(away.odds[0]).toBeCloseTo(1 / 2.2);
+            expect(away.odds[6]).toBeCloseTo(1 / 15);
+            expect(away.odds[1]).toBe(0);
+        });
+
+        it('produces no market when there are no exact-goals lines', () => {
+            expect(run([]).markets).toHaveLength(0);
         });
     });
 });
