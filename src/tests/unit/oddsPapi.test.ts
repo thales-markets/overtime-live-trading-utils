@@ -23,6 +23,7 @@ import {
     resolveOddsPapiMarketDefinition,
     synthesizeOddsPapiLastPolled,
 } from '../../utils/oddsPapi';
+import { groupAndFormatDoubleChanceOdds } from '../../utils/odds';
 
 const MONEYLINE_DEFINITION: OddsPapiResolvedMarket = {
     opticOddsMarketName: 'Moneyline',
@@ -321,6 +322,153 @@ describe('OddsPapi', () => {
                 selectionLine: null,
             });
             expect(fieldsFor(13111)).toMatchObject({ name: '2', selection: 'away-team', selectionLine: null });
+        });
+
+        describe('double chance outcomes', () => {
+            const catalog: OddsPapiMarketCatalogEntry[] = [
+                {
+                    marketId: 101902,
+                    sportId: 10,
+                    handicap: 0,
+                    period: 'fulltime',
+                    marketType: 'doublechance',
+                    outcomes: [
+                        { outcomeId: 101902, outcomeName: '1X' },
+                        { outcomeId: 101903, outcomeName: '12' },
+                        { outcomeId: 101904, outcomeName: '2X' },
+                    ],
+                } as OddsPapiMarketCatalogEntry,
+            ];
+            const marketNameMap = buildOddsPapiMarketNameMap([
+                {
+                    oddspapiSportId: '10',
+                    oddspapiMarketType: 'doublechance',
+                    oddspapiPeriod: 'fulltime',
+                    opticOddsMarketName: 'Double Chance',
+                } as OddsPapiMarketMapCsvRow,
+            ]);
+            const resolve: ResolveOddsPapiMarketDefinition = (sportId, marketId) =>
+                resolveOddsPapiMarketDefinition(sportId, marketId, marketNameMap, catalog);
+            // home Ukraine, away Hungary - OpticOdds' own selections for this game are "Ukraine Or Draw",
+            // "Hungary Or Ukraine" and "Hungary Or Draw"
+            const selectionFor = (outcomeId: number, rotated: boolean) =>
+                mapOddsPapiOutcomeFields(
+                    { marketId: 101902, outcomeId },
+                    10,
+                    orientOddsPapiParticipants('Ukraine', 'Hungary', rotated),
+                    resolve
+                );
+
+            it('maps "1X"/"2X" to "<team> Or Draw" and "12" to the two teams in alphabetical order', () => {
+                expect(selectionFor(101902, false)).toMatchObject({
+                    marketName: 'double chance',
+                    points: 0,
+                    name: '1X',
+                    selection: 'Ukraine Or Draw',
+                    selectionLine: null,
+                });
+                expect(selectionFor(101903, false)).toMatchObject({ name: '12', selection: 'Hungary Or Ukraine' });
+                expect(selectionFor(101904, false)).toMatchObject({ name: '2X', selection: 'Hungary Or Draw' });
+            });
+
+            it('follows the rotation for "1X"/"2X" and keeps "12" unchanged', () => {
+                // OddsPapi participant1 is really the caller's away team (Hungary)
+                expect(selectionFor(101902, true)).toMatchObject({ selection: 'Hungary Or Draw' });
+                expect(selectionFor(101903, true)).toMatchObject({ selection: 'Hungary Or Ukraine' });
+                expect(selectionFor(101904, true)).toMatchObject({ selection: 'Ukraine Or Draw' });
+            });
+
+            it('produces selections groupAndFormatDoubleChanceOdds reads as [1X, 12, X2]', () => {
+                const odds = [101902, 101903, 101904].map((outcomeId, index) => ({
+                    ...selectionFor(outcomeId, true),
+                    price: [1.454, 1.416, 1.5][index],
+                    typeId: 10003,
+                }));
+
+                const [market] = groupAndFormatDoubleChanceOdds(odds, { homeTeam: 'Ukraine', awayTeam: 'Hungary' });
+
+                // rotated: OddsPapi's "1X" (1.454) is Hungary Or Draw = our X2, its "2X" (1.5) is our 1X
+                expect(market.odds).toEqual([1.5, 1.416, 1.454]);
+            });
+        });
+
+        describe('soccer markets resolved by marketType', () => {
+            const catalogEntry = (marketId: number, marketType: string, outcomeNames: string[]) =>
+                ({
+                    marketId,
+                    sportId: 10,
+                    handicap: 0,
+                    period: 'fulltime',
+                    marketType,
+                    outcomes: outcomeNames.map((outcomeName, index) => ({ outcomeId: marketId + index, outcomeName })),
+                }) as OddsPapiMarketCatalogEntry;
+            const catalog = [
+                catalogEntry(1000, 'exactscore', ['0', '1', '2', '3+']),
+                catalogEntry(2000, 'exactscore-team1', ['0', '1', '2']),
+                catalogEntry(3000, 'exactscore-team2', ['0', '1', '2']),
+                catalogEntry(4000, 'oddeven-team1', ['Odd', 'Even']),
+                catalogEntry(5000, 'oddeven-team2', ['Odd', 'Even']),
+                catalogEntry(6000, 'oddeven', ['Odd', 'Even']),
+                catalogEntry(7000, 'halftime-fulltime', ['1/1', '1/X', 'X/2', '2/1']),
+            ];
+            const marketNameMap = buildOddsPapiMarketNameMap(
+                [
+                    ['exactscore', 'Total Goals Exact'],
+                    ['exactscore-team1', 'Team Total Exact'],
+                    ['exactscore-team2', 'Team Total Exact'],
+                    ['oddeven-team1', 'Team Total Odd/Even'],
+                    ['oddeven-team2', 'Team Total Odd/Even'],
+                    ['oddeven', 'Total Goals Odd/Even'],
+                    ['halftime-fulltime', 'Halftime / Fulltime'],
+                ].map(
+                    ([oddspapiMarketType, opticOddsMarketName]) =>
+                        ({
+                            oddspapiSportId: '10',
+                            oddspapiMarketType,
+                            oddspapiPeriod: 'fulltime',
+                            opticOddsMarketName,
+                        }) as OddsPapiMarketMapCsvRow
+                )
+            );
+            const resolve: ResolveOddsPapiMarketDefinition = (sportId, marketId) =>
+                resolveOddsPapiMarketDefinition(sportId, marketId, marketNameMap, catalog);
+            const fieldsFor = (marketId: number, outcomeIndex: number, rotated = false) =>
+                mapOddsPapiOutcomeFields(
+                    { marketId, outcomeId: marketId + outcomeIndex },
+                    10,
+                    orientOddsPapiParticipants('Ukraine', 'Hungary', rotated),
+                    resolve
+                );
+
+            it('keeps exact-goals outcomes as counts instead of reading "1"/"2" as the participants', () => {
+                expect(fieldsFor(1000, 0)).toMatchObject({ selection: '0', selectionLine: null, points: 0 });
+                expect(fieldsFor(1000, 1)).toMatchObject({ selection: '1', selectionLine: null, points: 0 });
+                expect(fieldsFor(1000, 2)).toMatchObject({ selection: '2', selectionLine: null, points: 0 });
+                expect(fieldsFor(1000, 3)).toMatchObject({ selection: '3+', selectionLine: null });
+            });
+
+            it('prefixes team exact-goals outcomes with the team, so team1 and team2 do not share a selection', () => {
+                expect(fieldsFor(2000, 1)).toMatchObject({ selection: 'Ukraine - 1', selectionLine: null });
+                expect(fieldsFor(3000, 1)).toMatchObject({ selection: 'Hungary - 1', selectionLine: null });
+                expect(fieldsFor(3000, 2)).toMatchObject({ selection: 'Hungary - 2', points: 0 });
+                expect(fieldsFor(2000, 0, true)).toMatchObject({ selection: 'Hungary - 0' });
+            });
+
+            it('maps team odd/even to the team as selection and odd/even as selection line', () => {
+                expect(fieldsFor(4000, 0)).toMatchObject({ selection: 'Ukraine', selectionLine: 'odd' });
+                expect(fieldsFor(4000, 1)).toMatchObject({ selection: 'Ukraine', selectionLine: 'even' });
+                expect(fieldsFor(5000, 0)).toMatchObject({ selection: 'Hungary', selectionLine: 'odd' });
+                // whole-match odd/even is unchanged
+                expect(fieldsFor(6000, 0)).toMatchObject({ selection: 'Odd', selectionLine: null });
+            });
+
+            it('maps halftime/fulltime outcomes to "<half> :: <full>"', () => {
+                expect(fieldsFor(7000, 0)).toMatchObject({ selection: 'Ukraine :: Ukraine', selectionLine: null });
+                expect(fieldsFor(7000, 1)).toMatchObject({ selection: 'Ukraine :: Draw' });
+                expect(fieldsFor(7000, 2)).toMatchObject({ selection: 'Draw :: Hungary' });
+                expect(fieldsFor(7000, 3)).toMatchObject({ selection: 'Hungary :: Ukraine' });
+                expect(fieldsFor(7000, 1, true)).toMatchObject({ selection: 'Hungary :: Draw' });
+            });
         });
 
         it('returns null (not a throw) when resolveMarketDefinition cannot resolve the market', () => {
@@ -1179,6 +1327,7 @@ describe('OddsPapi', () => {
                     [1, '1'],
                     [2, '2'],
                 ]),
+                marketType: 'ml',
             });
         });
 
@@ -1208,6 +1357,7 @@ describe('OddsPapi', () => {
                 opticOddsMarketName: 'Correct Score',
                 handicap: 0,
                 outcomeNameByOutcomeId: new Map(),
+                marketType: 'correctscore',
             });
         });
 
