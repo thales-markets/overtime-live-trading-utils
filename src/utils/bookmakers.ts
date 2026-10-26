@@ -17,6 +17,7 @@ import { LiveMarketType } from '../enums/sports';
 import { BookmakersConfig, BookmakerWithVendor, LastPolledCheckConfig } from '../types/bookmakers';
 import { Anchor, OddsWithLeagueInfo } from '../types/odds';
 import { LastPolledArray, LeagueConfigInfo } from '../types/sports';
+import { getLeagueInfo, getLeagueInfoByMarketName } from './sports';
 
 export const parseBookmakerCell = (rawValue: string): BookmakerWithVendor => {
     const trimmed = (rawValue || '').trim();
@@ -68,8 +69,8 @@ export const getBookmakersArray = (
 };
 
 export const getBookmakersFromLeagueConfig = (sportId: string | number, leagueInfoArray: LeagueConfigInfo[]) => {
-    const leagueInfoArrayFiltered: string[] = leagueInfoArray
-        .filter((leagueInfo) => Number(leagueInfo.sportId) === Number(sportId) && leagueInfo.enabled === 'true')
+    const leagueInfoArrayFiltered: string[] = getLeagueInfo(Number(sportId), leagueInfoArray)
+        .filter((leagueInfo) => leagueInfo.enabled === 'true')
         .flatMap((item) => [
             item.primaryBookmaker?.toLowerCase(),
             item.secondaryBookmaker?.toLowerCase(),
@@ -205,19 +206,32 @@ export const checkOdds = (
     const errorMessageMap = new Map<number, string>();
     const errorDetailsMap = new Map<number, string>();
 
+    const leagueInfoByMarketName = getLeagueInfoByMarketName(leagueInfos);
+    // Both depend only on the typeId, so they are resolved once per typeId rather than per odds line
+    const bookmakersByTypeId = new Map<number, { bookmakers: BookmakerWithVendor[]; invalidBookmakers: string[] }>();
+
     const formattedOdds = Object.entries(odds).reduce((acc: any, [key, value]: [string, OddsWithLeagueInfo]) => {
         const [sportsBookName, marketName, points, selection, selectionLine] = key.split(SPLIT_DELIMITER);
+        const lowerMarketName = marketName.toLowerCase();
 
-        const info = leagueInfos.find((leagueInfo) => leagueInfo.marketName.toLowerCase() === marketName.toLowerCase());
+        const info = leagueInfoByMarketName.get(lowerMarketName);
         if (info) {
-            const bookmakers = getBookmakersForTypeId(oddsProviders, leagueInfos, Number(info.typeId));
-
-            const invalidBookmakers = getLastPolledInvalidBookmakers(
-                lastPolledData,
-                maxAllowedProviderDataStaleDelay,
-                bookmakers,
-                lastPolledCheck
-            );
+            const typeId = Number(info.typeId);
+            let typeIdBookmakers = bookmakersByTypeId.get(typeId);
+            if (!typeIdBookmakers) {
+                const typeIdBookmakersList = getBookmakersForTypeId(oddsProviders, leagueInfos, typeId);
+                typeIdBookmakers = {
+                    bookmakers: typeIdBookmakersList,
+                    invalidBookmakers: getLastPolledInvalidBookmakers(
+                        lastPolledData,
+                        maxAllowedProviderDataStaleDelay,
+                        typeIdBookmakersList,
+                        lastPolledCheck
+                    ),
+                };
+                bookmakersByTypeId.set(typeId, typeIdBookmakers);
+            }
+            const { bookmakers, invalidBookmakers } = typeIdBookmakers;
 
             if (!invalidBookmakers.length) {
                 const primaryBookmaker = bookmakers[0];
@@ -246,7 +260,7 @@ export const checkOdds = (
                             const otherBookmakerId = getBookmakerOddsId(otherBookmaker.name, otherBookmaker.vendor);
                             const otherBookmakerObject =
                                 odds[
-                                    `${otherBookmakerId}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
+                                    `${otherBookmakerId}${SPLIT_DELIMITER}${lowerMarketName}${SPLIT_DELIMITER}${points}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
                                 ];
                             if (otherBookmakerObject) {
                                 if (shouldBlockOdds(value.price, otherBookmakerObject.price, anchors)) {
@@ -272,7 +286,7 @@ export const checkOdds = (
 
                                         const adjustedBookmakerObject =
                                             odds[
-                                                `${otherBookmakerId}${SPLIT_DELIMITER}${marketName.toLowerCase()}${SPLIT_DELIMITER}${adjustedPoints}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
+                                                `${otherBookmakerId}${SPLIT_DELIMITER}${lowerMarketName}${SPLIT_DELIMITER}${adjustedPoints}${SPLIT_DELIMITER}${selection}${SPLIT_DELIMITER}${selectionLine}`
                                             ];
 
                                         if (adjustedBookmakerObject) {
