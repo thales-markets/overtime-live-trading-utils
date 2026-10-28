@@ -1,5 +1,7 @@
 import {
     getBetTypesForLeague,
+    getLeagueInfo,
+    getLeagueInfoByMarketName,
     getLeagueSpreadTypes,
     getLeagueTotalTypes,
     getLiveSupportedLeagues,
@@ -54,5 +56,36 @@ describe('Sports', () => {
         expect(betTypes).not.toContain('moneyline');
         expect(betTypes).not.toContain('goal spread');
         expect(betTypes).toContain('total goals');
+    });
+
+    it('Should return league rows of the requested league only, from the config array passed', () => {
+        const leagueMap = LeagueMocks.leagueInfoEnabledAll;
+        const leagueInfos = getLeagueInfo(9806, leagueMap);
+
+        expect(leagueInfos.length).toBeGreaterThan(0);
+        expect(leagueInfos).toEqual(leagueMap.filter((leagueInfo) => Number(leagueInfo.sportId) === 9806));
+        expect(getLeagueInfo(-1, leagueMap)).toEqual([]);
+
+        // another (refreshed) config array is indexed on its own
+        const refreshedLeagueMap = leagueMap.slice(0, 1);
+        expect(getLeagueInfo(9806, refreshedLeagueMap)).toEqual(refreshedLeagueMap);
+    });
+
+    it('Should return a copy of league rows, unaffected by changes of a previously returned array', () => {
+        const leagueMap = LeagueMocks.leagueInfoEnabledAll;
+        const leagueInfos = getLeagueInfo(9806, leagueMap);
+        const count = leagueInfos.length;
+        leagueInfos.pop();
+
+        expect(getLeagueInfo(9806, leagueMap).length).toBe(count);
+    });
+
+    it('Should return league rows by lowercase market name, the first row for a repeated name', () => {
+        const leagueInfos = LeagueMocks.leagueInfoEnabledAll.filter((leagueInfo) => leagueInfo.sportId === '9806');
+        const duplicate = { ...leagueInfos[0], typeId: '99999' };
+        const leagueInfoByMarketName = getLeagueInfoByMarketName([...leagueInfos, duplicate]);
+
+        expect(leagueInfoByMarketName.get(leagueInfos[0].marketName.toLowerCase())).toBe(leagueInfos[0]);
+        expect(leagueInfoByMarketName.get('moneyline')?.marketName).toBe('Moneyline');
     });
 });
