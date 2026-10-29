@@ -284,7 +284,6 @@ describe('Odds', () => {
                 (odd: any) => odd.selection === playerPropsMarket.playerProps.playerName
             );
 
-            expect(playerPropsMarket.isPlayerPropsMarket).toBe(true);
             expect(playerPropsMarket.playerProps.playerId).toBe(playersMap.get(expectedOdd.player_id));
             expect(playerPropsMarket.odds).toHaveLength(1);
             expect(playerPropsMarket.odds[0].decimal).toBe(expectedOdd.price);

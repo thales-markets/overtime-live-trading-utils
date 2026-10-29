@@ -171,7 +171,6 @@ export const generateMarkets: (params: {
                     playerId: 0,
                     playerName: '',
                 },
-                isPlayerPropsMarket: false,
             };
             if (data.playerProps) {
                 childMarket = {
@@ -180,7 +179,6 @@ export const generateMarkets: (params: {
                         playerId: playersMap.get(data.playerProps.playerId.toString()) || 0, // convert from opticOdds playerId to our internal playerId
                         playerName: data.playerProps.playerName,
                     },
-                    isPlayerPropsMarket: true,
                 };
             }
 
@@ -228,7 +226,6 @@ export const generateMarkets: (params: {
                     playerId: 0,
                     playerName: '',
                 },
-                isPlayerPropsMarket: false,
             };
             markets.push(childMarket);
         });
