@@ -74,6 +74,7 @@ export const processMarket = (params: ProcessMarketParams) => {
             market.odds = oddsAfterSpread.map((probability) => {
                 return formatOddsForUi(probability);
             });
+            return undefined;
         } else {
             // child market contains only child specific fields, game fields (gameId, teams, maturity, scores...) are read from the parent market
             const preparedMarket = {
