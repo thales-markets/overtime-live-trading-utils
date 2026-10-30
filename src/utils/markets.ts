@@ -85,7 +85,6 @@ export const processMarket = (params: ProcessMarketParams) => {
                 odds: childMarket.odds,
                 playerProps: childMarket.playerProps,
                 positionNames: childMarket.positionNames,
-                combinedPositions: market.combinedPositions,
                 status: market.status,
             };
             const oddsAfterSpread = adjustAddedSpread(preparedMarket.odds, leagueInfo, preparedMarket.typeId);
