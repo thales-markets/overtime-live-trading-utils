@@ -74,8 +74,19 @@ export const processMarket = (params: ProcessMarketParams) => {
             market.odds = oddsAfterSpread.map((probability) => {
                 return formatOddsForUi(probability);
             });
+            return undefined;
         } else {
-            const preparedMarket = { ...market, ...childMarket };
+            // child market contains only child specific fields, game fields (gameId, teams, maturity, scores...) are read from the parent market
+            const preparedMarket = {
+                typeId: childMarket.typeId,
+                type: childMarket.type,
+                originalMarketName: childMarket.originalMarketName,
+                line: childMarket.line,
+                odds: childMarket.odds,
+                playerProps: childMarket.playerProps,
+                positionNames: childMarket.positionNames,
+                status: market.status,
+            };
             const oddsAfterSpread = adjustAddedSpread(preparedMarket.odds, leagueInfo, preparedMarket.typeId);
             if (preparedMarket.odds.length > 0) {
                 preparedMarket.odds = oddsAfterSpread.map((probability) => {

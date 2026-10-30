@@ -26,7 +26,6 @@ export type ChildMarket = {
         playerId: number;
         playerName: string;
     };
-    isPlayerPropsMarket: boolean;
     positionNames?: string[];
 };
 
