@@ -209,14 +209,13 @@ describe('Markets', () => {
             expect(market.odds).toHaveLength(3);
 
             // First two odds should be valid (home and away)
-            expect(market.odds[0].american).not.toBe(0);
-            expect(market.odds[0].decimal).not.toBe(0);
-            expect(market.odds[1].american).not.toBe(0);
-            expect(market.odds[1].decimal).not.toBe(0);
+            expect(market.odds[0].normalizedImplied).not.toBe(0);
+            expect(market.odds[1].normalizedImplied).not.toBe(0);
+
+            // Only implied odds
+            expect(Object.keys(market.odds[0])).toEqual(['normalizedImplied']);
 
             // Third odd (draw) should be zero since it's missing from bookmaker
-            expect(market.odds[2].american).toBe(0);
-            expect(market.odds[2].decimal).toBe(0);
             expect(market.odds[2].normalizedImplied).toBe(0);
         });
 
@@ -237,8 +236,7 @@ describe('Markets', () => {
             });
 
             // Parent market should have zero draw odds
-            expect(market.odds[2].american).toBe(0);
-            expect(market.odds[2].decimal).toBe(0);
+            expect(market.odds[2].normalizedImplied).toBe(0);
 
             // Child markets should still be processed
             const containsSpread = market.childMarkets.some((child: any) => child.type === 'spread');
@@ -251,7 +249,7 @@ describe('Markets', () => {
             const spreadMarket = market.childMarkets.find((child: any) => child.type === 'spread');
             expect(spreadMarket).toBeDefined();
             expect(spreadMarket.odds.length).toBeGreaterThan(0);
-            expect(spreadMarket.odds[0].american).not.toBe(0);
+            expect(spreadMarket.odds[0].normalizedImplied).not.toBe(0);
         });
 
         it('Should return only parent odds with missing draw when no child markets enabled', () => {
@@ -275,10 +273,8 @@ describe('Markets', () => {
 
             // Parent market should have 3 odds with draw being zero
             expect(market.odds).toHaveLength(3);
-            expect(market.odds[0].american).not.toBe(0);
-            expect(market.odds[1].american).not.toBe(0);
-            expect(market.odds[2].american).toBe(0);
-            expect(market.odds[2].decimal).toBe(0);
+            expect(market.odds[0].normalizedImplied).not.toBe(0);
+            expect(market.odds[1].normalizedImplied).not.toBe(0);
             expect(market.odds[2].normalizedImplied).toBe(0);
         });
     });

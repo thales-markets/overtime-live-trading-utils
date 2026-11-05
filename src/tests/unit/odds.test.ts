@@ -22,6 +22,7 @@ import {
     getPlayersMap,
     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
     MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
+    getDecimalOdds,
 } from '../utils/helper';
 
 const lastPolledData = getLastPolledDataForBookmakers();
@@ -43,9 +44,7 @@ describe('Odds', () => {
             maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
         });
 
-        const hasOdds = market.odds.some(
-            (odd: any) => odd.american !== 0 || odd.decimal !== 0 || odd.normalizedImplied !== 0
-        );
+        const hasOdds = market.odds.some((odd: any) => odd.normalizedImplied !== 0);
 
         expect(hasOdds).toBe(true);
     });
@@ -65,9 +64,7 @@ describe('Odds', () => {
             maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
         });
 
-        const hasZeros = market.odds.some(
-            (odd: any) => odd.american === 0 || odd.decimal === 0 || odd.normalizedImplied === 0
-        );
+        const hasZeros = market.odds.some((odd: any) => odd.normalizedImplied === 0);
 
         expect(hasZeros).toBe(true);
     });
@@ -134,7 +131,7 @@ describe('Odds', () => {
         LeagueMocks.leagueInfoEnabledDoubleChance.forEach((info) => {
             const actualMarketOdds = doubleChanceMarkets
                 .find((childMarket: any) => childMarket.typeId === Number(info.typeId))
-                ?.odds.map((odd: any) => odd.decimal);
+                ?.odds.map((odd: any) => getDecimalOdds(odd));
 
             const expectedMarketOdds = freshMockOpticSoccer.odds
                 .filter((odd: any) => odd.market === info.marketName)
@@ -174,8 +171,8 @@ describe('Odds', () => {
         ).price;
 
         expect(oddEvenMarket.odds).toHaveLength(2);
-        expect(oddEvenMarket.odds[0].decimal).toBe(expectedOddPrice);
-        expect(oddEvenMarket.odds[1].decimal).toBe(expectedEvenPrice);
+        expect(getDecimalOdds(oddEvenMarket.odds[0])).toBe(expectedOddPrice);
+        expect(getDecimalOdds(oddEvenMarket.odds[1])).toBe(expectedEvenPrice);
     });
 
     it('Should return appropriate team total odd/even odds per team', () => {
@@ -216,8 +213,8 @@ describe('Odds', () => {
             ).price;
 
             expect(teamOddEvenMarket.odds).toHaveLength(2);
-            expect(teamOddEvenMarket.odds[0].decimal).toBeCloseTo(expectedOddPrice, 8);
-            expect(teamOddEvenMarket.odds[1].decimal).toBeCloseTo(expectedEvenPrice, 8);
+            expect(getDecimalOdds(teamOddEvenMarket.odds[0])).toBeCloseTo(expectedOddPrice, 8);
+            expect(getDecimalOdds(teamOddEvenMarket.odds[1])).toBeCloseTo(expectedEvenPrice, 8);
         });
     });
 
@@ -253,7 +250,7 @@ describe('Odds', () => {
             const expectedPrice = freshMockOpticSoccer.odds.find(
                 (odd: any) => odd.market === 'Halftime / Fulltime' && odd.selection === selection
             ).price;
-            expect(halftimeFulltimeMarket.odds[position].decimal).toBeCloseTo(expectedPrice, 8);
+            expect(getDecimalOdds(halftimeFulltimeMarket.odds[position])).toBeCloseTo(expectedPrice, 8);
         });
     });
 
@@ -286,7 +283,7 @@ describe('Odds', () => {
 
             expect(playerPropsMarket.playerProps.playerId).toBe(playersMap.get(expectedOdd.player_id));
             expect(playerPropsMarket.odds).toHaveLength(1);
-            expect(playerPropsMarket.odds[0].decimal).toBe(expectedOdd.price);
+            expect(getDecimalOdds(playerPropsMarket.odds[0])).toBe(expectedOdd.price);
         });
     });
 

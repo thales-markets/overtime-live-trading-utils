@@ -24,3 +24,7 @@ export const getPlayersMap = () => {
 export const MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK = 10; // 10%, used for tests, the production value is from env variable
 
 export const MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST = 30000; // 30 seconds
+
+// Decimal odds of an odds object (formatOddsForUi), rounded as consumers do
+export const getDecimalOdds = (odd: { normalizedImplied: number }) =>
+    odd.normalizedImplied ? Number((1 / odd.normalizedImplied).toFixed(10)) : 0;
