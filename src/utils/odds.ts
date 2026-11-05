@@ -936,17 +936,7 @@ export const sanityCheck = (iterableGroupedOdds: any[]) => {
     return result;
 };
 
-export const formatOddsForUi = (odd: number) => {
-    if (odd == 0) {
-        return {
-            american: 0,
-            decimal: 0,
-            normalizedImplied: 0,
-        };
-    }
-    return {
-        american: oddslib.from('impliedProbability', odd).to('moneyline'),
-        decimal: Number(oddslib.from('impliedProbability', odd).to('decimal').toFixed(10)),
-        normalizedImplied: odd,
-    };
-};
+// Only implied odds, to keep the markets small (consumers derive decimal odds as 1 / normalizedImplied)
+export const formatOddsForUi = (odd: number) => ({
+    normalizedImplied: odd,
+});

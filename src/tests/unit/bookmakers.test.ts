@@ -61,9 +61,7 @@ describe('Bookmakers', () => {
             maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
         });
 
-        const hasOdds = market.odds.some(
-            (odd: any) => odd.american !== 0 || odd.decimal !== 0 || odd.normalizedImplied !== 0
-        );
+        const hasOdds = market.odds.some((odd: any) => odd.normalizedImplied !== 0);
 
         expect(hasOdds).toBe(false);
     });
@@ -83,9 +81,7 @@ describe('Bookmakers', () => {
             maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
         });
 
-        const hasZeroOdds = market.odds.some(
-            (odd: any) => odd.american !== 0 || odd.decimal !== 0 || odd.normalizedImplied !== 0
-        );
+        const hasZeroOdds = market.odds.some((odd: any) => odd.normalizedImplied !== 0);
 
         expect(hasZeroOdds).toBe(true);
     });
@@ -105,9 +101,7 @@ describe('Bookmakers', () => {
             maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
         });
 
-        const hasOdds = market.odds.some(
-            (odd: any) => odd.american !== 0 || odd.decimal !== 0 || odd.normalizedImplied !== 0
-        );
+        const hasOdds = market.odds.some((odd: any) => odd.normalizedImplied !== 0);
 
         expect(hasOdds).toBe(false);
     });
