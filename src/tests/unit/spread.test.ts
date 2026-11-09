@@ -9,6 +9,7 @@ import {
     getPlayersMap,
     MAX_ALLOWED_PROVIDER_DATA_STALE_DELAY_TEST,
     MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
+    getDecimalOdds,
 } from '../utils/helper';
 
 const lastPolledData = getLastPolledDataForBookmakers();
@@ -30,9 +31,7 @@ describe('Spread configuration', () => {
             maxPercentageDiffForLines: MAX_PERCENTAGE_DIFF_FOR_PP_LINES_MOCK,
         });
 
-        const hasOdds = market.odds.some(
-            (odd: any) => odd.american !== 0 || odd.decimal !== 0 || odd.normalizedImplied !== 0
-        );
+        const hasOdds = market.odds.some((odd: any) => odd.normalizedImplied !== 0);
 
         expect(hasOdds).toBe(true);
     });
@@ -73,15 +72,18 @@ describe('Spread configuration', () => {
         );
 
         const diff1 =
-            ((market.odds[0].decimal - marketWithAddedSpread.odds[0].decimal) / marketWithAddedSpread.odds[0].decimal) *
+            ((getDecimalOdds(market.odds[0]) - getDecimalOdds(marketWithAddedSpread.odds[0])) /
+                getDecimalOdds(marketWithAddedSpread.odds[0])) *
             100;
 
         const diff2 =
-            ((market.odds[1].decimal - marketWithAddedSpread.odds[1].decimal) / marketWithAddedSpread.odds[1].decimal) *
+            ((getDecimalOdds(market.odds[1]) - getDecimalOdds(marketWithAddedSpread.odds[1])) /
+                getDecimalOdds(marketWithAddedSpread.odds[1])) *
             100;
 
         const diff3 =
-            ((market.odds[2].decimal - marketWithAddedSpread.odds[2].decimal) / marketWithAddedSpread.odds[2].decimal) *
+            ((getDecimalOdds(market.odds[2]) - getDecimalOdds(marketWithAddedSpread.odds[2])) /
+                getDecimalOdds(marketWithAddedSpread.odds[2])) *
             100;
 
         expect(Math.round(diff1)).toBe(3);
@@ -125,15 +127,18 @@ describe('Spread configuration', () => {
         );
 
         const diff1 =
-            ((market.odds[0].decimal - marketWithAddedSpread.odds[0].decimal) / marketWithAddedSpread.odds[0].decimal) *
+            ((getDecimalOdds(market.odds[0]) - getDecimalOdds(marketWithAddedSpread.odds[0])) /
+                getDecimalOdds(marketWithAddedSpread.odds[0])) *
             100;
 
         const diff2 =
-            ((market.odds[1].decimal - marketWithAddedSpread.odds[1].decimal) / marketWithAddedSpread.odds[1].decimal) *
+            ((getDecimalOdds(market.odds[1]) - getDecimalOdds(marketWithAddedSpread.odds[1])) /
+                getDecimalOdds(marketWithAddedSpread.odds[1])) *
             100;
 
         const diff3 =
-            ((market.odds[2].decimal - marketWithAddedSpread.odds[2].decimal) / marketWithAddedSpread.odds[2].decimal) *
+            ((getDecimalOdds(market.odds[2]) - getDecimalOdds(marketWithAddedSpread.odds[2])) /
+                getDecimalOdds(marketWithAddedSpread.odds[2])) *
             100;
 
         expect(Math.round(diff1)).toBe(0);

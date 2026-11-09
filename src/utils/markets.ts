@@ -51,13 +51,7 @@ export const processMarket = (params: ProcessMarketParams) => {
         lastPolledCheck,
     });
 
-    market.odds = market.odds.map(() => {
-        return {
-            american: 0,
-            decimal: 0,
-            normalizedImplied: 0,
-        };
-    });
+    market.odds = market.odds.map(() => formatOddsForUi(0));
 
     const packedChildMarkets = allMarkets.map((childMarket: any) => {
         // parent odds
